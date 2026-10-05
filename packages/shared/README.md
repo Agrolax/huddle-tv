@@ -1,3 +1,3 @@
-# shared
+# packages/shared
 
-See [PRD](../../docs/PRD.md).
+Shared TypeScript types (models, realtime events) and theme tokens.

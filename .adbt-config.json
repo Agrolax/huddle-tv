@@ -1,0 +1,8 @@
+{
+  "platform": {
+    "default": "both",
+    "paths": {
+      "apps/tv": "both"
+    }
+  }
+}

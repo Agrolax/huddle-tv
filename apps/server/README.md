@@ -1,3 +1,5 @@
-# server
+# apps/server
 
-See [PRD](../../docs/PRD.md).
+Node + TS API: households, board, events, photos, launch log, WebSocket push, Bedrock.
+
+See [architecture](../../docs/architecture/architecture.md#5-server).
