@@ -46,11 +46,14 @@ The TV is the one screen the whole household shares, but its home screen is buil
 
 ## 4. Platform facts that shape the product
 
+**Target device:** Fire TV Stick HD (1st gen), **Fire OS 8** (Android 11 based), 1080p. Build the Android TV target of the React Native app; Vega (simulator) is a stretch "runs on both" bonus.
+
+
 | Fact | Consequence |
 |---|---|
 | Amazon blocks third-party launchers; the remote's **Home button always goes to Amazon's home**. | Huddle is an app you open (pin it first in the apps row). Don't use launcher exploits. Frame it as "your family's home *inside* Fire TV". |
 | Apps are sandboxed: **no access to what's playing or other apps' watch history**. | "Household patterns" come from what happens *in Huddle*: who's here, what they launched, when. |
-| **App-to-app deep links work** (Vega: `Linking.openURL`; Fire OS: intents). Support for a specific title varies per app. | Launch a title where supported, otherwise open the app or its search. Always `canOpenURL` first. Verify on Day 1 ([spike](roadmap.md)). |
+| **On Fire OS, Huddle can list installed apps and launch them** (Android `PackageManager` + launch intents), and deep link into titles where the app supports it. | **Auto-detect** installed streaming apps (no manual setup). Launch a title where supported, else open the app. Verify on Day 1 ([spike](roadmap.md)). |
 | The remote's voice button goes to Alexa, not your app. | Text input happens on the **phone companion**. |
 
 ## 5. Users
@@ -67,7 +70,7 @@ The TV is the one screen the whole household shares, but its home screen is buil
 |---|---|---|
 | M1 | **Profile picker** ("Who's here?") | Multi-select avatars. Sets theme, greeting, app order. |
 | M2 | **Home screen**: greeting/brief hero + apps row + widget grid | The core design showcase |
-| M3 | **App shortcuts** to installed streaming apps | Curated list (Netflix, Prime Video, YouTube, Disney+, Crave, Spotify…). "Opening Netflix…" transition with fallback. |
+| M3 | **App shortcuts** to installed streaming apps | Auto-detected from the device (Netflix, Prime Video, YouTube, Disney+, Crave, Spotify…). "Opening Netflix…" transition with fallback. |
 | M4 | **Widgets ×4**: Clock+Weather, Family Board, Agenda, Photos | Each has a compact tile + an expanded view |
 | M5 | **Phone companion (web)**: QR pairing, post note, add event, send photo | Real-time update on TV |
 | M6 | **"Tonight" picker (AI)**: who's watching + mood → 3–5 picks with "on Netflix" badges → launch | Bedrock + a watch-provider data source (e.g. TMDB) |

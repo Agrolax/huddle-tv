@@ -5,13 +5,14 @@ Today: Oct 4 · Submit: **Oct 22** · Hard deadline: Oct 23, 3:00pm EDT
 Edit freely: this is the living plan. Tick boxes as you go. When a date slips, move items down, don't squeeze them.
 
 ## Week 0: Setup & spikes (Oct 4–6)
-- [ ] Check Fire Stick OS: Settings → My Fire TV → About (Vega or Fire OS) → update `.adbt-config.json`
+- [x] Check Fire Stick OS → **Fire TV Stick HD (1st gen) = Fire OS 8** (Android 11 based). `.adbt-config.json` set to `fire_os`
 - [x] Submit [AWS credits form](https://forms.gle/GaHFxSbBQNG9Kti6A) (name the Fire TV track)
-- [ ] Enable developer mode on the stick (ask Claude: "help me enable developer mode")
-- [ ] Install Vega SDK if Vega (ask Claude: "Help me set up Vega SDK")
-- [ ] Run `react-native-multi-tv-app-sample` on the stick (`scripts/fetch-references.sh` clones it)
+- [ ] Mac tooling: Android Studio (SDK + emulator), JDK 17, `adb` (see README › Setup)
+- [ ] Stick: Settings → My Fire TV → About → press Select on the device name 7× → Developer Options → **ADB debugging ON**, **Apps from unknown sources ON**
+- [ ] `adb connect <stick-ip>:5555` (IP in Settings → My Fire TV → About → Network), accept the prompt on the TV
+- [ ] Run `react-native-multi-tv-app-sample` (Android TV target) on the stick (`scripts/fetch-references.sh` clones it)
 - [ ] **Spike: app launching.** From a test screen, open Netflix, Prime Video, YouTube (app + a specific title). Record what works in [architecture § App launching](../architecture/architecture.md#4-app-launching)
-- [ ] AWS: Bedrock model access, pick region
+- [ ] AWS: pick region, enable Bedrock model access, **set a Budget alert** ($25 / $50 / $75), test one Bedrock call and confirm it bills against credits
 - [ ] Start the [friction log](../submission/friction-log.md)
 
 ## Week 1: Design + shell (Oct 5–10)
@@ -42,3 +43,4 @@ Edit freely: this is the living plan. Tick boxes as you go. When a date slips, m
 |---|---|
 | Oct 4 | Pivoted from party game to Huddle Home; game moved to bonus |
 | Oct 4 | AWS credits requested (allow ~5 business days) |
+| Oct 5 | Got $100 AWS credits. Device confirmed Fire OS 8 → Android TV build target, auto-detect installed apps |

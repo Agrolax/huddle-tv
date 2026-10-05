@@ -55,6 +55,12 @@
 
 ## 4. App launching
 
+**Our device is Fire OS 8 (Android 11 based)**, so the Fire OS row is the primary path. A small native module (Kotlin) exposes:
+- `getInstalledApps()`: `PackageManager.queryIntentActivities` for `CATEGORY_LEANBACK_LAUNCHER` (+ `CATEGORY_LAUNCHER`) → name, package, banner/icon. Needs `<queries>` entries (or `QUERY_ALL_PACKAGES`) because of Android 11 package visibility.
+- `launchApp(package)`: `getLeanbackLaunchIntentForPackage` → `startActivity`
+- `openUri(uri, package?)`: `ACTION_VIEW` intent, optionally targeted at a package (title deep links)
+
+
 | OS | API | Notes |
 |---|---|---|
 | Vega | `Linking.canOpenURL(url)` → `Linking.openURL(url)` | App-to-app deep links via Vega Messaging; supports custom URIs, https, and limited Fire OS intent-style URIs. [Docs](https://developer.amazon.com/docs/vega/0.22/deep-links-vega-apps.html) |
@@ -108,6 +114,7 @@ Launch flow: `canOpenURL(titleUri)` → open title; else `canOpenURL(appUri)` �
 | **NL → event** | "dentist Thursday 4pm for Ammu" | `{ title, start, profileIds }` | Phone input |
 | **Pattern phrasing** | launch stats | `"Saturday mornings are YouTube Kids time"` | Precomputed |
 
+- **Model choice:** start with **Amazon Nova** (Lite/Micro) on Bedrock: first-party, cheap, definitely covered by credits. Third-party models (e.g. Claude) on Bedrock may be billed via AWS Marketplace, which promotional credits often don't cover, so check the Billing console after one test call before relying on them.
 - Validate every response with `zod`; retry once on invalid JSON.
 - Watch-provider availability: AI suggests titles, then **verify availability with a data source** (e.g. TMDB watch providers for region CA, which requires attribution). Never trust the model for "it's on Netflix".
 - Stretch: wrap these as a Strands agent with tools (`get_agenda`, `get_launch_stats`, `search_titles`), which makes for a stronger AWS Builder story.
@@ -121,11 +128,11 @@ Launch flow: `canOpenURL(titleUri)` → open title; else `canOpenURL(appUri)` �
 
 ## 8. Hosting
 - Dev: server on laptop + tunnel (cloudflared / ngrok) so the stick and phone reach it.
-- Demo: EC2 / Lightsail instance (WebSockets), DynamoDB, S3 in one region with Bedrock access.
+- Demo: **Lightsail** instance (cheapest; WebSockets fine) or EC2, plus DynamoDB and S3, in one region with Bedrock access. All covered by the $100 credits.
 - Companion served as static files from the server.
 - Secrets in `.env` (gitignored); `.env.example` committed.
 
 ## 9. Open questions
-- Vega or Fire OS on the device? (decides native modules)
+- ~~Vega or Fire OS?~~ **Fire OS 8.** Native module in Kotlin for app listing/launching.
 - Which streaming apps support title-level deep links on this device? (spike)
 - Can `react-native-multi-tv-app-sample`'s web target share the same focus code? (matters for fast design iteration)

@@ -1,8 +1,5 @@
 {
   "platform": {
-    "default": "both",
-    "paths": {
-      "apps/tv": "both"
-    }
+    "default": "fire_os"
   }
 }
