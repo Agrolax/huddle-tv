@@ -13,7 +13,8 @@ Built for the [Build, Ship, Shape: Amazon Developer Hackathon](https://amazonapp
 | Date | What |
 |---|---|
 | **Oct 23, 2026 · 12:00pm PT / 3:00pm EDT** | Submission deadline (we aim for Oct 22) |
-| Oct 21, 12:00pm PT | AWS credits form closes (✅ received $100) |
+| Oct 6, 1:30pm EDT · Oct 19, 12:00pm EDT | Live office hours with the Amazon team ([#1](https://amazon.zoom.us/webinar/register/WN_ny5v5N4GQNGeMMaJRLKerQ) · [#2](https://amazon.zoom.us/webinar/register/WN_kh9CSYi0QtuN31d8nsTuOQ)) |
+| Oct 21, 12:00pm PT | AWS credits form closes (✅ requested; $150 code pending) |
 | Nov 9 – Nov 20 | Judging |
 | ~Dec 3 | Winners announced |
 
@@ -28,7 +29,7 @@ Built for the [Build, Ship, Shape: Amazon Developer Hackathon](https://amazonapp
 ### Mini challenges (a project can win **one**, on top of its track)
 | Challenge | Requirement | Prize | Our plan |
 |---|---|---|---|
-| **AWS Builder** | Use AWS services with documented integration (Bedrock, AgentCore, Strands, Kiro, SageMaker…). Kiro alone qualifies. | $5,000 + $5k credits + meeting | Bedrock (Nova) for Tonight picks / daily brief / plain-English events, DynamoDB, S3, Lightsail |
+| **AWS Builder** | Use AWS services with documented integration (Bedrock, AgentCore, Strands, Kiro, SageMaker…). Kiro alone qualifies. | $5,000 + $5k credits + meeting | Bedrock (Nova) for Tonight picks / daily brief / plain-English events, Polly (TV voice), Transcribe (phone voice input), DynamoDB, S3, Lightsail |
 | **Open Source** | New open-source project or a PR/fork/branch to a public repo, made during the hackathon | $5,000 + $5k credits + meeting | Extract `tv-focus-kit`, or a PR to a React Native TV library |
 
 ### Judging (equally weighted, after a pass/fail viability check)

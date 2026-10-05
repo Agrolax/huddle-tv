@@ -14,7 +14,9 @@
 └──────────────────────────────┘                       │  ┌──────── AWS ───────────┐     │
                                                        │  │ Bedrock: Tonight picks, │     │
 ┌──────────────────────────────┐   HTTPS + WebSocket   │  │   daily brief, NL→event │     │
-│ Phone companion (apps/companion)◄───────────────────►│  │ DynamoDB: household data│     │
+│ Phone companion (apps/companion)◄───────────────────►│  │ Polly: TV voice (TTS)   │     │
+│  │ Transcribe: phone voice │     │
+│  │ DynamoDB: household data│     │
 │ React + Vite, mobile web       │                      │  │ S3: photos              │     │
 │ opened via QR                  │                      │  └─────────────────────────┘     │
 └──────────────────────────────┘                       │  External: weather, watch        │
@@ -118,6 +120,11 @@ Launch flow: `canOpenURL(titleUri)` → open title; else `canOpenURL(appUri)` �
 - Validate every response with `zod`; retry once on invalid JSON.
 - Watch-provider availability: AI suggests titles, then **verify availability with a data source** (e.g. TMDB watch providers for region CA, which requires attribution). Never trust the model for "it's on Netflix".
 - Stretch: wrap these as a Strands agent with tools (`get_agenda`, `get_launch_stats`, `search_titles`), which makes for a stronger AWS Builder story.
+
+### Voice (Polly + Transcribe)
+- **Polly (TTS):** server synthesizes short lines (brief, announcements) with a neural voice → caches MP3 in S3 keyed by text hash → sends the URL to the TV, which plays it. Precompute the daily brief audio together with its text.
+- **Transcribe (speech-to-text):** phone companion records with `MediaRecorder` (hold-to-talk), streams audio over the existing WebSocket to the server, server uses **Transcribe streaming** → final text goes through the same Bedrock NL parser as typed input. Show the live transcript on the phone.
+- Both are covered by the AWS credits; keep clips short (a few seconds) so costs stay at cents.
 
 ## 7. External data
 | Need | Option | Key? |

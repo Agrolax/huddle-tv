@@ -7,7 +7,7 @@
 | **Hackathon** | Build, Ship, Shape: Amazon Developer Hackathon |
 | **Deadline** | Oct 23, 2026 · 3:00pm EDT (aim: submit Oct 22) |
 | **Primary track** | Fire TV |
-| **Mini challenges** | AWS Builder (Bedrock, DynamoDB, S3) · Open Source |
+| **Mini challenges** | AWS Builder (Bedrock, Polly, Transcribe, DynamoDB, S3) · Open Source |
 | **Bonus** | Friction log (up to +10%) |
 | **Related docs** | [Roadmap](roadmap.md) · [Architecture](../architecture/architecture.md) · [Design guide](../design/design-guide.md) · [Wireframes](../design/wireframes.html) · [Ideas backlog](ideas-backlog.md) |
 
@@ -81,6 +81,8 @@ The TV is the one screen the whole household shares, but its home screen is buil
 - **Ambient mode** after N minutes idle: photo slideshow + clock + today's board
 - **Daily brief (AI)**: per-profile greeting summarizing agenda, board, weather ("Rafi, 2 chores left, Raptors at 7:30")
 - **Natural-language input** on phone: "dentist Thursday 4pm for Ammu" → structured event (Bedrock)
+- **Voice input on the phone (Amazon Transcribe)**: hold-to-talk on the companion for board notes, events and Tonight requests ("something funny for me and the kids")
+- **Huddle's voice (Amazon Polly)**: the TV reads the daily brief aloud when people check in, announces new board posts ("Ammu posted: pizza night"), and gives ambient-mode reminders. Mutable, and quiet hours by default
 - **Edit mode** on TV: add, remove and rearrange widgets with the D-pad
 - **Sports widget** (sports is a priority category): follow teams per profile, live scores
 
