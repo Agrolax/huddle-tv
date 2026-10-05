@@ -13,3 +13,21 @@
 | Write required tool feedback | [submission/product-feedback.md](submission/product-feedback.md) |
 
 **How to iterate:** edit any file directly, or ask Claude ("move ambient mode to MVP", "add a chores widget to the PRD"). Everything is in git, so you can see what changed and undo it.
+
+## Next session: design, planning, research
+
+**Research (~1h)**
+- [ ] Skim `reference/vega-tv-interfaces-sample` and `reference/react-native-multi-tv-app-sample` (run `scripts/fetch-references.sh` first): note focus patterns and layouts to reuse
+- [ ] Collect 10–15 inspiration screenshots (Google TV, Apple TV, Echo Show, Nest Hub ambient, Skylight calendar) → [design-guide § Inspiration](design/design-guide.md#inspiration)
+- [ ] Look at what's on the [Fire TV Appstore](https://www.amazon.com/Fire-TV-Apps-All-Models/b/?node=10208590011) in "home / lifestyle / family" to confirm nothing already does this
+
+**Planning (~30m)**
+- [ ] Re-read the [PRD](product/PRD.md). Cut or add, and lock the MVP list
+- [ ] Answer the open questions in [design-guide](design/design-guide.md#open-design-questions)
+- [ ] Adjust dates in the [roadmap](product/roadmap.md)
+
+**Design (rest of the day)**
+- [ ] Figma file in the `Saf` or `Laurier` team, 1920×1080 frames with a 5% safe-area guide
+- [ ] Tokens first: colour, type scale (≥28px body), spacing, focus style
+- [ ] Hero frames: Home, Who's here, Tonight picks, Ambient. Then phone quick actions
+- [ ] Share the Figma link with Claude to start the TV app shell
