@@ -1,0 +1,228 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Huddle Wireframes</title>
+<style>
+  :root {
+    --bg: #f4f3ef; --paper: #fff; --ink: #222; --mute: #888; --line: #bbb; --fill: #e6e4de;
+    --focus: #2b6cff; --a: #e5484d; --b: #3e63dd; --c: #f5a524; --d: #30a46c;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) { --bg:#16161a; --paper:#1f1f24; --ink:#eee; --mute:#999; --line:#444; --fill:#2c2c33; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.4 ui-sans-serif, system-ui, -apple-system, sans-serif; padding: 24px 16px 64px; }
+  h1 { margin: 0 0 4px; font-size: 22px; }
+  .sub { color: var(--mute); margin: 0 0 28px; }
+  h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .08em; color: var(--mute); margin: 36px 0 12px; }
+  .row { display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-start; }
+  figure { margin: 0; }
+  figcaption { font-size: 12px; color: var(--mute); margin-top: 6px; max-width: 420px; }
+  figcaption b { color: var(--ink); }
+
+  /* TV frame 16:9 */
+  .tv { width: min(420px, 100%); aspect-ratio: 16/9; background: var(--paper); border: 2px solid var(--ink); border-radius: 6px; position: relative; overflow: hidden; }
+  .safe { position: absolute; inset: 5%; border: 1px dashed var(--line); padding: 8px; display: flex; flex-direction: column; gap: 6px; }
+  /* Phone frame */
+  .phone { width: 150px; aspect-ratio: 9/19; background: var(--paper); border: 2px solid var(--ink); border-radius: 18px; padding: 14px 10px; display: flex; flex-direction: column; gap: 6px; }
+
+  .box { background: var(--fill); border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 10px; color: var(--mute); text-align: center; padding: 4px; }
+  .t { font-weight: 700; font-size: 13px; }
+  .s { font-size: 9px; color: var(--mute); }
+  .focus { outline: 3px solid var(--focus); outline-offset: 2px; transform: scale(1.05); color: var(--ink); }
+  .grow { flex: 1; }
+  .hr { display: flex; gap: 6px; }
+  .av { width: 22px; height: 22px; border-radius: 50%; background: var(--line); flex: none; }
+  .opt { border-radius: 4px; color: #fff; font-size: 10px; font-weight: 600; display: flex; align-items: center; gap: 4px; padding: 0 6px; }
+  .oa{background:var(--a)} .ob{background:var(--b)} .oc{background:var(--c)} .od{background:var(--d)}
+  .dim { opacity: .3; }
+  .note { font-size: 12px; background: var(--paper); border-left: 3px solid var(--focus); padding: 10px 12px; max-width: 860px; margin-top: 8px; }
+  .flow { font-family: ui-monospace, monospace; font-size: 12px; background: var(--paper); padding: 12px; border-radius: 6px; overflow-x: auto; white-space: pre; }
+</style>
+</head>
+<body>
+<h1>Huddle: low-fi wireframes</h1>
+<p class="sub">Layout + focus sketches only, no visual design. Blue outline = current D-pad focus. Dashed line = 5% TV safe area.</p>
+
+<div class="flow">TV:    Home → Lobby (QR) → Setup → Generating → [Question → Reveal]×N → Leaderboard → Podium
+Phone:        Join → Waiting (suggest theme) ──────────→ [Answer → Result]×N ────────────→ Final</div>
+
+<h2>TV · 1920×1080 · D-pad</h2>
+<div class="row">
+  <figure>
+    <div class="tv"><div class="safe">
+      <div class="grow box" style="font-size:16px;color:var(--ink);font-weight:800">HUDDLE<br><span class="s">host mascot / logo animation</span></div>
+      <div class="hr" style="justify-content:center">
+        <div class="box focus" style="width:110px;height:28px">Start a party</div>
+        <div class="box" style="width:90px;height:28px">How to play</div>
+        <div class="box" style="width:70px;height:28px">Settings</div>
+      </div>
+    </div></div>
+    <figcaption><b>1 · Home.</b> One primary action, focused by default. Left/right moves focus.</figcaption>
+  </figure>
+
+  <figure>
+    <div class="tv"><div class="safe" style="flex-direction:row;gap:10px">
+      <div style="width:42%;display:flex;flex-direction:column;gap:6px">
+        <div class="box" style="aspect-ratio:1">QR</div>
+        <div class="t" style="text-align:center;letter-spacing:.2em">K 7 P Q</div>
+        <div class="s" style="text-align:center">huddle.tv/join</div>
+      </div>
+      <div class="grow" style="display:flex;flex-direction:column;gap:6px">
+        <div class="t">Players (3)</div>
+        <div class="hr"><div class="av"></div><span>Ammu</span></div>
+        <div class="hr"><div class="av"></div><span>Rafi</span></div>
+        <div class="hr"><div class="av"></div><span>Nanu</span></div>
+        <div class="hr dim"><div class="av"></div><span>waiting…</span></div>
+        <div class="grow"></div>
+        <div class="box focus" style="height:26px">Everyone's in → Start</div>
+      </div>
+    </div></div>
+    <figcaption><b>2 · Lobby.</b> QR is the hero. Players pop in live (animate this!). Start is enabled at ≥1 player.</figcaption>
+  </figure>
+
+  <figure>
+    <div class="tv"><div class="safe">
+      <div class="t">Pick your themes</div>
+      <div class="hr"><div class="box focus" style="flex:1;height:26px">Movies ✓</div><div class="box" style="flex:1;height:26px">Science</div><div class="box" style="flex:1;height:26px">Minecraft ✓</div><div class="box" style="flex:1;height:26px">Food</div></div>
+      <div class="hr"><div class="box" style="flex:1;height:26px">Sports</div><div class="box" style="flex:1;height:26px">Music</div><div class="box" style="flex:1;height:26px">History</div><div class="box" style="flex:1;height:26px;border:1px dashed var(--mute)">📱 "Pokémon" (from Rafi)</div></div>
+      <div class="hr" style="margin-top:4px"><span class="s" style="width:60px">Ages</span><div class="box" style="width:50px">Kids</div><div class="box" style="width:50px;background:var(--line)">Mixed</div><div class="box" style="width:50px">Adults</div></div>
+      <div class="hr"><span class="s" style="width:60px">Questions</span><div class="box" style="width:50px">◀ 10 ▶</div></div>
+      <div class="grow"></div>
+      <div class="box" style="height:24px;align-self:flex-end;width:120px">Generate game →</div>
+    </div></div>
+    <figcaption><b>3 · Setup.</b> Focus grid ≤ 3 rows. Themes typed on phones appear as chips. No TV keyboard.</figcaption>
+  </figure>
+
+  <figure>
+    <div class="tv"><div class="safe" style="align-items:center;justify-content:center">
+      <div class="box" style="width:90px;height:90px;border-radius:50%">host<br>thinking anim</div>
+      <div class="t">Writing your questions…</div>
+      <div class="s">"Teaching myself Minecraft crafting recipes"</div>
+    </div></div>
+    <figcaption><b>4 · Generating.</b> Hides Bedrock latency (~3–8s). Rotating funny lines tied to chosen themes.</figcaption>
+  </figure>
+
+  <figure>
+    <div class="tv"><div class="safe">
+      <div class="hr" style="justify-content:space-between"><span class="s">Q 3 / 10 · Minecraft</span><span class="t">⏱ 12</span></div>
+      <div class="grow box" style="font-size:13px;color:var(--ink);font-weight:700">What do you need to craft a torch?</div>
+      <div class="hr"><div class="opt oa grow" style="height:28px">▲ Stick + coal</div><div class="opt ob grow" style="height:28px">◆ Stone + wool</div></div>
+      <div class="hr"><div class="opt oc grow" style="height:28px">● Sand + iron</div><div class="opt od grow" style="height:28px">■ Wood + string</div></div>
+      <div class="hr"><div class="av"></div><div class="av"></div><div class="av dim"></div><span class="s">2 of 3 answered</span></div>
+    </div></div>
+    <figcaption><b>5 · Question.</b> Not interactive on TV (answers come from phones). Remote-only mode: options become focusable.</figcaption>
+  </figure>
+
+  <figure>
+    <div class="tv"><div class="safe">
+      <div class="s">Q 3 / 10</div>
+      <div class="hr"><div class="opt oa grow" style="height:28px;outline:3px solid var(--ink)">▲ Stick + coal ✓ · Ammu, Nanu</div></div>
+      <div class="hr dim"><div class="opt ob grow" style="height:20px">◆ Stone + wool · Rafi</div></div>
+      <div class="box grow" style="flex-direction:column;gap:4px"><span>🎙 host line</span><span style="color:var(--ink)">"Nanu, faster than a creeper!"</span></div>
+      <div class="s">Fun fact: charcoal works too.</div>
+    </div></div>
+    <figcaption><b>6 · Reveal.</b> Correct answer + who picked what. Polly voice reads the host line.</figcaption>
+  </figure>
+
+  <figure>
+    <div class="tv"><div class="safe">
+      <div class="t">Leaderboard</div>
+      <div class="hr box" style="justify-content:flex-start;height:26px"><b style="color:var(--ink)">1</b>&nbsp;<div class="av"></div>&nbsp;Nanu · 2,400 <span style="margin-left:auto">▲2</span></div>
+      <div class="hr box" style="justify-content:flex-start;height:26px"><b style="color:var(--ink)">2</b>&nbsp;<div class="av"></div>&nbsp;Ammu · 2,150 <span style="margin-left:auto">▼1</span></div>
+      <div class="hr box" style="justify-content:flex-start;height:26px"><b style="color:var(--ink)">3</b>&nbsp;<div class="av"></div>&nbsp;Rafi · 1,900 <span style="margin-left:auto">▼1</span></div>
+      <div class="grow"></div>
+      <div class="s" style="text-align:right">auto-continues in 5s · Select to skip</div>
+    </div></div>
+    <figcaption><b>7 · Leaderboard.</b> Animate rows swapping places. This is the moment people react to.</figcaption>
+  </figure>
+
+  <figure>
+    <div class="tv"><div class="safe">
+      <div class="grow" style="display:flex;align-items:flex-end;justify-content:center;gap:8px">
+        <div style="text-align:center"><div class="av" style="margin:auto"></div><div class="box" style="width:60px;height:40px">2</div></div>
+        <div style="text-align:center"><div class="av" style="margin:auto;width:30px;height:30px"></div><div class="box" style="width:60px;height:60px">1 👑</div></div>
+        <div style="text-align:center"><div class="av" style="margin:auto"></div><div class="box" style="width:60px;height:28px">3</div></div>
+      </div>
+      <div class="hr" style="justify-content:center"><div class="box focus" style="width:90px;height:24px">Play again</div><div class="box" style="width:90px;height:24px">New themes</div><div class="box" style="width:60px;height:24px">Exit</div></div>
+    </div></div>
+    <figcaption><b>8 · Podium.</b> Confetti + host closing line. "Play again" keeps the same players.</figcaption>
+  </figure>
+
+  <figure>
+    <div class="tv"><div class="safe dim" style="opacity:.25"><div class="grow box">game behind</div></div>
+      <div style="position:absolute;inset:30% 30%;background:var(--paper);border:2px solid var(--ink);border-radius:6px;display:flex;flex-direction:column;gap:6px;padding:8px;justify-content:center">
+        <div class="t" style="text-align:center">Paused</div>
+        <div class="box focus" style="height:22px">Resume</div>
+        <div class="box" style="height:22px">Quit to lobby</div>
+      </div>
+    </div>
+    <figcaption><b>9 · Back / Menu overlay.</b> Back never exits the app mid-game without confirming.</figcaption>
+  </figure>
+</div>
+
+<h2>Phone controller · mobile web · portrait</h2>
+<div class="row">
+  <figure>
+    <div class="phone">
+      <div class="t" style="text-align:center">Join Huddle</div>
+      <div class="box" style="height:26px;letter-spacing:.2em;color:var(--ink)">K7PQ</div>
+      <div class="box" style="height:26px">Your name</div>
+      <div class="s">Pick an avatar</div>
+      <div class="hr" style="flex-wrap:wrap"><div class="av"></div><div class="av" style="outline:2px solid var(--focus)"></div><div class="av"></div><div class="av"></div><div class="av"></div><div class="av"></div></div>
+      <div class="grow"></div>
+      <div class="box" style="height:32px;background:var(--ink);color:var(--paper)">Join</div>
+    </div>
+    <figcaption><b>P1 · Join.</b> Code prefilled from QR.</figcaption>
+  </figure>
+
+  <figure>
+    <div class="phone">
+      <div class="av" style="width:56px;height:56px;margin:8px auto"></div>
+      <div class="t" style="text-align:center">You're in, Rafi!</div>
+      <div class="s" style="text-align:center">Look at the TV 📺</div>
+      <div class="grow"></div>
+      <div class="s">Suggest a theme</div>
+      <div class="box" style="height:26px">e.g. Pokémon</div>
+      <div class="box" style="height:26px">Send</div>
+    </div>
+    <figcaption><b>P2 · Waiting.</b> Theme suggestions show up on TV setup.</figcaption>
+  </figure>
+
+  <figure>
+    <div class="phone" style="gap:8px">
+      <div class="hr" style="justify-content:space-between"><span class="s">Q3</span><span class="s">⏱ 12</span></div>
+      <div class="opt oa grow" style="justify-content:center;font-size:22px">▲</div>
+      <div class="opt ob grow" style="justify-content:center;font-size:22px">◆</div>
+      <div class="opt oc grow" style="justify-content:center;font-size:22px">●</div>
+      <div class="opt od grow" style="justify-content:center;font-size:22px">■</div>
+    </div>
+    <figcaption><b>P3 · Answer.</b> Huge targets, shape + color, no text (eyes on TV). Kids mode could show text/pictures here.</figcaption>
+  </figure>
+
+  <figure>
+    <div class="phone" style="align-items:center;justify-content:center">
+      <div style="font-size:36px">✓</div>
+      <div class="t">+800</div>
+      <div class="s">You're 3rd</div>
+    </div>
+    <figcaption><b>P4 · Result.</b> Haptic buzz on correct (navigator.vibrate).</figcaption>
+  </figure>
+
+  <figure>
+    <div class="phone" style="align-items:center">
+      <div class="grow"></div>
+      <div class="t">🥉 3rd place</div>
+      <div class="s">1,900 pts</div>
+      <div class="grow"></div>
+      <div class="box" style="height:30px;width:100%">Waiting for host…</div>
+    </div>
+    <figcaption><b>P5 · Final.</b> TV controls "Play again"; phone mirrors state.</figcaption>
+  </figure>
+</div>
+
+<div class="note"><b>Design open questions to explore in Figma:</b> host personality (mascot vs voice-only), how avatars animate into the lobby, how the leaderboard shuffle reads from 3 m away, kids mode (pictures instead of text on phones), and a shared colour/shape language between TV and phone.</div>
+</body>
+</html>
