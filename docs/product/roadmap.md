@@ -6,7 +6,7 @@ Edit freely: this is the living plan. Tick boxes as you go. When a date slips, m
 
 ## Week 0: Setup & spikes (Oct 4–6)
 - [ ] Check Fire Stick OS: Settings → My Fire TV → About (Vega or Fire OS) → update `.adbt-config.json`
-- [ ] Submit [AWS credits form](https://forms.gle/GaHFxSbBQNG9Kti6A) (name the Fire TV track)
+- [x] Submit [AWS credits form](https://forms.gle/GaHFxSbBQNG9Kti6A) (name the Fire TV track)
 - [ ] Enable developer mode on the stick (ask Claude: "help me enable developer mode")
 - [ ] Install Vega SDK if Vega (ask Claude: "Help me set up Vega SDK")
 - [ ] Run `react-native-multi-tv-app-sample` on the stick (`scripts/fetch-references.sh` clones it)
@@ -41,3 +41,4 @@ Edit freely: this is the living plan. Tick boxes as you go. When a date slips, m
 | Date | Change |
 |---|---|
 | Oct 4 | Pivoted from party game to Huddle Home; game moved to bonus |
+| Oct 4 | AWS credits requested (allow ~5 business days) |
