@@ -27,3 +27,10 @@ Pick one (a contribution to a popular repo likely scores higher):
 ## Bonus
 - [ ] **Friction log** entries ([friction-log.md](friction-log.md)): up to +10%
 - [ ] Feature requests (in product-feedback.md)
+
+## Tips from Devpost's "Strong Submission Tips" email (Oct 5)
+- Feedback must **name the tool** for every point ("the docs were confusing" alone doesn't help)
+- Give the project a **memorable, specific name**
+- **No API keys in code**: `.env` is gitignored; check the repo before submitting
+- Make the track tool **impossible to miss**: name Fire TV / Vega in the description, in **Built With**, and clearly in the video
+- Treat the video as a **pitch**: problem → solution working → who it's for → how it uses the track's tool

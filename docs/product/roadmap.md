@@ -6,9 +6,9 @@ Edit freely: this is the living plan. Tick boxes as you go. When a date slips, m
 
 ## Week 0: Setup & spikes (Oct 4–6)
 - [x] Check Fire Stick OS → **Fire TV Stick HD (1st gen) = Fire OS 8** (Android 11 based). `.adbt-config.json` set to `fire_os`
-- [x] Submit [AWS credits form](https://forms.gle/GaHFxSbBQNG9Kti6A) (name the Fire TV track). **$150 hackathon code still pending** (≤5 business days; arrives by email)
+- [x] Submit [AWS credits form](https://forms.gle/GaHFxSbBQNG9Kti6A) (name the Fire TV track). **$150 hackathon code still pending** as of Oct 6 (≤5 business days; arrives by email). Questions can also be emailed to kmeiss@amazon.com (per the Zoom confirmation)
 - [x] Devpost submission draft started ('Untitled'): [edit it](https://devpost.com/submit-to/30992-build-ship-shape-amazon-developer-hackathon/manage/submissions/1217824/edit). Fill in as you build; finalize by Oct 22
-- [ ] Register for **Office Hours #1: Tue Oct 6, 1:30–2:30pm EDT** ([Zoom](https://amazon.zoom.us/webinar/register/WN_ny5v5N4GQNGeMMaJRLKerQ)). Ask: launching other apps from ours on Fire OS / Vega, judging of Vega vs Fire OS
+- [x] Registered for **Office Hours #1: Tue Oct 6, 1:30–2:30pm EDT** ([Zoom](https://amazon.zoom.us/webinar/register/WN_ny5v5N4GQNGeMMaJRLKerQ)). Ask: launching other apps from ours on Fire OS / Vega, judging of Vega vs Fire OS
 - [ ] Mac tooling: Android Studio (SDK + emulator), JDK 17, `adb` (see README › Setup)
 - [ ] Stick: Settings → My Fire TV → About → press Select on the device name 7× → Developer Options → **ADB debugging ON**, **Apps from unknown sources ON**
 - [ ] `adb connect <stick-ip>:5555` (IP in Settings → My Fire TV → About → Network), accept the prompt on the TV
@@ -37,7 +37,7 @@ Edit freely: this is the living plan. Tick boxes as you go. When a date slips, m
 - [ ] Motion + sound pass, focus audit, Back audit
 - [ ] Open Source: extract package or open a PR (see [checklist](../submission/checklist.md))
 - [ ] Bonus (only if green on Oct 17): Huddle Games
-- [ ] Register for **Office Hours #2: Mon Oct 19, 12–1pm EDT** ([Zoom](https://amazon.zoom.us/webinar/register/WN_kh9CSYi0QtuN31d8nsTuOQ)): bring the near-final demo
+- [x] Registered for **Office Hours #2: Mon Oct 19, 12–1pm EDT** ([Zoom](https://amazon.zoom.us/webinar/register/WN_kh9CSYi0QtuN31d8nsTuOQ)): bring the near-final demo
 - [ ] Oct 20–21: record and edit the [demo video](../submission/demo-script.md)
 - [ ] Oct 22: submit everything
 
