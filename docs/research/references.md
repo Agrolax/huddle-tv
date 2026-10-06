@@ -11,6 +11,11 @@ Add links here as you find them. Keep one line of "why it's useful" per link.
 - [AWS credit request form](https://forms.gle/GaHFxSbBQNG9Kti6A): $150, due Oct 21 12pm PT, first-come first-served, ~5 business days. Must name your track in the description. (The rules page links `forms.gle/5hyhr1u6x3fuV2aW7`; it's the same form.)
 - Live office hours: schedule + join link posted on the hackathon landing page
 
+## Competition snapshot (Amazon slide, public repos as of Oct 1, directional only)
+44K+ registered. Share of public hackathon repos by track: **Alexa+ 70% · Fire TV 16% · Ring 11% · Bee 3%**.
+- Fire TV has the same cash as Alexa+ ($44K across 3 places) with roughly 1/4 of the competition, which confirms our track choice.
+- Ring and Bee: $20K cash each (2 places). Amazon says it wants more entries there.
+
 ## AI tooling (installed in this project)
 - [Amazon Devices Builder Tools](https://developer.amazon.com/docs/vega/0.24/mcp-server): MCP server + Agent Skills for Fire OS / Vega: scaffolding, crash analysis, perf profiling, docs search. **Installed:** MCP server (user scope) + Amazon skills in `~/.claude/skills`, context in `.claude/amazon-devices/`.
 
