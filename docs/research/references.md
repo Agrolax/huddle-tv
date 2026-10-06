@@ -16,6 +16,11 @@ Add links here as you find them. Keep one line of "why it's useful" per link.
 - Fire TV has the same cash as Alexa+ ($44K across 3 places) with roughly 1/4 of the competition, which confirms our track choice.
 - Ring and Bee: $20K cash each (2 places). Amazon says it wants more entries there.
 
+## Similar products (how Huddle differs)
+- **Projectivy Launcher**, **Wolf Launcher**: popular custom launchers for Android TV / Fire TV. Fire TV users install them to get rid of ads and bring back a simple app grid. Setting them as the default on Fire TV needs workarounds. *This shows real demand for a better home.*
+- Huddle's difference: a normal app (no hacks), built for the **household** (profiles, family board, agenda, photos), with AI (Tonight picker, patterns, daily brief) and a phone companion. Launchers are single-user app grids.
+- Family dashboards (Skylight, DAKboard, Echo Show home): household info on a dedicated screen, not on the TV.
+
 ## AI tooling (installed in this project)
 - [Amazon Devices Builder Tools](https://developer.amazon.com/docs/vega/0.24/mcp-server): MCP server + Agent Skills for Fire OS / Vega: scaffolding, crash analysis, perf profiling, docs search. **Installed:** MCP server (user scope) + Amazon skills in `~/.claude/skills`, context in `.claude/amazon-devices/`.
 
