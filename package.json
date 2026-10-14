@@ -1,0 +1,30 @@
+{
+  "name": "huddle-home",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Family home screen for Fire TV (Vega OS) with a phone companion",
+  "workspaces": [
+    "packages/shared",
+    "packages/tv-focus-kit",
+    "apps/server",
+    "apps/companion",
+    "apps/tv"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
+    "check": "npm run typecheck && npm run test",
+    "dev:server": "npm run dev -w @huddle/server",
+    "dev:companion": "npm run dev -w @huddle/companion",
+    "build:tv": "npm run build:debug -w @huddle/tv",
+    "tv:install": "cd apps/tv && vega device install-app --dir . -b Debug",
+    "tv:launch": "cd apps/tv && vega device launch-app --dir ."
+  },
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "typescript": "4.8.4"
+  }
+}

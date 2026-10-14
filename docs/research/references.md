@@ -9,7 +9,7 @@ Add links here as you find them. Keep one line of "why it's useful" per link.
 - [Official rules](https://amazonappdev2026.devpost.com/rules): submission requirements, "obvious vs creative" examples per track
 - [Resources](https://amazonappdev2026.devpost.com/resources): official SDK/sample list (summarized below)
 - [AWS credit request form](https://forms.gle/GaHFxSbBQNG9Kti6A): $150, due Oct 21 12pm PT, first-come first-served, ~5 business days. Must name your track in the description. (The rules page links `forms.gle/5hyhr1u6x3fuV2aW7`; it's the same form.)
-- Live office hours: schedule + join link posted on the hackathon landing page
+- Live office hours: schedule + join link posted on the hackathon landing page. Our notes: [office-hours.md](office-hours.md)
 
 ## Competition snapshot (Amazon slide, public repos as of Oct 1, directional only)
 44K+ registered. Share of public hackathon repos by track: **Alexa+ 70% · Fire TV 16% · Ring 11% · Bee 3%**.
@@ -39,6 +39,27 @@ Add links here as you find them. Keep one line of "why it's useful" per link.
 
 - [The Ultimate Guide to React Native TV Development](https://www.callstack.com/ebooks/the-ultimate-guide-to-react-native-tv-development) (Callstack, free e-book)
 
+## Vega packages to install
+
+SDK first: [Install the Vega Developer Tools](https://developer.amazon.com/docs/vega/0.24/install-vega-sdk.html) (CLI, SDK 0.24, Vega Virtual Device). Add Amazon packages with `vega project install <name>` so the version matches OS 1.2, then `npm install`. Full catalog: [Supported libraries and services](https://developer.amazon.com/docs/vega-api/0.24/supported-libraries.html).
+
+**For Huddle**
+
+| Package | Why |
+|---|---|
+| `@amazon-devices/react-native-kepler` | React Native for Vega. Comes with the app template. React and React Native themselves are provided by the OS |
+| `@amazon-devices/react-navigation` (RN 0.72: `^7`; RN 0.83: `^8`) | TV navigation. Use this, not the public `@react-navigation` packages |
+| `@amazon-devices/kepler-ui-components` | TV UI (carousel and friends). On RN 0.83 this must be 3.x |
+| `@amazon-devices/react-native-svg`, `@amazon-devices/react-native-fast-image`, `@amazon-devices/lottie-react-native` | Icons, posters, motion |
+| `@amazon-devices/react-native-async-storage__async-storage` | Cache the last household snapshot on device |
+| `@amazon-devices/react-native-netinfo` | Know when the TV is offline and should render from cache |
+| `@amazon-devices/react-native-qrcode-svg` | Pairing QR on the TV |
+| React Native `Linking` (built in) | Launch Netflix and the rest. Not a separate download |
+
+**Available, not needed for the MVP:** Content Launcher, Account Login, and Media Controls (`@amazon-devices/kepler-media-content-launcher`, `kepler-media-account-login`, `kepler-media-controls`) are for apps that *receive* "play this title" from Fire TV. In-app purchasing (`kepler` IAP + App Tester) is out of scope. Media players (Shaka, hls.js, dash.js) matter only if Huddle plays video itself.
+
+**Plain JavaScript that works without a Vega port:** lodash, zod, socket.io-client. Anything with native code needs an `@amazon-devices` port. On RN 0.83, `@amazon-devices/shopify__flash-list` is broken; use `@shopify/flash-list@2.1.0` if we need a long list. Expo font, GL, image manipulator, notifications, splash, sqlite, and system-ui are not stabilized on RN 0.83.
+
 ## Fire TV / Vega docs
 - [Amazon Developer documentation](https://developer.amazon.com/docs/apps-and-games/documentation.html)
 - [Announcing Vega OS / getting started](https://developer.amazon.com/apps-and-games/blogs/2025/09/announcing-vega-os)
@@ -50,7 +71,7 @@ Add links here as you find them. Keep one line of "why it's useful" per link.
 
 ## Community & learning
 - [Vega developer forum](https://community.amazondeveloper.com/c/vega/6)
-- [Fire Devices & Appstore forum](https://community.amazondeveloper.com/c/fire-apps/17)
+- [Fire Devices & Appstore forum](https://community.amazondeveloper.com/c/fire-apps/17): mostly support complaints; our read of it is in [community-research.md](community-research.md)
 - [AmazonAppDev YouTube](https://www.youtube.com/channel/UCT9ApARFgQJOeqD-ygmxnJQ)
 - [AmazonAppDev on dev.to](https://dev.to/amazonappdev)
 

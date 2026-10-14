@@ -1,7 +1,7 @@
 # Huddle Home
 
-Family home-screen app for Fire TV (Amazon Developer Hackathon, Fire TV track, due Oct 23 2026 3pm EDT).
-Widgets + profiles + AI "Tonight" picker + one-press launch into existing streaming apps, with a phone web companion.
+Family home-screen app for Fire TV on Vega OS (Amazon Developer Hackathon, Fire TV track; submit Oct 22, hard deadline Oct 23 2026 3pm EDT).
+Locked scope (Oct 14): widgets (clock/weather, family calendar, Bedrock Tonight picks, profiles), phone companion via QR (switch profile, message the TV, AI chat), one game "Sketch it" (phone draws, TV shows, phones guess), simulated smart-home widget. Polly/Transcribe are stretch.
 
 ## Where things are
 - Product: `docs/product/PRD.md` (what/why), `docs/product/roadmap.md` (plan, checkboxes), `docs/product/ideas-backlog.md`
@@ -11,10 +11,11 @@ Widgets + profiles + AI "Tonight" picker + one-press launch into existing stream
 - Submission: `docs/submission/` (checklist, friction log, product feedback, demo script)
 
 ## Code layout
-- `apps/tv`: React Native TV app (Vega + Fire OS), based on `reference/react-native-multi-tv-app-sample`
+- npm workspaces; `npm run check` = typecheck + tests for every workspace
+- `apps/tv`: React Native for Vega (SDK 0.24, RN 0.72). Build/run: see README › Apps. Screenshots: `scripts/vvd-capture.sh`
 - `apps/companion`: React + Vite phone web app
 - `apps/server`: Node + TS API, WebSocket, Bedrock/DynamoDB/S3
-- `packages/shared`: shared types + theme tokens; `packages/tv-focus-kit`: open-source candidate
+- `packages/shared`: theme tokens + realtime protocol (`protocol.ts`, roles tv/phone/display/voice); `packages/tv-focus-kit`: D-pad focus primitives (open-source entry)
 
 ## Working rules
 - When the plan or scope changes, update the PRD/roadmap (and the roadmap change log) in the same change.

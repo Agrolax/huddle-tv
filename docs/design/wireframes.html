@@ -45,14 +45,37 @@
 </head>
 <body>
 <h1>Huddle Home: low-fi wireframes</h1>
-<p class="sub">Layout + focus only, no visual design. Blue outline = current D-pad focus. Dashed line = 5% TV safe area. <a href="wireframes-games.html">Bonus: Huddle Games wireframes →</a></p>
+<p class="sub">Layout + focus only. Blue outline = D-pad focus. Dashed line = 5% safe area. Draw phase 1 in Figma first. <a href="wireframes-games.html">Phase 4 game wireframes →</a></p>
 
-<div class="flow">TV:     Pair (first run) → Who's here? → Home ─┬─► Widget expanded (Board / Agenda / Photos / Weather)
-                                              ├─► Tonight: who + mood → generating → picks → Launching… → (streaming app)
-                                              ├─► Edit mode
-                                              └─► idle 10 min → Ambient mode → any key → Home
-Phone:  Scan QR → Join household → Quick actions → Post note · Add event (plain English) · Send photo · Setup</div>
+<div class="flow">Step 1   Who's here? → Home (clock · calendar · profiles · Tonight · Sketch it · smart home)
+Step 2   Connect phone (QR) → phone switches profile, sends a message
+Step 3   Widgets live      Step 4   Bedrock: Tonight + phone AI chat
+Step 5   Sketch it: phone draws → TV canvas → phones guess
+Stretch  Polly / Transcribe · Echo Show as a display</div>
 
+<h2>Step 1 · home (scope locked Oct 14)</h2>
+<figure>
+  <div class="tv big"><div class="safe">
+    <div class="hr" style="align-items:flex-start">
+      <div class="grow">
+        <div class="t">Good evening, Rafi &amp; Nanu</div>
+        <div class="s">Dinner at 7 · 14° and clear · nothing new from phones</div>
+      </div>
+      <span class="chip">Connect phone</span>
+    </div>
+    <div class="grid grow" style="grid-template-rows:1fr 1fr">
+      <div class="box focus" style="color:var(--ink)">⏰ Clock &amp; weather<br><b>6:18</b> · 14° clear</div>
+      <div class="box" style="grid-column:span 2">📅 Family calendar<br>4:00 Dentist · Ammu<br>7:00 Pizza night</div>
+      <div class="box">👪 Who's here<br><span class="hr"><span class="av"></span><span class="av"></span></span>Select to switch</div>
+      <div class="box" style="grid-column:span 2">✨ Tonight (Bedrock)<br>[Cozy] [Funny] [Edge-of-seat]</div>
+      <div class="box">✏️ Sketch it<br>phones draw, room guesses</div>
+      <div class="box">🏠 Home (simulated)<br>Lamp on · 21° · Locked</div>
+    </div>
+  </div></div>
+  <figcaption><b>Home, as built in step 1.</b> 4×2 grid, focus starts on Clock. Arrows stay in a row; Up/Down return to the tile last used in that row. Up from the top row reaches "Connect phone" (QR pairing in step 2). Screenshots from the Vega Virtual Device are in <code>docs/screenshots/step-1/</code>.</figcaption>
+</figure>
+
+<h2>Earlier exploration (before the Oct 14 scope lock)</h2>
 <h2>The hero screen · Home</h2>
 <figure>
   <div class="tv big"><div class="safe">

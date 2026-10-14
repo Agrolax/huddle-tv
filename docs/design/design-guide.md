@@ -2,7 +2,7 @@
 
 ## Process
 1. **Wireframes**: [`wireframes.html`](wireframes.html) (layout + focus only)
-2. **Figma hi-fi**: Home, Who's here, Tonight, Board expanded, Ambient, phone quick actions
+2. **Figma, phase 1 only**: Who's here, Home, launching overlay. Tonight, phone, ambient, and games come after those three frames exist
 3. **Tokens**: colour, type, spacing, radius, focus style → `packages/shared/theme`
 4. **Code**: send Claude the Figma frame link; it pulls frames via the Figma MCP
 5. **Iterate on device**: the TV is the truth, not the Figma canvas
@@ -31,16 +31,25 @@ Figma notes: work in the `Saf` or `Laurier` team (full seats). The Starter plan 
 - Use the `amazon-devices-scalable-ui-audit` skill before submitting (catches hard-coded 1080p assumptions).
 
 ## Home screen anatomy
+
+Locked Oct 14. Built in step 1 with placeholder content ([screenshots](../screenshots/step-1/)).
+
 ```
-┌───────────────────────────────────────────────────────────────┐
-│ Hero: greeting + daily brief       [avatars here] [Tonight ▶] │
-├───────────────────────────────────────────────────────────────┤
-│ Apps row:  [Netflix] [Prime] [YouTube] [Disney+] [+]          │  ← reorders by who/when
-├───────────────────────────────────────────────────────────────┤
-│ Widgets:  [Board  M] [Agenda M] [Weather S] [Photos L]        │
-│           [Sports M] …                                         │
-└───────────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────────┐
+│ Good evening, Rafi & Nanu                          [Connect phone]   │
+│ Dinner at 7 · 14° and clear · nothing new from phones                │
+├──────────────┬────────────────────────────────┬──────────────────────┤
+│ Clock &      │ Family calendar                │ Who's here           │
+│ weather      │ 4:00 Dentist · Ammu …          │ (R)(N)  Select=switch│
+├──────────────┴─────────────────┬──────────────┼──────────────────────┤
+│ Tonight (Bedrock picks)        │ Sketch it    │ Home (simulated)     │
+│ [Cozy] [Funny] [Edge-of-seat]  │ Select=start │ Lamp On · 21° · Lock │
+└────────────────────────────────┴──────────────┴──────────────────────┘
 ```
+
+Focus starts on Clock. Left/Right stay in a row; Up/Down go to the tile with the most overlap, or back to the one you last used in that row. Up from the top row reaches "Connect phone". Focus state: scale 1.05, 4px amber inset ring, lighter surface. Each widget has an accent colour (`colors.widget.*`) for its top rule and label.
+
+Draw the phase 1 frames in the `Saf` or `Laurier` Figma team, 1920×1080, content inside a 5% safe area. The low-fi to trace is the first TV frame in [wireframes.html](wireframes.html).
 
 ## Open design questions
 - Personality: playful (stickers, avatars) or calm (Apple TV-like)? Probably calm home + playful details.

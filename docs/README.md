@@ -7,7 +7,8 @@
 | Park an idea for later | [product/ideas-backlog.md](product/ideas-backlog.md) |
 | See how it works technically | [architecture/architecture.md](architecture/architecture.md) |
 | Design screens | [design/design-guide.md](design/design-guide.md) · [design/wireframes.html](design/wireframes.html) |
-| Find docs, samples, links | [research/references.md](research/references.md) |
+| Find docs, samples, links | [research/references.md](research/references.md) · [research/echo-show.md](research/echo-show.md) (Echo Show as a second screen) |
+| See the app as it runs | [screenshots/](screenshots/) (one folder per step, from the Vega Virtual Device) |
 | Prepare the submission | [submission/checklist.md](submission/checklist.md) · [demo-script.md](submission/demo-script.md) |
 | Log tool pain (+10% bonus) | [submission/friction-log.md](submission/friction-log.md) |
 | Write required tool feedback | [submission/product-feedback.md](submission/product-feedback.md) |
@@ -22,12 +23,12 @@
 - [ ] Look at what's on the [Fire TV Appstore](https://www.amazon.com/Fire-TV-Apps-All-Models/b/?node=10208590011) in "home / lifestyle / family" to confirm nothing already does this
 
 **Planning (~30m)**
-- [ ] Re-read the [PRD](product/PRD.md). Cut or add, and lock the MVP list
+- [x] Re-read the [PRD](product/PRD.md). Cut or add, and lock the MVP list (Oct 14)
 - [ ] Answer the open questions in [design-guide](design/design-guide.md#open-design-questions)
 - [ ] Adjust dates in the [roadmap](product/roadmap.md)
 
 **Design (rest of the day)**
 - [ ] Figma file in the `Saf` or `Laurier` team, 1920×1080 frames with a 5% safe-area guide
-- [ ] Tokens first: colour, type scale (≥28px body), spacing, focus style
+- [x] Tokens first: colour, type scale (≥28px body), spacing, focus style (`packages/shared/src/theme.ts`)
 - [ ] Hero frames: Home, Who's here, Tonight picks, Ambient. Then phone quick actions
 - [ ] Share the Figma link with Claude to start the TV app shell

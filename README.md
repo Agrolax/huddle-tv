@@ -1,10 +1,10 @@
 # Huddle Home
 
-The family home screen for Fire TV: widgets, profiles, and an AI that learns your household, with one-press launch into the apps you already use.
+The family home screen for Fire TV (Vega OS): household widgets, a phone companion you join with a QR code, Amazon Bedrock picks for tonight, and Sketch it, a draw-and-guess game where phones are the pens.
 
 Built for the [Build, Ship, Shape: Amazon Developer Hackathon](https://amazonappdev2026.devpost.com/) · **Fire TV track** · AWS Builder + Open Source mini challenges.
 
-> Status: planning / design. Start at [`docs/README.md`](docs/README.md).
+> Status: **step 1 (shell) runs on the Vega Virtual Device** ([screenshots](docs/screenshots/step-1/)). Plan: [roadmap](docs/product/roadmap.md). Docs: [`docs/README.md`](docs/README.md).
 
 ## Hackathon at a glance
 
@@ -29,8 +29,8 @@ Built for the [Build, Ship, Shape: Amazon Developer Hackathon](https://amazonapp
 ### Mini challenges (a project can win **one**, on top of its track)
 | Challenge | Requirement | Prize | Our plan |
 |---|---|---|---|
-| **AWS Builder** | Use AWS services with documented integration (Bedrock, AgentCore, Strands, Kiro, SageMaker…). Kiro alone qualifies. | $5,000 + $5k credits + meeting | Bedrock (Nova) for Tonight picks / daily brief / plain-English events, Polly (TV voice), Transcribe (phone voice input), DynamoDB, S3, Lightsail |
-| **Open Source** | New open-source project or a PR/fork/branch to a public repo, made during the hackathon | $5,000 + $5k credits + meeting | Extract `tv-focus-kit`, or a PR to a React Native TV library |
+| **AWS Builder** | Use AWS services with documented integration (Bedrock, AgentCore, Strands, Kiro, SageMaker…). Kiro alone qualifies. | $5,000 + $5k credits + meeting | Bedrock (Nova) for Tonight picks, phone AI chat and Sketch it prompts; DynamoDB, S3, Lightsail. Polly / Transcribe are stretch |
+| **Open Source** | New open-source project or a PR/fork/branch to a public repo, made during the hackathon | $5,000 + $5k credits + meeting | `packages/tv-focus-kit`: D-pad focus primitives for React Native TV (MIT) |
 
 ### Judging (equally weighted, after a pass/fail viability check)
 1. **Tech implementation**: how well it's built and how well it uses the platform
@@ -47,7 +47,7 @@ Text description · GitHub repo · demo video < 3 min (running on the device) ·
 
 | Path | What |
 |---|---|
-| `apps/tv` | Fire TV app (React Native, Android TV target for Fire OS 8; Vega optional) |
+| `apps/tv` | Fire TV app (React Native for Vega OS; demo on the Vega Virtual Device) |
 | `apps/companion` | Phone companion (React + Vite web app, opened via QR) |
 | `apps/server` | API + realtime (Node + TS, WebSocket, Amazon Bedrock, DynamoDB, S3) |
 | `packages/shared` | Shared types + theme tokens |
@@ -63,24 +63,46 @@ Text description · GitHub repo · demo video < 3 min (running on the device) ·
 
 ## Setup
 
-**Target device:** Fire TV Stick HD (1st gen), Fire OS 8 (Android 11 based).
+**Target platform:** Vega OS. Demo on the Vega Virtual Device (included with the SDK). A Vega Fire TV Stick needs OS 1.2 for SDK 0.24. The Fire TV Stick HD (1st gen) in the house is Fire OS 8 and cannot run this app.
 
-### Mac tooling (one-time)
+The SDK installer is interactive and wants about **20 GB** free. Prerequisites (Homebrew packages, Vega Studio) are already on this Mac. Run the installer yourself:
+
 ```bash
-brew install --cask android-studio zulu@17 android-platform-tools
-```
-Open Android Studio once and install the Android SDK (default), then add to `~/.zshrc`:
-```bash
-export JAVA_HOME=/Library/Java/JavaVirtualMachines/zulu-17.jdk/Contents/Home
-export ANDROID_HOME=$HOME/Library/Android/sdk
-export PATH=$PATH:$ANDROID_HOME/platform-tools:$ANDROID_HOME/emulator
+curl -fsSL https://sdk-installer.vega.labcollab.net/get_vvm.sh | bash && source ~/vega/env
+vega --version
 ```
 
-### Fire TV Stick
-1. Settings → My Fire TV → About → press Select on the device name 7 times → "You are now a developer"
-2. Settings → My Fire TV → Developer Options → **ADB debugging: ON**, **Apps from unknown sources: ON**
-3. Find the IP: Settings → My Fire TV → About → Network
-4. `adb connect <ip>:5555` → accept "Allow USB debugging" on the TV → `adb devices`
+Docs: [Install the Vega Developer Tools](https://developer.amazon.com/docs/vega/0.24/install-vega-sdk.html). Add `@amazon-devices/*` packages with `vega project install <package>` so versions match the SDK, then `npm install`.
+
+### Vega Fire TV (only if the stick is on Vega OS)
+1. Settings → My Fire TV → About → press Select on the device name 7 times → developer mode
+2. `vega devmode login` to link the device (SDK 0.24)
+3. Install and run from Vega Studio, or `vega device` commands in [Run your app](https://developer.amazon.com/docs/vega/0.24/run-apps.html)
 
 ### Apps
-_Coming soon._
+
+npm workspaces monorepo. Node ≥ 20.
+
+```bash
+npm install            # all workspaces
+npm run check          # typecheck every workspace + unit tests
+```
+
+**TV app on the Vega Virtual Device**
+
+```bash
+source ~/vega/env
+vega virtual-device start
+npm run build:tv       # apps/tv debug .vpkg (aarch64, armv7, x86_64)
+npm run tv:install
+npm run tv:launch
+```
+
+D-pad: the remote on the VVD window, or `vega exec vda shell "inputd-cli button_press KEY_RIGHT"`. Screenshots: `scripts/vvd-capture.sh out.png KEY_DOWN KEY_ENTER` (presses keys, then captures the VVD screen).
+
+**Server and phone companion** (skeletons in step 1)
+
+```bash
+npm run dev:server     # ws://localhost:8787/ws
+npm run dev:companion  # http://localhost:5173
+```
