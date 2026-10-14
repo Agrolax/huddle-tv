@@ -150,6 +150,29 @@ export interface HouseholdSnapshot {
   clients: ClientInfo[];
 }
 
+export interface PairCode {
+  /** 6 characters from PAIR_CODE_ALPHABET. */
+  code: string;
+  /** ms since epoch. */
+  expiresAt: number;
+  /** Companion URL with `?h=<householdId>&c=<code>`; what the QR encodes. */
+  joinUrl: string;
+}
+
+export type ErrorCode =
+  | 'bad-request' // frame or payload has the wrong shape
+  | 'not-ready' // sent something before `hello`
+  | 'forbidden' // role may not send this type
+  | 'pairing-required' // phone/display without a pair code or token
+  | 'pair-code-invalid'
+  | 'pair-code-expired'
+  | 'tv-claimed' // another TV owns this household and no valid TV token was given
+  | 'not-implemented'
+  | 'internal';
+
+/** Errors after which the client should stop reconnecting and ask the user (rescan the QR). */
+export const FATAL_ERRORS: readonly ErrorCode[] = ['pairing-required', 'pair-code-invalid', 'pair-code-expired', 'tv-claimed'];
+
 // ---------------------------------------------------------------------------
 // Messages
 // ---------------------------------------------------------------------------
@@ -163,13 +186,16 @@ export type ClientMessage =
         client: ClientInfo;
         capabilities: ClientCapabilities;
         topics: Topic[];
-        /** Pairing code from the QR (phones, displays). */
+        /** Pairing code from the QR. Phones and displays need this or a `token`. */
         pairCode?: string;
+        /** Token from an earlier `welcome`. Lets a client reconnect after its pair code expired; a TV needs it to reclaim its household. */
+        token?: string;
       };
     }
+  | {type: 'pair:request'; payload: Record<string, never>}
   | {type: 'subscribe'; payload: {topics: Topic[]}}
   | {type: 'profile:switch'; payload: {profileIds: string[]}}
-  | {type: 'message:send'; payload: {text: string}}
+  | {type: 'message:send'; payload: {text: string; fromProfileId?: string}}
   | {type: 'chat:ask'; payload: {text: string; conversationId?: string}}
   | {type: 'tonight:request'; payload: {mood?: string}}
   | {type: 'sketch:start'; payload: {drawerProfileId: string}}
@@ -181,7 +207,8 @@ export type ClientMessage =
 
 /** Server → client. */
 export type ServerMessage =
-  | {type: 'welcome'; payload: {snapshot: HouseholdSnapshot; you: ClientInfo}}
+  | {type: 'welcome'; payload: {snapshot: HouseholdSnapshot; you: ClientInfo; token: string}}
+  | {type: 'pair:code'; payload: PairCode}
   | {type: 'household:state'; payload: HouseholdSnapshot}
   | {type: 'client:joined'; payload: ClientInfo}
   | {type: 'client:left'; payload: {clientId: string}}
@@ -198,7 +225,7 @@ export type ServerMessage =
       payload: {roundId: string; profileId?: string; text: string; correct: boolean};
     }
   | {type: 'smart-home:state'; payload: {devices: SmartDevice[]}}
-  | {type: 'error'; payload: {code: string; message: string}}
+  | {type: 'error'; payload: {code: ErrorCode; message: string; /** The client frame that caused it. */ replyTo?: string}}
   | {type: 'pong'; payload: Record<string, never>};
 
 export type MessageType = ClientMessage['type'] | ServerMessage['type'];
@@ -219,6 +246,7 @@ export type ServerEnvelope = Envelope<ServerMessage>;
 /** Which topic a server message belongs to. `null` = always delivered. */
 export const SERVER_MESSAGE_TOPIC: Record<ServerMessage['type'], Topic | null> = {
   welcome: null,
+  'pair:code': null,
   'household:state': 'household',
   'client:joined': 'household',
   'client:left': 'household',
@@ -240,6 +268,7 @@ export const SERVER_MESSAGE_TOPIC: Record<ServerMessage['type'], Topic | null> =
 export const CLIENT_MESSAGE_ROLES: Record<ClientMessage['type'], readonly ClientRole[]> = {
   hello: ['tv', 'phone', 'display', 'voice'],
   subscribe: ['tv', 'phone', 'display', 'voice'],
+  'pair:request': ['tv'],
   'profile:switch': ['tv', 'phone', 'voice'],
   'message:send': ['phone', 'voice'],
   'chat:ask': ['phone', 'voice', 'tv'],

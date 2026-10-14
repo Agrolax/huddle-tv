@@ -89,3 +89,36 @@ Severity: **Blocker** · **Major** · **Minor** · **Papercut**
 - **Actual:** The MCP has no Echo guidance, and searching "Echo Show" returns i18n and catalog snippets. The answer (Alexa skill + `Alexa.Presentation.HTML`, or APL widgets + Data Store API) is only in the Alexa docs, which don't say whether the HTML runtime allows WebSockets. See [echo-show.md](../research/echo-show.md).
 - **Severity:** Minor
 - **Suggestion:** Add an "Echo Show and Vega" page to the Builder Tools KB: what runs where, and the multi-screen options for a Fire TV app.
+
+### FL-09 — `vega project install` rejects libraries the docs list as supported for SDK 0.24
+- **Tool / SDK:** Vega CLI 1.4.4 (`vega project install`), SDK 0.24.12112, OS 1.2 profile
+- **Task attempted:** Add a QR code and persistent storage to the TV app the recommended way (`vega project install <pkg>`).
+- **Steps taken:** `vega project install --dry-run @amazon-devices/react-native-qrcode-svg @amazon-devices/react-native-async-storage__async-storage @amazon-devices/react-native-mmkv`
+- **Expected:** Resolved versions. The [react-native-qrcode-svg page](https://developer.amazon.com/docs/vega-api/0.24/react-native-qrcode-svg.html) says `~3.0.0` is the version for SDK 0.24 / OS 1.2, and async-storage and mmkv are in the 0.24 supported-libraries list.
+- **Actual:** `⚠️ … not in OS version 1.2 profile, skipping` for all three. Only `react-native-svg` resolved.
+- **Severity:** Major (the CLI the README tells you to use contradicts the docs, and you can't tell which one is right)
+- **Workaround:** Installed by hand with `npm install @amazon-devices/react-native-qrcode-svg@~3.0.0 @amazon-devices/react-native-async-storage__async-storage@~2.1.0`. Both build and work on the VVD (QR renders and decodes; the TV token survives an app restart).
+- **Suggestion:** Generate the CLI profile from the same source as the supported-libraries docs, and have `project install` say *why* a package is missing (not ported vs. not yet in the profile).
+
+### FL-10 — react-native-qrcode-svg needs a manual TextEncoder polyfill
+- **Tool / SDK:** `@amazon-devices/react-native-qrcode-svg` 3.0.0
+- **Actual:** The docs' "Known issues" say the app may crash on `TextEncoder` and to add `fast-text-encoding` yourself and import it wherever you use the QR component.
+- **Severity:** Papercut
+- **Suggestion:** Ship the polyfill as a dependency of the port, or set `TextEncoder` in the Vega runtime.
+
+### FL-11 — Translucent full-screen overlay painted over its own children
+- **Tool / SDK:** React Native for Vega 0.72 (react-native-kepler 2.1.0), Vega Virtual Device
+- **Task attempted:** A modal "Connect your phone" sheet: an absolutely positioned full-screen `View` with `backgroundColor: 'rgba(8,11,16,0.94)'`, containing a `TVFocusGuideView` card with its own opaque background.
+- **Expected:** Dimmed home behind a bright card (what web, iOS and Android render).
+- **Actual:** On the VVD the whole sheet (QR, text, Done button) rendered at ~6% brightness, as if the translucent background were drawn on top of the children. The card's own background never showed. Screenshot in PR #2.
+- **Severity:** Major (hard to diagnose: the jest tests pass and nothing is logged)
+- **Workaround:** Make the backdrop a *sibling* of the card (`opacity: 0.94` on a solid colour) and put the card background on a plain `View` instead of on `TVFocusGuideView`.
+- **Suggestion:** Document (or fix) how alpha backgrounds and `TVFocusGuideView` backgrounds composite on Vega, and add a modal-overlay example to the focus-management docs.
+
+### FL-12 — How the Vega Virtual Device reaches a dev server on the host isn't documented in one place
+- **Tool / SDK:** Vega Virtual Device, docs
+- **Task attempted:** Connect the TV app to a local WebSocket server on the Mac.
+- **Actual:** The only mention we found is the Charles Proxy page ("use 10.0.2.2 as the host value"). Testing showed both `10.0.2.2` and the Mac's LAN IP work, and `localhost` doesn't. No doc covers WebSockets, cleartext `ws://`, or whether an app needs a manifest privilege for network access (none was needed).
+- **Severity:** Minor
+- **Workaround:** Probed with `vega exec vda shell "curl -s http://<host>:<port>/"`, then used the LAN IP so the phone and the TV share one address (README › Networking).
+- **Suggestion:** A "Networking from the Virtual Device" page: host aliases, cleartext policy, required privileges (if any), and `vda reverse` for real devices.

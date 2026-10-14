@@ -9,6 +9,10 @@ Used by the TV app, the phone companion and the server.
   - **Permissions:** `CLIENT_MESSAGE_ROLES` says who may send what. For example, only phones draw (`sketch:stroke`), and a `display` can only `hello`, `subscribe` and `ping`.
   - Sketch it strokes use 0..1 coordinates, so any screen can render them at its own size.
 
+- `src/pairing.ts`: pair code alphabet/TTL, `buildJoinUrl` / `parseJoinParams`.
+- `src/validate.ts`: shape checks for inbound payloads (`hello`, `profile:switch`, `message:send`, …) used by the server.
+- `src/socket.ts`: `HuddleSocket`, the reconnecting client (backoff + jitter, hello with token, ping/pong, stops on fatal pairing errors). Used by the TV and the companion.
+
 Adding a new kind of screen means picking a role and topics. The server and the other clients don't change. See [docs/research/echo-show.md](../../docs/research/echo-show.md).
 
 ```bash

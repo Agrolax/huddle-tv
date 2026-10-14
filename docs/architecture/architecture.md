@@ -108,7 +108,12 @@ Launch flow: `canOpenURL(titleUri)` → open title; else `canOpenURL(appUri)` �
   | `HH#<id>` | `EVENT#<date>#<id>` | agenda item |
   | `HH#<id>` | `PHOTO#<ts>` | S3 key |
   | `HH#<id>` | `LAUNCH#<ts>` | app launch log |
-- **Pairing:** TV creates household → 6-char code + QR (`https://<host>/h/<code>`) → phone joins. No accounts; a PIN gates settings.
+- **Pairing (step 2, built):**
+  1. The TV says `hello` as `tv` for its household (`HOUSEHOLD_ID`, default `home`). The **first TV claims the household** and gets a TV token in `welcome`, which it keeps in AsyncStorage. After that, only a TV holding that token may connect as `tv` (`tv-claimed` otherwise). A reconnecting TV replaces its old socket.
+  2. "Connect phone" → `pair:request` → `pair:code {code, expiresAt, joinUrl}`. Codes are 6 characters from an unambiguous alphabet, live 10 minutes and can be reused within that window. The TV asks for a new one 30 s before expiry. `joinUrl` = `COMPANION_URL?h=<householdId>&c=<code>`, and that's what the QR encodes.
+  3. A phone or display must send a valid, unexpired `pairCode` in `hello` (`pairing-required` / `pair-code-invalid` / `pair-code-expired` otherwise, then the socket closes). Its `welcome` carries a session token, so reconnects work after the code expires.
+  4. Every inbound payload is shape-checked (`packages/shared/src/validate.ts`) before a handler runs. Bad frames get an `error` reply with `replyTo`. Each frame is handled inside a try/catch, so one bad frame can't crash the process. Frames over 16 KB are refused.
+- No accounts: the household code + tokens are the whole auth model for the hackathon.
 
 ### Realtime protocol
 Source of truth: [`packages/shared/src/protocol.ts`](../../packages/shared/src/protocol.ts) (types + routing tables, unit tested).
@@ -127,6 +132,7 @@ Source of truth: [`packages/shared/src/protocol.ts`](../../packages/shared/src/p
 | `sketch:start` / `sketch:stroke` / `sketch:clear` / `sketch:guess` | tv+phone / phone / phone / phone+voice | `sketch:state` (prompt only to the drawer), `sketch:stroke`, `sketch:clear`, `sketch:guess` | sketch |
 | `smart-home:set` | tv, phone, voice | `smart-home:state` | smart-home |
 | — | | `calendar:updated` | calendar |
+| `pair:request` | tv | `pair:code` (to that TV only) | — |
 | `subscribe`, `ping` | all | `pong`, `error`, `client:joined/left` | — / household |
 
 ## 6. AI features (Bedrock)

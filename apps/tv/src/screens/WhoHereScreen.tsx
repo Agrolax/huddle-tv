@@ -2,7 +2,7 @@ import React, {useState} from 'react';
 import {StyleSheet, Text, View} from 'react-native';
 import {TVFocusGuideView} from '@amazon-devices/react-native-kepler';
 import {FocusableCard} from '@huddle/tv-focus-kit';
-import {PROFILES} from '../data/profiles';
+import {useHousehold} from '../net/HouseholdContext';
 import {colors, focus, radius, space, type} from '../theme';
 
 type Props = {
@@ -12,6 +12,7 @@ type Props = {
 
 /** "Who's here?": multi-select profiles. Select toggles, Continue goes home. */
 export function WhoHereScreen({initialSelected, onContinue}: Props) {
+  const {profiles} = useHousehold();
   const [selected, setSelected] = useState<string[]>(initialSelected);
 
   const toggle = (id: string) => {
@@ -24,7 +25,7 @@ export function WhoHereScreen({initialSelected, onContinue}: Props) {
       <Text style={styles.sub}>Pick everyone in the room. Select again to remove someone.</Text>
 
       <TVFocusGuideView autoFocus style={styles.row}>
-        {PROFILES.map((p, index) => {
+        {profiles.map((p, index) => {
           const isOn = selected.includes(p.id);
           return (
             <FocusableCard

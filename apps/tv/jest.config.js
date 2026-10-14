@@ -6,6 +6,7 @@ module.exports = {
   // Vega's preset: kepler haste platform, its jest setup and test environment.
   preset: '@amazon-devices/react-native-kepler',
   testRegex: '/test/.*\\.(test|spec)\\.(ts|tsx|js)$',
+  testTimeout: 10000,
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json', 'node'],
   roots: ['<rootDir>/src/', '<rootDir>/test/'],
   // Workspace packages ship TypeScript source; transform them like app code.
@@ -15,6 +16,8 @@ module.exports = {
     '^react-native$': kepler,
     '^react-native/(.*)$': `${kepler}/$1`,
     '^@huddle/(shared|tv-focus-kit)$': path.resolve(__dirname, '../../packages/$1/src'),
+    '^@amazon-devices/react-native-qrcode-svg$': '<rootDir>/test/mocks/QRCode.tsx',
+    '^@amazon-devices/react-native-async-storage__async-storage$': '<rootDir>/test/mocks/asyncStorage.ts',
   },
   coverageDirectory: '.tmp/coverage',
 };
