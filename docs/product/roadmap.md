@@ -31,10 +31,14 @@ Edit freely: this is the living plan. Tick boxes as you go. When a date slips, m
 - [x] Runs on the Vega Virtual Device; D-pad verified; screenshots in [`docs/screenshots/step-1/`](../screenshots/step-1/)
 - [x] [Echo Show research](../research/echo-show.md); friction log FL-01–FL-08
 
-## Step 2: Server + pairing (Oct 15–16)
-- [ ] `apps/server` WebSocket hub on the shared protocol; household in memory → DynamoDB
-- [ ] TV: pairing QR (`@amazon-devices/react-native-qrcode-svg`), connect as `role: 'tv'`
-- [ ] Companion: join from QR, pick yourself, switch profile, send a message → toast on the TV
+## Step 2: Server + pairing (Oct 14) ✅
+- [x] `apps/server` WebSocket hub on the shared protocol: pair codes (10 min), TV claim + TV token, session tokens, payload validation, crash-proof handler; 21 server tests. Household still in memory (DynamoDB later)
+- [x] TV: reconnecting client (backoff, ping/pong), Connect overlay with QR (`@amazon-devices/react-native-qrcode-svg` 3.0), code and URL, focus trap, Back closes and focus returns to the chip
+- [x] TV: `profile:changed` updates Who's here + greeting; `message:new` → 8 s toast + greeting subline
+- [x] Companion: join from QR, pick yourself, switch who's watching, send a message (≤ 280)
+- [x] LAN networking documented (README › Networking); VVD reaches the Mac on its LAN IP and 10.0.2.2
+- [x] Verified end to end: QR decoded from a VVD screenshot → phone-sized browser on the LAN → profile switch + message on the TV ([screenshots](../screenshots/step-2/))
+- [ ] Scan with a real phone on the same Wi-Fi (needs a person with a phone)
 - [ ] **Verify Bedrock access** (quota-0 risk) before step 4
 
 ## Step 3: Widgets live (Oct 16–17)
@@ -76,3 +80,4 @@ Edit freely: this is the living plan. Tick boxes as you go. When a date slips, m
 | Oct 9 | Vega SDK 0.24.12112 (CLI 1.4.4) installed; Vega Virtual Device starts and shows in `vega device list`. Added phone↔TV connection ideas to the [ideas backlog](ideas-backlog.md) |
 | Oct 14 | **Scope locked**: widgets (clock/weather, family calendar, Bedrock Tonight, profiles), phone companion via QR (switch profile, message TV, AI chat), Sketch it (phone draws, TV shows, phones guess, Bedrock prompts), simulated smart-home widget. Polly/Transcribe stretch. Board, photos, agenda, apps row, trivia, Echo voice phase dropped or moved to stretch. Plan is now steps, one PR each |
 | Oct 14 | Step 1 shell: npm workspaces monorepo, `tv-focus-kit`, home grid on the VVD, shared protocol with a `display` role. Echo Show researched: no Vega app path; Alexa skill + HTML web app is the route ([echo-show.md](../research/echo-show.md)) |
+| Oct 14 | Step 2 pairing: server pair codes + TV claim/tokens + validation, TV Connect overlay with QR, live profile switch and phone → TV messages. QR lib, async-storage and mmkv aren't in `vega project install`'s OS 1.2 profile even though the docs list them (FL-09); installed by version. Hint text raised to 24 px |

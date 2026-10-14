@@ -10,6 +10,7 @@ export function demoHousehold(householdId: string): HouseholdSnapshot {
       {id: 'nanu', name: 'Nanu', color: '#F5A524'},
       {id: 'ammu', name: 'Ammu', color: '#3DCF8E'},
       {id: 'abbu', name: 'Abbu', color: '#B57BFF'},
+      {id: 'guest', name: 'Guest', color: '#9AA3B2'},
     ],
     activeProfileIds: ['rafi', 'nanu'],
     events: [],

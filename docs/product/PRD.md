@@ -74,7 +74,7 @@ Built in steps. Each step ends with a PR, running on the Vega Virtual Device wit
 | Step | What | Status |
 |---|---|---|
 | 1 | **Shell**: npm workspaces monorepo, `tv-focus-kit` (FocusableCard, FocusGrid, focus ring), home screen with placeholder widget tiles, "Who's here?", shared protocol types, Echo Show research | ✅ Oct 14 |
-| 2 | **Server + companion pairing**: `apps/server` WebSocket hub, QR pairing, phone switches profile, phone → TV message | |
+| 2 | **Server + companion pairing**: `apps/server` WebSocket hub, QR pairing, phone switches profile, phone → TV message | ✅ Oct 14 |
 | 3 | **Widgets live**: clock/weather (Open-Meteo), family calendar (server data), profiles, smart-home (simulated, toggled from the phone) | |
 | 4 | **Bedrock**: Tonight picks for who's here, phone AI chat | |
 | 5 | **Sketch it**: phone draws, strokes stream to the TV, phones guess, Bedrock prompts, scores | |
@@ -113,7 +113,7 @@ Real accounts/auth (household code only), replacing the system launcher, reading
 
 ## 8. Screens
 
-See [wireframes](../design/wireframes.html). Step 1 screenshots from the Vega Virtual Device: [`docs/screenshots/step-1/`](../screenshots/step-1/).
+See [wireframes](../design/wireframes.html). Screenshots from the Vega Virtual Device: [step 1](../screenshots/step-1/), [step 2](../screenshots/step-2/).
 
 **TV:** Who's here? · Home (greeting + "Connect phone" + 4×2 widget grid) · Pair (QR) · Tonight · Sketch it (canvas + guesses) · message toast.
 

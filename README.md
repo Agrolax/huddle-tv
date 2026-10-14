@@ -100,9 +100,26 @@ npm run tv:launch
 
 D-pad: the remote on the VVD window, or `vega exec vda shell "inputd-cli button_press KEY_RIGHT"`. Screenshots: `scripts/vvd-capture.sh out.png KEY_DOWN KEY_ENTER` (presses keys, then captures the VVD screen).
 
-**Server and phone companion** (skeletons in step 1)
+**Server and phone companion**
 
 ```bash
-npm run dev:server     # ws://localhost:8787/ws
-npm run dev:companion  # http://localhost:5173
+npm run dev:server     # ws://<LAN IP>:8787/ws; prints the URLs it detected
+npm run dev:companion  # http://<LAN IP>:5173, the page the QR code opens
 ```
+
+**Pair a phone (step 2):** start both, then build and launch the TV app. On the TV press Up to reach **Connect phone**, then Select. Scan the QR with a phone on the same Wi-Fi. From the phone you can switch who's watching and send a message to the TV.
+
+#### Networking: TV, phone and server on one LAN
+Everything talks to the Mac on its **LAN IP**, never `localhost`:
+
+| Who | Reaches the server at | Set by |
+|---|---|---|
+| Server | listens on `0.0.0.0:8787` | `PORT`, `HOST` |
+| TV app (VVD) | `ws://<LAN IP>:8787/ws`, baked in at build time | `apps/tv/scripts/write-config.mjs` writes `src/config.generated.ts` (gitignored) before every build/test. Override: `HUDDLE_SERVER_URL=ws://… npm run build:tv` |
+| QR code / join URL | `http://<LAN IP>:5173/?h=<household>&c=<code>` | server's `COMPANION_URL` (default: detected LAN IP, port 5173) |
+| Phone (companion) | `ws://<host it was opened from>:8787/ws` | `?s=ws://…` in the URL, or `VITE_HUDDLE_SERVER_URL` (see `apps/companion/.env.example`) |
+
+- **Vega Virtual Device → Mac** works on both the Mac's LAN IP and `10.0.2.2` (QEMU's alias for the host). `localhost` inside the VVD is the VVD itself. We use the LAN IP so the TV and the phone agree on one address. Checked with `vega exec vda shell "curl http://<ip>:<port>/"`.
+- **Phone → Mac** needs the same Wi-Fi, and no client isolation on that network (guest and some office networks block device-to-device traffic). macOS may ask to allow incoming connections for `node`. Say yes, or check *System Settings → Network → Firewall*.
+- **The LAN IP changed** (new network): rebuild the TV app (`npm run build:tv`) so it picks up the new address, and restart the server.
+- **Restarting** the server forgets households (in-memory until DynamoDB). The TV reclaims its household automatically. Phones need to scan the QR code again.

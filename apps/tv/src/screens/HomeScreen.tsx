@@ -1,16 +1,17 @@
-import React, {useMemo} from 'react';
-import {StyleSheet, Text, View} from 'react-native';
-import {TVFocusGuideView} from '@amazon-devices/react-native-kepler';
+import React, {useCallback, useMemo, useRef, useState} from 'react';
+import {findNodeHandle, StyleSheet, Text, View} from 'react-native';
+import {FocusManager, TVFocusGuideView} from '@amazon-devices/react-native-kepler';
 import {FocusableCard, FocusGrid, FocusGridItem} from '@huddle/tv-focus-kit';
+import {ConnectOverlay} from '../components/ConnectOverlay';
 import {WidgetTile} from '../components/WidgetTile';
-import {PROFILES, namesFor} from '../data/profiles';
+import {namesFor} from '../data/profiles';
+import {HouseholdActions, HouseholdState, useHousehold} from '../net/HouseholdContext';
 import {formatDate, formatTime, greetingFor, useClock} from '../hooks/useClock';
 import {colors, focus, radius, space, type} from '../theme';
 
 export type WidgetId = 'clock' | 'calendar' | 'profiles' | 'tonight' | 'sketch' | 'smart-home';
 
 type Props = {
-  profileIds: string[];
   onSwitchProfiles: () => void;
   onOpenWidget?: (id: WidgetId) => void;
   onFocusChange?: (id: string) => void;
@@ -22,10 +23,27 @@ type Props = {
  *   clock       | calendar (2 wide) | profiles
  *   tonight (2 wide)  | sketch      | smart home
  */
-export function HomeScreen({profileIds, onSwitchProfiles, onOpenWidget, onFocusChange}: Props) {
+export function HomeScreen({onSwitchProfiles, onOpenWidget, onFocusChange}: Props) {
   const now = useClock();
-  const names = namesFor(profileIds);
-  const here = useMemo(() => PROFILES.filter(p => profileIds.includes(p.id)), [profileIds]);
+  const household = useHousehold();
+  const {activeProfileIds: profileIds, profiles, status} = household;
+  const names = namesFor(profileIds, profiles);
+  const here = useMemo(() => profiles.filter(p => profileIds.includes(p.id)), [profiles, profileIds]);
+  const [connectOpen, setConnectOpen] = useState(false);
+  const connectRef = useRef<View>(null);
+
+  const closeConnect = useCallback(() => {
+    setConnectOpen(false);
+    // Give focus back to the chip that opened the overlay.
+    setTimeout(() => {
+      try {
+        const handle = connectRef.current && findNodeHandle(connectRef.current);
+        if (handle) FocusManager.focus(handle);
+      } catch {
+        // FocusManager is device-only.
+      }
+    }, 0);
+  }, []);
 
   const items = useMemo<FocusGridItem[]>(
     () => [
@@ -153,9 +171,14 @@ export function HomeScreen({profileIds, onSwitchProfiles, onOpenWidget, onFocusC
           <Text style={styles.greeting}>
             {greetingFor(now)}, {names}
           </Text>
-          <Text style={styles.sub}>Dinner at 7 · 14° and clear · nothing new from phones</Text>
+          <Text style={styles.sub} numberOfLines={1} testID="greeting-subline">
+            Dinner at 7 · 14° and clear · {sublineFor(household)}
+          </Text>
         </View>
+        <StatusPill status={status} phones={household.companions.filter(c => c.role === 'phone').length} />
         <FocusableCard
+          ref={connectRef}
+          onPress={() => setConnectOpen(true)}
           testID="connect-phone"
           accessibilityLabel="Connect a phone"
           ringColor={colors.focus}
@@ -184,6 +207,28 @@ export function HomeScreen({profileIds, onSwitchProfiles, onOpenWidget, onFocusC
           onFocusChange={onFocusChange}
         />
       </TVFocusGuideView>
+
+      {connectOpen ? <ConnectOverlay onClose={closeConnect} /> : null}
+    </View>
+  );
+}
+
+/** The part of the greeting line that talks about phones. */
+export function sublineFor(h: Pick<HouseholdState, 'status' | 'latestMessage' | 'companions'> & Pick<HouseholdActions, 'senderName'>): string {
+  if (h.latestMessage) return `${h.senderName(h.latestMessage)}: “${h.latestMessage.text}”`;
+  if (h.status !== 'open') return 'phones offline';
+  const phones = h.companions.filter(c => c.role === 'phone').length;
+  if (phones === 0) return 'connect a phone to send messages';
+  return `${phones} phone${phones > 1 ? 's' : ''} connected`;
+}
+
+function StatusPill({status, phones}: {status: HouseholdState['status']; phones: number}) {
+  const online = status === 'open';
+  const label = online ? (phones ? `${phones} phone${phones > 1 ? 's' : ''}` : 'Online') : status === 'failed' ? 'Offline' : 'Reconnecting';
+  return (
+    <View style={styles.pill} testID="status-pill" accessibilityLabel={`Server ${label}`}>
+      <View style={[styles.dot, {backgroundColor: online ? colors.success : status === 'failed' ? colors.danger : colors.focus}]} />
+      <Text style={styles.pillText}>{label}</Text>
     </View>
   );
 }
@@ -214,6 +259,7 @@ const styles = StyleSheet.create({
   },
   heroText: {
     flex: 1,
+    marginRight: space.lg,
   },
   greeting: {
     color: colors.ink,
@@ -224,6 +270,21 @@ const styles = StyleSheet.create({
     color: colors.mute,
     fontSize: type.body,
     marginTop: space.xs,
+  },
+  pill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginRight: space.md,
+  },
+  dot: {
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    marginRight: space.xs,
+  },
+  pillText: {
+    color: colors.mute,
+    fontSize: type.chip,
   },
   chip: {
     backgroundColor: colors.surface,

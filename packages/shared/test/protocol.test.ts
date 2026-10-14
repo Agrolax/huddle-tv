@@ -55,6 +55,12 @@ describe('protocol', () => {
     expect(DEFAULT_TOPICS.tv).toEqual(ALL_TOPICS);
   });
 
+  it('lets only the TV ask for a pair code', () => {
+    expect(canSend('tv', 'pair:request')).toBe(true);
+    for (const role of ['phone', 'display', 'voice'] as const) expect(canSend(role, 'pair:request')).toBe(false);
+    expect(shouldDeliver('pair:code', [])).toBe(true);
+  });
+
   it('recognises client message types', () => {
     expect(isClientMessageType('chat:ask')).toBe(true);
     expect(isClientMessageType('welcome')).toBe(false);

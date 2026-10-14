@@ -45,7 +45,7 @@ export const type = {
   title: 40,
   body: 28,
   caption: 22,
-  chip: 20,
+  chip: 24,
 } as const;
 
 export const radius = {
