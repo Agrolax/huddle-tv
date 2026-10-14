@@ -34,3 +34,9 @@ Pick one (a contribution to a popular repo likely scores higher):
 - **No API keys in code**: `.env` is gitignored; check the repo before submitting
 - Make the track tool **impossible to miss**: name Fire TV / Vega in the description, in **Built With**, and clearly in the video
 - Treat the video as a **pitch**: problem → solution working → who it's for → how it uses the track's tool
+
+## Tips from Office Hours #1 (Oct 6), see [office-hours.md](../research/office-hours.md)
+- Judges may score from the **text + video alone**, so the video has to work as a trailer. Narrate with **Polly**
+- **Judge setup ≈ one click**: no API keys or sign-ups for them; seeded demo household + demo credentials; `.vpkg` and Vega Virtual Device steps in GitHub Releases
+- **Hosted demo (server + companion) stays live through judging (Nov 20)**
+- Show **live Bedrock calls** on screen; any architecture diagram must be accurate, not AI filler

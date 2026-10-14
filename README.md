@@ -47,7 +47,7 @@ Text description · GitHub repo · demo video < 3 min (running on the device) ·
 
 | Path | What |
 |---|---|
-| `apps/tv` | Fire TV app (React Native, Android TV target for Fire OS 8; Vega optional) |
+| `apps/tv` | Fire TV app (React Native for Vega OS; demo on the Vega Virtual Device) |
 | `apps/companion` | Phone companion (React + Vite web app, opened via QR) |
 | `apps/server` | API + realtime (Node + TS, WebSocket, Amazon Bedrock, DynamoDB, S3) |
 | `packages/shared` | Shared types + theme tokens |
@@ -63,24 +63,21 @@ Text description · GitHub repo · demo video < 3 min (running on the device) ·
 
 ## Setup
 
-**Target device:** Fire TV Stick HD (1st gen), Fire OS 8 (Android 11 based).
+**Target platform:** Vega OS. Demo on the Vega Virtual Device (included with the SDK). A Vega Fire TV Stick needs OS 1.2 for SDK 0.24. The Fire TV Stick HD (1st gen) in the house is Fire OS 8 and cannot run this app.
 
-### Mac tooling (one-time)
+The SDK installer is interactive and wants about **20 GB** free. Prerequisites (Homebrew packages, Vega Studio) are already on this Mac. Run the installer yourself:
+
 ```bash
-brew install --cask android-studio zulu@17 android-platform-tools
-```
-Open Android Studio once and install the Android SDK (default), then add to `~/.zshrc`:
-```bash
-export JAVA_HOME=/Library/Java/JavaVirtualMachines/zulu-17.jdk/Contents/Home
-export ANDROID_HOME=$HOME/Library/Android/sdk
-export PATH=$PATH:$ANDROID_HOME/platform-tools:$ANDROID_HOME/emulator
+curl -fsSL https://sdk-installer.vega.labcollab.net/get_vvm.sh | bash && source ~/vega/env
+vega --version
 ```
 
-### Fire TV Stick
-1. Settings → My Fire TV → About → press Select on the device name 7 times → "You are now a developer"
-2. Settings → My Fire TV → Developer Options → **ADB debugging: ON**, **Apps from unknown sources: ON**
-3. Find the IP: Settings → My Fire TV → About → Network
-4. `adb connect <ip>:5555` → accept "Allow USB debugging" on the TV → `adb devices`
+Docs: [Install the Vega Developer Tools](https://developer.amazon.com/docs/vega/0.24/install-vega-sdk.html). Add `@amazon-devices/*` packages with `vega project install <package>` so versions match the SDK, then `npm install`.
+
+### Vega Fire TV (only if the stick is on Vega OS)
+1. Settings → My Fire TV → About → press Select on the device name 7 times → developer mode
+2. `vega devmode login` to link the device (SDK 0.24)
+3. Install and run from Vega Studio, or `vega device` commands in [Run your app](https://developer.amazon.com/docs/vega/0.24/run-apps.html)
 
 ### Apps
 _Coming soon._

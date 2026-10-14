@@ -10,3 +10,7 @@ build/
 android/app/build/
 ios/Pods/
 reference/
+.cursor/
+.tmp/
+coverage/
+*.tsbuildinfo

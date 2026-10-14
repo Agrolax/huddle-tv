@@ -1,6 +1,6 @@
 # Huddle Home: PRD
 
-> The family home screen for Fire TV. Widgets, profiles, and an AI that learns your household, with one-press launch into the apps you already use.
+> The household hub for a Vega home: the Fire TV is the screen, the Echo is the voice, the phone is the keyboard. Widgets, profiles, Amazon's own AI, and one-press launch into the apps you already use.
 
 | | |
 |---|---|
@@ -23,21 +23,25 @@ The TV is the one screen the whole household shares, but its home screen is buil
 
 ## 2. Pitch
 
-**Huddle Home** is a Fire TV app that becomes the household's home base:
-1. **"Who's here?"** Pick the profiles in the room. The home screen adapts to them.
-2. **Widgets**: family board, agenda, weather, photos, sports scores, all on the big screen.
-3. **Your apps, one press away**: shortcuts into Netflix, Prime Video, YouTube and others, reordered by what *this household* actually uses at *this time of day*.
-4. **"Tonight" picker**: say who's watching and the mood. The AI suggests titles, tells you which of your services has them, and launches straight into that app.
-5. **Phone companion**: scan a QR code to post a note, add an event in plain English, or send photos to the TV. No app install.
-6. **Ambient mode**: when idle, the TV becomes a family frame (photos, clock, today's board).
+**Huddle Home** is one household, reached from three places:
+1. **Fire TV (Vega app).** "Who's here?", widgets, app shortcuts, and the Tonight picker on the big screen.
+2. **Echo (voice).** Echo Dot Max and Echo Show 8 run Vega OS, but Amazon's Vega app tools target Fire TV. The Echo talks to the same household through Alexa, so someone in the kitchen can post to the board or ask what's on tonight. The TV stays the screen.
+3. **Phone (web).** Scan a QR code to type, talk, or send a photo. No app install.
 
-**One-liner for judges:** *An AI-enhanced Fire TV home experience that adapts to household patterns, combining D-pad, phone, and ambient display, and launching into the streaming apps families already pay for.*
+On the TV:
+1. **"Who's here?"** Pick the profiles in the room. The home screen adapts to them.
+2. **Widgets**: family board, agenda, weather, photos, sports scores.
+3. **Your apps, one press away**: shortcuts into Netflix, Prime Video, YouTube and others, reordered by what *this household* actually uses at *this time of day*.
+4. **"Tonight" picker**: who's watching and the mood. Amazon Bedrock suggests titles, says which of your services has them, and launches straight into that app.
+5. **A game shelf, later**: one built-in game, plus a folder anyone can drop a game into.
+
+**One-liner for judges:** *A household hub on Vega: the Fire TV screen adapts to who's in the room, the Echo is the voice, and Amazon's own AI picks what to watch and says it out loud.*
 
 ## 3. Why it scores
 
 | Criterion (25% each) | How Huddle Home hits it |
 |---|---|
-| **Tech implementation** | React Native on Vega/Fire OS, app-to-app deep links, real-time phone ↔ TV sync, Bedrock structured generation, pattern learning |
+| **Tech implementation** | React Native for Vega OS, `Linking` into other apps, one household API shared by TV, phone, and Alexa on Echo, Bedrock + Polly + Transcribe |
 | **Design** | A whole home-screen system: widget grid, focus model, edit mode, ambient mode, profile theming. Lots of surface to show craft. |
 | **Potential impact** | Every Fire TV household. Clear Appstore fit (productivity/lifestyle). Families, roommates, care homes, dorms. |
 | **Quality of idea** | Matches the judges' own "creative" examples: *"AI-enhanced viewing that adapts to household patterns"* and *"multi-modal UX combining voice + D-pad + visual"*. Not a streaming UI clone. |
@@ -46,15 +50,18 @@ The TV is the one screen the whole household shares, but its home screen is buil
 
 ## 4. Platform facts that shape the product
 
-**Target device:** Fire TV Stick HD (1st gen), **Fire OS 8** (Android 11 based), 1080p. Build the Android TV target of the React Native app; Vega (simulator) is a stretch "runs on both" bonus.
+**Target platform:** **Vega OS** (React Native for Vega), 1080p. Demo on the **Vega Virtual Device**. A Vega Fire TV (Stick 4K / 4K Select, Vega OS 2.0) is the real-device path if we get one. The Fire TV Stick HD already in the house runs **Fire OS 8** and cannot install this build.
 
 
 | Fact | Consequence |
 |---|---|
 | Amazon blocks third-party launchers; the remote's **Home button always goes to Amazon's home**. | Huddle is an app you open (pin it first in the apps row). Don't use launcher exploits. Frame it as "your family's home *inside* Fire TV". |
 | Apps are sandboxed: **no access to what's playing or other apps' watch history**. | "Household patterns" come from what happens *in Huddle*: who's here, what they launched, when. |
-| **On Fire OS, Huddle can list installed apps and launch them** (Android `PackageManager` + launch intents), and deep link into titles where the app supports it. | **Auto-detect** installed streaming apps (no manual setup). Launch a title where supported, else open the app. Verify on Day 1 ([spike](roadmap.md)). |
-| The remote's voice button goes to Alexa, not your app. | Text input happens on the **phone companion**. |
+| Vega has no Android `PackageManager`. Other apps open through React Native **`Linking`** (`canOpenURL` / `openURL`): custom schemes, https, and `amzns://apps?asin=…`. | The phone companion records which services the household has. The TV launches those URIs. Title deep link where the app publishes one, otherwise open the app. Verify on Day 1 ([spike](roadmap.md)). |
+| Consumer sideloading is off on Vega. | Judges run the Vega Virtual Device, or a device in developer mode. Ship a `.vpkg`, not an APK. |
+| React and React Native are provided by Vega OS. | Do not bundle them in the app. |
+| The remote's voice button goes to Alexa, not your app. | Text input happens on the **phone**. Voice in the room happens on the **Echo**, which calls the same API. |
+| Echo Dot Max and Echo Show 8 run Vega OS. Amazon's own Vega FAQ says third-party apps are built for Fire TV, and Echo work goes through the Alexa developer portal. | Do not try to install the TV app on an Echo. Treat the Echo as a voice client of the household. Echo Dot Max has no screen; Echo Show can speak Alexa's answer. |
 
 ## 5. Users
 
@@ -65,35 +72,45 @@ The TV is the one screen the whole household shares, but its home screen is buil
 
 ## 6. Features & scope
 
-### MVP (must ship, enough to win on its own)
+Build in this order. A later phase does not start until the one before it plays on the Vega Virtual Device. If time runs out, the demo is whatever phase is finished.
+
+### Phase 1 — Home on the TV (design this first, then build it)
 | # | Feature | Notes |
 |---|---|---|
-| M1 | **Profile picker** ("Who's here?") | Multi-select avatars. Sets theme, greeting, app order. |
-| M2 | **Home screen**: greeting/brief hero + apps row + widget grid | The core design showcase |
-| M3 | **App shortcuts** to installed streaming apps | Auto-detected from the device (Netflix, Prime Video, YouTube, Disney+, Crave, Spotify…). "Opening Netflix…" transition with fallback. |
-| M4 | **Widgets ×4**: Clock+Weather, Family Board, Agenda, Photos | Each has a compact tile + an expanded view |
-| M5 | **Phone companion (web)**: QR pairing, post note, add event, send photo | Real-time update on TV |
-| M6 | **"Tonight" picker (AI)**: who's watching + mood → 3–5 picks with "on Netflix" badges → launch | Bedrock + a watch-provider data source (e.g. TMDB) |
-| M7 | **Household patterns v1**: log launches by profile + time; reorder apps row; one "suggested now" chip | Simple stats first. AI phrasing on top. |
-| M8 | Full D-pad navigation, focus states, Back behaviour | Non-negotiable for the Design score |
+| M1 | **Profile picker** ("Who's here?") | Multi-select avatars. Sets greeting and app order. |
+| M2 | **Home screen**: greeting + apps row + two widgets | Clock+Weather and Family Board. Agenda and Photos wait. |
+| M3 | **App shortcuts** | Services chosen on the phone. TV launches them with `Linking`. |
+| M8 | D-pad focus and Back | Every focusable tile has a visible focus state. |
 
-### Should have
-- **Ambient mode** after N minutes idle: photo slideshow + clock + today's board
-- **Daily brief (AI)**: per-profile greeting summarizing agenda, board, weather ("Rafi, 2 chores left, Raptors at 7:30")
-- **Natural-language input** on phone: "dentist Thursday 4pm for Ammu" → structured event (Bedrock)
-- **Voice input on the phone (Amazon Transcribe)**: hold-to-talk on the companion for board notes, events and Tonight requests ("something funny for me and the kids")
-- **Huddle's voice (Amazon Polly)**: the TV reads the daily brief aloud when people check in, announces new board posts ("Ammu posted: pizza night"), and gives ambient-mode reminders. Mutable, and quiet hours by default
-- **Edit mode** on TV: add, remove and rearrange widgets with the D-pad
-- **Sports widget** (sports is a priority category): follow teams per profile, live scores
+Figma for this phase: Who's here, Home, launching overlay. Nothing else.
 
-### Bonus (only if everything above is green by Oct 17)
-- **Huddle Games**: phones-as-controllers party trivia, launched from the home screen (the original concept, see [ideas backlog](ideas-backlog.md))
-- Ring doorbell tile / "someone's at the door" overlay
-- Expose Huddle actions as an **MCP server** so any agent (incl. Alexa+-style assistants) could post to the board or ask "what's on tonight"
-- Google Calendar / ICS import, chore rotation, cooking timer
+### Phase 2 — The household loop, using Amazon's AI
+| # | Feature | Amazon tool |
+|---|---|---|
+| M5 | Phone companion: QR, post a note, add an event, send a photo | The server is the household. TV updates live. |
+| M4 | Agenda and Photos widgets | |
+| M6 | **Tonight** picker: mood → 3–5 picks with a service badge → launch | **Bedrock** (Nova) for the picks. A watch-provider API checks "on Netflix". |
+| M7 | Launch log → apps row reorder + one "suggested now" chip | |
+| | Plain-English events ("dentist Thursday 4pm for Ammu") | **Bedrock** |
+| | Hold-to-talk on the phone | **Transcribe** |
+| | TV reads the brief and announces a new board post | **Polly** |
+
+### Phase 3 — Echo is the voice of the same household
+- An Alexa interaction (custom skill, or the Huddle MCP if that is further along) posts to the board and answers "what's on tonight".
+- Same household id, same events. A post from the kitchen Echo shows up on the TV.
+- Echo Dot Max is voice only. Echo Show speaks the answer. We do not draw a second UI for them in this hackathon.
+
+### Phase 4 — Games, only if phase 2 is green
+- **One built-in game**: party trivia. TV shows the question, phones are the controllers, Bedrock writes the questions, Polly can host.
+- **A contributor slot.** A game is a folder with a `manifest.json` (id, title, min/max players) plus its TV screen and phone controls. Dropping a folder adds it to the Games row. That folder is the open-source contribution: someone else can add a game without touching the home screen. Wireframes already exist in [wireframes-games.html](../design/wireframes-games.html).
+
+### Parked
+- Ambient mode, widget edit mode, sports widget
+- Ring doorbell overlay (Amazon already lists a Ring tile as an obvious idea)
+- Google Calendar import, chore rotation, cooking timer
 
 ### Out of scope
-Real accounts/auth (household code + PIN only), replacing the system launcher, reading other apps' data, payments, Appstore publishing.
+Real accounts/auth (household code + PIN only), replacing the system launcher, reading other apps' data, payments, Appstore publishing, installing the Vega app onto an Echo.
 
 ## 7. Core flows
 
@@ -105,32 +122,35 @@ Real accounts/auth (household code + PIN only), replacing the system launcher, r
 
 **Phone → TV:** Scan QR → "Post to board" → type "Pizza night 🍕" → appears on the TV instantly with an animation + who posted it.
 
-**Idle:** 10 min no input → ambient mode → any key returns home.
+**Echo → TV:** In the kitchen, "Alexa, ask Huddle to post pizza night" → the same note lands on the TV board.
+
+**Idle:** 10 min no input → ambient mode, once that phase exists → any key returns home.
 
 ## 8. Screens
 
-**TV**: see [wireframes](../design/wireframes.html)
-1. Pairing / first run (QR)
-2. Who's here? (profile picker)
-3. Home (hero + apps row + widget grid)
-4. Widget expanded views (Board, Agenda, Photos, Weather)
-5. Tonight: who + mood → generating → results
-6. Launching overlay (+ "couldn't open, open app instead" fallback)
-7. Edit mode
-8. Ambient mode
-9. Settings (profiles, apps, idle timer)
+**Phase 1 TV** (draw these in Figma first): see [wireframes](../design/wireframes.html)
+1. Who's here? (profile picker)
+2. Home (greeting + apps row + Clock/Weather + Board)
+3. Launching overlay
 
-**Phone companion**
+**Phase 2:** pairing QR, Board/Agenda/Photos expanded, Tonight (mood → picks), phone quick actions.
+
+**Phase 3:** no new TV screen. The Echo speaks; the TV board updates.
+
+**Phase 4:** Games row on Home, then the trivia flow in [wireframes-games.html](../design/wireframes-games.html).
+
+**Phone companion** (phase 2)
 1. Pair / join household
 2. Quick actions (Post · Event · Photo · Tonight remote)
 3. Post note / Add event (plain English) / Send photo
 4. Household setup: profiles + which streaming services you have
 
 ## 9. Success criteria for the demo
-- Opens on a real Fire TV, profile pick → home in < 2s
-- A phone post appears on the TV in < 1s
-- "Tonight" returns picks in < 8s and launches a real streaming app
-- Apps row visibly reorders based on who's here / time of day
+Phase 1 is enough to record a first cut. The full demo adds the later checks.
+- Opens on the Vega Virtual Device, profile pick → home in < 2s, and launches one real app
+- A phone post, and a phrase spoken to the Echo, both appear on the TV board
+- "Tonight" returns picks in < 8s (Bedrock) and launches a streaming app
+- Polly speaks one line on the TV
 - Zero focus dead-ends; Back always predictable
 
 ## 10. Risks
@@ -140,4 +160,5 @@ Real accounts/auth (household code + PIN only), replacing the system launcher, r
 | Vega/RN toolchain setup eats days | Start from `react-native-multi-tv-app-sample`; log every snag in the friction log |
 | Looks like "just another launcher" | Lead the demo with household adaptation + phone → TV + ambient |
 | Watch-provider data is incomplete | Show "available on" only when known; otherwise "search in Netflix" |
-| Scope creep (it's a whole home screen) | MVP = 4 widgets. Games and Ring are bonus only. |
+| Scope creep (hub + games + AI) | Phases are sequential. The demo is the last finished phase. Games wait until the household loop works. |
+| Judges never run it | They may score from the text and video alone: make the video the priority; keep the hosted demo live through Nov 20 with zero-setup judge access |

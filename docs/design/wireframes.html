@@ -45,13 +45,39 @@
 </head>
 <body>
 <h1>Huddle Home: low-fi wireframes</h1>
-<p class="sub">Layout + focus only, no visual design. Blue outline = current D-pad focus. Dashed line = 5% TV safe area. <a href="wireframes-games.html">Bonus: Huddle Games wireframes →</a></p>
+<p class="sub">Layout + focus only. Blue outline = D-pad focus. Dashed line = 5% safe area. Draw phase 1 in Figma first. <a href="wireframes-games.html">Phase 4 game wireframes →</a></p>
 
-<div class="flow">TV:     Pair (first run) → Who's here? → Home ─┬─► Widget expanded (Board / Agenda / Photos / Weather)
-                                              ├─► Tonight: who + mood → generating → picks → Launching… → (streaming app)
-                                              ├─► Edit mode
-                                              └─► idle 10 min → Ambient mode → any key → Home
-Phone:  Scan QR → Join household → Quick actions → Post note · Add event (plain English) · Send photo · Setup</div>
+<div class="flow">Phase 1   Who's here? → Home (apps + clock + board) → Launching…
+Phase 2   Phone QR → board/agenda/photos live → Tonight (Bedrock) → Polly speaks a line
+Phase 3   Echo voice → same board. No new screen.
+Phase 4   Games row → trivia. A contributed game is another tile.</div>
+
+<h2>Phase 1 · draw this first</h2>
+<figure>
+  <div class="tv big"><div class="safe">
+    <div class="hr" style="align-items:flex-start">
+      <div class="grow">
+        <div class="t">Good evening, Rafi &amp; Nanu</div>
+        <div class="s">Echo heard “pizza night” · 14° and clear</div>
+      </div>
+      <div class="hr"><div class="av"></div><div class="av"></div></div>
+    </div>
+    <div class="hr"><span class="s">Your apps</span></div>
+    <div class="hr">
+      <div class="box focus" style="flex:1;height:52px;color:var(--ink);font-weight:700">Netflix</div>
+      <div class="box" style="flex:1;height:52px">Prime Video</div>
+      <div class="box" style="flex:1;height:52px">YouTube</div>
+      <div class="box" style="flex:1;height:52px">Disney+</div>
+    </div>
+    <div class="s">Widgets</div>
+    <div class="hr grow">
+      <div class="box" style="flex:1">⛅ 14°<br>clear · 6:42 pm</div>
+      <div class="box" style="flex:2">📌 Family board<br>"Pizza night 🍕" · from the Echo<br>"Take out recycling" · Rafi</div>
+    </div>
+    <div class="hr"><span class="s">Games · phase 4, leave the row empty for now</span><span class="chip">Trivia</span><span class="chip dim">+ contributed</span></div>
+  </div></div>
+  <figcaption><b>Phase 1 Home.</b> Focus starts on the first app. Down moves to the widgets, then to Games once that phase exists. The Echo line is a status, not a button: a phrase spoken in the kitchen shows up here. Trace this frame in Figma at 1920×1080.</figcaption>
+</figure>
 
 <h2>The hero screen · Home</h2>
 <figure>

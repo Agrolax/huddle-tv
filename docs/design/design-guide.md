@@ -2,7 +2,7 @@
 
 ## Process
 1. **Wireframes**: [`wireframes.html`](wireframes.html) (layout + focus only)
-2. **Figma hi-fi**: Home, Who's here, Tonight, Board expanded, Ambient, phone quick actions
+2. **Figma, phase 1 only**: Who's here, Home, launching overlay. Tonight, phone, ambient, and games come after those three frames exist
 3. **Tokens**: colour, type, spacing, radius, focus style → `packages/shared/theme`
 4. **Code**: send Claude the Figma frame link; it pulls frames via the Figma MCP
 5. **Iterate on device**: the TV is the truth, not the Figma canvas
@@ -31,16 +31,23 @@ Figma notes: work in the `Saf` or `Laurier` team (full seats). The Starter plan 
 - Use the `amazon-devices-scalable-ui-audit` skill before submitting (catches hard-coded 1080p assumptions).
 
 ## Home screen anatomy
+
+Phase 1 is the top three bands. The Echo chip and the Games row are drawn in, and built later.
+
 ```
 ┌───────────────────────────────────────────────────────────────┐
-│ Hero: greeting + daily brief       [avatars here] [Tonight ▶] │
+│ Good evening, Rafi & Nanu          [avatars]  [Tonight ▶]     │
+│ Echo: "pizza night" just landed                                │
 ├───────────────────────────────────────────────────────────────┤
-│ Apps row:  [Netflix] [Prime] [YouTube] [Disney+] [+]          │  ← reorders by who/when
+│ Apps:  [Netflix] [Prime] [YouTube] [Disney+] [+]              │
 ├───────────────────────────────────────────────────────────────┤
-│ Widgets:  [Board  M] [Agenda M] [Weather S] [Photos L]        │
-│           [Sports M] …                                         │
+│ [Clock + weather]  [Family board]                              │
+├───────────────────────────────────────────────────────────────┤
+│ Games (phase 4):  [Trivia]  [+ a contributed game]            │
 └───────────────────────────────────────────────────────────────┘
 ```
+
+Draw the phase 1 frames in the `Saf` or `Laurier` Figma team, 1920×1080, content inside a 5% safe area. The low-fi to trace is the first TV frame in [wireframes.html](wireframes.html).
 
 ## Open design questions
 - Personality: playful (stickers, avatars) or calm (Apple TV-like)? Probably calm home + playful details.

@@ -11,7 +11,7 @@ Widgets + profiles + AI "Tonight" picker + one-press launch into existing stream
 - Submission: `docs/submission/` (checklist, friction log, product feedback, demo script)
 
 ## Code layout
-- `apps/tv`: React Native TV app (Vega + Fire OS), based on `reference/react-native-multi-tv-app-sample`
+- `apps/tv`: React Native TV app for Vega OS, based on `reference/react-native-multi-tv-app-sample`
 - `apps/companion`: React + Vite phone web app
 - `apps/server`: Node + TS API, WebSocket, Bedrock/DynamoDB/S3
 - `packages/shared`: shared types + theme tokens; `packages/tv-focus-kit`: open-source candidate

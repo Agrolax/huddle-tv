@@ -5,11 +5,11 @@
 ```
 ┌──────────────────────────────┐   HTTPS + WebSocket   ┌────────────────────────────────┐
 │ Fire TV app  (apps/tv)        │◄────────────────────►│ Huddle API  (apps/server)       │
-│ React Native (Vega / Fire OS) │                       │ Node + TypeScript               │
+│ React Native for Vega OS     │                       │ Node + TypeScript               │
 │ - profile picker, home, widgets│                      │ - households, profiles          │
 │ - focus/D-pad system           │                      │ - board, events, photos         │
 │ - launches other apps (deep    │                      │ - launch log → patterns         │
-│   links via Linking/intents)   │                      │ - realtime push (WebSocket)     │
+│   links via Linking)           │                      │ - realtime push (WebSocket)     │
 │ - ambient mode                 │                      │                                 │
 └──────────────────────────────┘                       │  ┌──────── AWS ───────────┐     │
                                                        │  │ Bedrock: Tonight picks, │     │
@@ -24,8 +24,13 @@
                                                        └────────────────────────────────┘
 ```
 
+**The hub.** One household on the server. Three clients:
+- **Fire TV app** (Vega, `apps/tv`) is the screen.
+- **Phone web app** is the keyboard and the camera.
+- **Echo** (Dot Max, Show 8) is the voice. Those devices run Vega OS, and Amazon's Vega app tooling targets Fire TV, so the Echo reaches the household through Alexa (a custom skill or the Huddle MCP), not by installing this app. Echo Dot Max has no screen to design.
+
 **Principles**
-- The **server is the source of truth**. The TV and phones are views that subscribe to household updates.
+- The **server is the source of truth**. The TV, phones, and Alexa are views that subscribe to household updates.
 - The TV app must **work offline-ish**: cache the last household state so the home screen renders instantly.
 - AI calls are **never on the critical path** of rendering home. Precompute the brief; show "Tonight" behind a loading state.
 
@@ -41,7 +46,7 @@
 
 ## 3. TV app
 
-- **Base:** `react-native-multi-tv-app-sample` (one codebase for Vega, Android TV/Fire OS, web). The web target is handy for fast design iteration in a browser.
+- **Base:** the Vega app in `react-native-multi-tv-app-sample`. Its web target is handy for fast design iteration in a browser. Stay on that sample's React Native version (0.72 until its 0.83 migration lands). SDK 0.24 can scaffold a new app on React Native 0.83, and several Expo libraries are not stabilized there yet.
 - **Navigation:** Amazon's react-navigation packages (skill: `amazon-devices-vega-navigation`)
 - **Focus:** `TVFocusGuideView` / FocusManager (skill: `amazon-devices-vega-focus-management`); reference `vega-tv-interfaces-sample`
 - **Widgets:** each widget is a module with:
@@ -57,21 +62,27 @@
 
 ## 4. App launching
 
-**Our device is Fire OS 8 (Android 11 based)**, so the Fire OS row is the primary path. A small native module (Kotlin) exposes:
-- `getInstalledApps()`: `PackageManager.queryIntentActivities` for `CATEGORY_LEANBACK_LAUNCHER` (+ `CATEGORY_LAUNCHER`) → name, package, banner/icon. Needs `<queries>` entries (or `QUERY_ALL_PACKAGES`) because of Android 11 package visibility.
-- `launchApp(package)`: `getLeanbackLaunchIntentForPackage` → `startActivity`
-- `openUri(uri, package?)`: `ACTION_VIEW` intent, optionally targeted at a package (title deep links)
+**The TV app targets Vega OS.** Vega has no Android `PackageManager`, so Huddle does not scan the device for installed apps. The phone companion stores which services the household has. The TV opens them with React Native `Linking`:
 
+```ts
+const supported = await Linking.canOpenURL(url);
+if (supported) await Linking.openURL(url);
+```
 
-| OS | API | Notes |
+URI shapes Vega accepts ([deep links](https://developer.amazon.com/docs/vega/0.22/deep-links-vega-apps.html), [Linking](https://developer.amazon.com/docs/react-native-vega/0.72/linking.html)):
+
+| Kind | Example | Use |
 |---|---|---|
-| Vega | `Linking.canOpenURL(url)` → `Linking.openURL(url)` | App-to-app deep links via Vega Messaging; supports custom URIs, https, and limited Fire OS intent-style URIs. [Docs](https://developer.amazon.com/docs/vega/0.22/deep-links-vega-apps.html) |
-| Fire OS | Android intents (`ACTION_VIEW` with URI, or launch intent by package) | Via RN `Linking` or a small native module |
-| Both | Appstore deep link fallback | If the app isn't installed, open its Appstore page |
+| Custom scheme | `netflix://…` | Open an app, or a title when that app publishes a scheme |
+| https | `https://www.netflix.com/title/…` | Title pages some apps claim |
+| App identifier | `amzns://apps?asin=B00…` | Open an Appstore app by ASIN |
+| Appstore fallback | same `amzns://` form | App missing → its store page |
+
+`@amazon-devices/kepler-media-content-launcher` is the API a media app implements so Fire TV can launch *into that app*. Huddle is the caller, so `Linking` is the path. Use Content Launcher only if the Day-1 spike shows a title handoff requires it.
 
 **Spike results (fill in on Day 1):**
 
-| App | Open app | Open specific title | URI used | Works on my stick? |
+| App | Open app | Open specific title | URI used | Works on VVD? |
 |---|---|---|---|---|
 | Netflix | | | | |
 | Prime Video | | | | |
@@ -135,11 +146,12 @@ Launch flow: `canOpenURL(titleUri)` → open title; else `canOpenURL(appUri)` �
 
 ## 8. Hosting
 - Dev: server on laptop + tunnel (cloudflared / ngrok) so the stick and phone reach it.
-- Demo: **Lightsail** instance (cheapest; WebSockets fine) or EC2, plus DynamoDB and S3, in one region with Bedrock access. All covered by the $100 credits.
+- Demo: **Lightsail** instance (cheapest; WebSockets fine) or EC2, plus DynamoDB and S3, in one region with Bedrock access. Covered by the $250 credits.
 - Companion served as static files from the server.
 - Secrets in `.env` (gitignored); `.env.example` committed.
 
 ## 9. Open questions
-- ~~Vega or Fire OS?~~ **Fire OS 8.** Native module in Kotlin for app listing/launching.
+- ~~Vega or Fire OS?~~ **Vega OS** (Oct 7). Demo on the Vega Virtual Device. The Stick HD on Fire OS 8 cannot run this build.
+- ~~Echo app?~~ **No.** Echo Dot Max and Echo Show 8 run Vega, and third-party Echo work goes through Alexa. Phase 3 is a voice client of the same API.
 - Which streaming apps support title-level deep links on this device? (spike)
 - Can `react-native-multi-tv-app-sample`'s web target share the same focus code? (matters for fast design iteration)
