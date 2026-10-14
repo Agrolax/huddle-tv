@@ -1,6 +1,10 @@
 # Roadmap
 
-Today: Oct 4 · Submit: **Oct 22** · Hard deadline: Oct 23, 3:00pm EDT
+Today: Oct 14 · Submit: **Oct 22** · Hard deadline: Oct 23, 3:00pm EDT
+
+Scope locked Oct 14 ([PRD §2](PRD.md#2-pitch)): widgets (clock/weather, family calendar, Bedrock Tonight, profiles), phone companion via QR (switch profile, message the TV, AI chat), one game (Sketch it), simulated smart-home widget. Polly/Transcribe are stretch.
+
+Work ships as one PR per step, each running on the Vega Virtual Device with screenshots in `docs/screenshots/<step>/`.
 
 Edit freely: this is the living plan. Tick boxes as you go. When a date slips, move items down, don't squeeze them.
 
@@ -16,38 +20,43 @@ Edit freely: this is the living plan. Tick boxes as you go. When a date slips, m
 - [ ] Run the Vega target of `react-native-multi-tv-app-sample` on the Vega Virtual Device (`scripts/fetch-references.sh` clones it)
 - [ ] **Spike: app launching.** From a test screen, `Linking.openURL` into Netflix, Prime Video, YouTube (app + a specific title). Record what works in [architecture § App launching](../architecture/architecture.md#4-app-launching)
 - [ ] AWS: pick region, enable Bedrock model access, **set a Budget alert** ($25 / $50 / $75), test one Bedrock call and confirm it bills against credits
-- [ ] Start the [friction log](../submission/friction-log.md)
+- [x] Start the [friction log](../submission/friction-log.md)
 
-## Phase 1: Design + TV home (now → Oct 10)
-Do not start phase 2 until this plays on the Vega Virtual Device.
-- [ ] Figma, these three frames only: Who's here, Home (apps row + Clock/Weather + Board), launching overlay. Low-fi is in [wireframes.html](../design/wireframes.html)
-- [x] Design tokens (colour, type scale, spacing, focus style) → `packages/shared` + `apps/tv/src/theme.ts`
-- [x] `apps/tv` Vega RN 0.72 app: Who's here → Home → Launching (`Linking`). Debug `.vpkg` builds
-- [x] Clock/Weather widget and a static Board tile
-- [ ] Run on Vega Virtual Device (checkpoint)
-- **Checkpoint Oct 10:** home on the Vega Virtual Device, D-pad works, one real app launches
+## Step 1: Shell (Oct 14) ✅
+- [x] npm workspaces monorepo, TypeScript everywhere: `apps/tv`, `apps/server`, `apps/companion`, `packages/shared`, `packages/tv-focus-kit`
+- [x] `@amazon-devices/*` aligned with `vega project install --fix` (react-native-kepler 2.1.0+rn0.72.0); `vega project doctor` passes
+- [x] `tv-focus-kit`: FocusableCard, FocusGrid (deterministic row/column nav, row memory, spans), FocusRing; unit tested
+- [x] Home: greeting + Connect phone + 4×2 placeholder widget grid; Who's here; Back goes Home → Who's here → exit
+- [x] Theme tokens in `packages/shared`; realtime protocol with a `display` role for future second screens
+- [x] Runs on the Vega Virtual Device; D-pad verified; screenshots in [`docs/screenshots/step-1/`](../screenshots/step-1/)
+- [x] [Echo Show research](../research/echo-show.md); friction log FL-01–FL-08
 
-## Phase 2: Phone + Amazon AI (Oct 11–16)
-- [ ] `apps/server`: household, profiles, board, events, photos (DynamoDB + S3), WebSocket push
-- [ ] `apps/companion`: QR pairing, post note, add event, send photo
-- [ ] Board, Agenda, Photos live on the TV
-- [ ] Tonight picker: **Bedrock** + watch-provider data → launch
-- [ ] Plain-English events (Bedrock), hold-to-talk (**Transcribe**), one spoken line on the TV (**Polly**)
-- [ ] Launch logging → apps row reorder
-- **Checkpoint Oct 16:** phone post shows on the TV, and Tonight launches an app. If not, skip phases 3 and 4.
+## Step 2: Server + pairing (Oct 15–16)
+- [ ] `apps/server` WebSocket hub on the shared protocol; household in memory → DynamoDB
+- [ ] TV: pairing QR (`@amazon-devices/react-native-qrcode-svg`), connect as `role: 'tv'`
+- [ ] Companion: join from QR, pick yourself, switch profile, send a message → toast on the TV
+- [ ] **Verify Bedrock access** (quota-0 risk) before step 4
 
-## Phase 3: Echo voice (Oct 17–19)
-- [ ] Alexa path into the same household API: post a board note, ask what's on tonight
-- [ ] Prove it with a spoken phrase that appears on the TV. Echo Dot Max is voice only; do not build an Echo screen
-- [x] Registered for **Office Hours #2: Mon Oct 19, 12–1pm EDT** ([Zoom](https://amazon.zoom.us/webinar/register/WN_kh9CSYi0QtuN31d8nsTuOQ)): bring the near-final demo
+## Step 3: Widgets live (Oct 16–17)
+- [ ] Weather (Open-Meteo), calendar from server, profiles from server, smart home simulated + toggled from the phone
 
-## Phase 4: One game + a contributor slot (only if phase 2 is green)
-- [ ] Games row on Home, one trivia game (phones as controllers, Bedrock questions)
-- [ ] `games/<id>/manifest.json` so another person can add a game without editing the home screen. That folder is the open-source entry
-- [ ] Motion + focus audit, Back audit
-- [ ] Judge-ready setup: hosted server + companion (live through Nov 20), `.vpkg` plus Vega Virtual Device steps, mock mode without AWS
-- [ ] Oct 20–21: record and edit the [demo video](../submission/demo-script.md) (Polly voice-over)
+## Step 4: Bedrock (Oct 17–18)
+- [ ] Tonight picks for who's here (Nova), phone AI chat; mock mode without AWS
+
+## Step 5: Sketch it (Oct 18–20)
+- [ ] Phone canvas → `sketch:stroke` → TV canvas (normalised points), guesses from phones, Bedrock prompts, scores
+- [x] Registered for **Office Hours #2: Mon Oct 19, 12–1pm EDT** ([Zoom](https://amazon.zoom.us/webinar/register/WN_kh9CSYi0QtuN31d8nsTuOQ)): bring Sketch it
+
+## Step 6: Ship (Oct 20–22)
+- [ ] Focus + Back audit, `amazon-devices-scalable-ui-audit`, judge setup (hosted server + companion live through Nov 20, `.vpkg` + VVD steps)
+- [ ] Open Source: publish `tv-focus-kit` (see [checklist](../submission/checklist.md))
+- [ ] Oct 20–21: record and edit the [demo video](../submission/demo-script.md)
 - [ ] Oct 22: submit everything
+
+## Stretch (only if step 5 is green)
+- [ ] Polly line on the TV, Transcribe hold-to-talk on the phone
+- [ ] Echo Show as a `display` client via an Alexa skill + `Alexa.Presentation.HTML` ([research](../research/echo-show.md)); first a 30-min WebSocket spike
+- [ ] Launch a Tonight pick into its streaming app (`Linking` spike)
 
 ## Change log
 | Date | Change |
@@ -65,3 +74,5 @@ Do not start phase 2 until this plays on the Vega Virtual Device.
 | Oct 7 | AWS credits confirmed at $250. Spend them on Nova, Polly, Transcribe, DynamoDB, S3, and a small Lightsail box |
 | Oct 9 | Phase 1 TV app scaffolded (`apps/tv`): Who's here, Home, Launching. Debug vpkg builds on SDK 0.24 / RN 0.72. Next: run on VVD |
 | Oct 9 | Vega SDK 0.24.12112 (CLI 1.4.4) installed; Vega Virtual Device starts and shows in `vega device list`. Added phone↔TV connection ideas to the [ideas backlog](ideas-backlog.md) |
+| Oct 14 | **Scope locked**: widgets (clock/weather, family calendar, Bedrock Tonight, profiles), phone companion via QR (switch profile, message TV, AI chat), Sketch it (phone draws, TV shows, phones guess, Bedrock prompts), simulated smart-home widget. Polly/Transcribe stretch. Board, photos, agenda, apps row, trivia, Echo voice phase dropped or moved to stretch. Plan is now steps, one PR each |
+| Oct 14 | Step 1 shell: npm workspaces monorepo, `tv-focus-kit`, home grid on the VVD, shared protocol with a `display` role. Echo Show researched: no Vega app path; Alexa skill + HTML web app is the route ([echo-show.md](../research/echo-show.md)) |

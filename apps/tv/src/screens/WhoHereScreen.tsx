@@ -1,62 +1,68 @@
 import React, {useState} from 'react';
 import {StyleSheet, Text, View} from 'react-native';
 import {TVFocusGuideView} from '@amazon-devices/react-native-kepler';
-import {Focusable} from '../components/Focusable';
+import {FocusableCard} from '@huddle/tv-focus-kit';
 import {PROFILES} from '../data/profiles';
-import {colors, space, type} from '../theme';
+import {colors, focus, radius, space, type} from '../theme';
 
 type Props = {
+  initialSelected: string[];
   onContinue: (profileIds: string[]) => void;
 };
 
-export function WhoHereScreen({onContinue}: Props) {
-  const [selected, setSelected] = useState<string[]>(['rafi', 'nanu']);
-  const [focusedId, setFocusedId] = useState<string>(PROFILES[0].id);
+/** "Who's here?": multi-select profiles. Select toggles, Continue goes home. */
+export function WhoHereScreen({initialSelected, onContinue}: Props) {
+  const [selected, setSelected] = useState<string[]>(initialSelected);
 
   const toggle = (id: string) => {
-    setSelected(prev =>
-      prev.includes(id) ? prev.filter(p => p !== id) : [...prev, id],
-    );
+    setSelected(prev => (prev.includes(id) ? prev.filter(p => p !== id) : [...prev, id]));
   };
 
   return (
     <View style={styles.root}>
       <Text style={styles.title}>Who's here?</Text>
-      <Text style={styles.sub}>Pick everyone in the room. Select again to toggle.</Text>
+      <Text style={styles.sub}>Pick everyone in the room. Select again to remove someone.</Text>
 
-      <TVFocusGuideView style={styles.row}>
+      <TVFocusGuideView autoFocus style={styles.row}>
         {PROFILES.map((p, index) => {
           const isOn = selected.includes(p.id);
-          const focused = focusedId === p.id;
           return (
-            <Focusable
+            <FocusableCard
               key={p.id}
-              focused={focused}
-              onFocus={() => setFocusedId(p.id)}
-              onPress={() => toggle(p.id)}
+              testID={`profile-${p.id}`}
               hasTVPreferredFocus={index === 0}
+              onPress={() => toggle(p.id)}
               accessibilityLabel={`${p.name}${isOn ? ', selected' : ''}`}
-              style={styles.avatarWrap}>
-              <View style={[styles.avatar, {backgroundColor: p.color}]}>
+              ringColor={colors.focus}
+              ringWidth={focus.borderWidth}
+              radius={radius.lg}
+              focusScale={1.08}
+              animationDuration={focus.duration}
+              containerStyle={styles.cardWrap}
+              style={styles.card}
+              focusedStyle={styles.cardFocused}>
+              <View style={[styles.avatar, {backgroundColor: p.color}, !isOn && styles.avatarOff]}>
                 <Text style={styles.avatarLetter}>{p.name[0]}</Text>
               </View>
               <Text style={styles.name}>{p.name}</Text>
-              <Text style={styles.check}>{isOn ? '●' : '○'}</Text>
-            </Focusable>
+              <Text style={[styles.check, isOn && styles.checkOn]}>{isOn ? 'Here' : 'Not here'}</Text>
+            </FocusableCard>
           );
         })}
       </TVFocusGuideView>
 
-      <Focusable
-        focused={focusedId === 'continue'}
-        onFocus={() => setFocusedId('continue')}
+      <FocusableCard
+        testID="continue"
         onPress={() => onContinue(selected.length ? selected : ['guest'])}
         accessibilityLabel="Continue to home"
+        ringColor={colors.focusRing}
+        ringWidth={focus.borderWidth}
+        radius={radius.pill}
+        animationDuration={focus.duration}
+        containerStyle={styles.ctaWrap}
         style={styles.cta}>
-        <Text style={styles.ctaText}>
-          Continue{selected.length ? ` · ${selected.length}` : ''}
-        </Text>
-      </Focusable>
+        <Text style={styles.ctaText}>Continue{selected.length ? ` with ${selected.length}` : ''}</Text>
+      </FocusableCard>
     </View>
   );
 }
@@ -82,42 +88,56 @@ const styles = StyleSheet.create({
   },
   row: {
     flexDirection: 'row',
-    gap: space.md,
     marginBottom: space.xl,
   },
-  avatarWrap: {
-    width: 180,
+  cardWrap: {
+    width: 240,
+    marginRight: space.lg,
+  },
+  card: {
     alignItems: 'center',
-    padding: space.sm,
+    paddingVertical: space.lg,
     backgroundColor: colors.surface,
   },
+  cardFocused: {
+    backgroundColor: colors.surfaceRaised,
+  },
   avatar: {
-    width: 96,
-    height: 96,
-    borderRadius: 48,
+    width: 128,
+    height: 128,
+    borderRadius: 64,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: space.sm,
+    marginBottom: space.md,
+  },
+  avatarOff: {
+    opacity: 0.35,
   },
   avatarLetter: {
-    color: colors.ink,
-    fontSize: type.title,
+    color: colors.bg,
+    fontSize: type.hero,
     fontWeight: '700',
   },
   name: {
     color: colors.ink,
     fontSize: type.body,
-    fontWeight: '600',
+    fontWeight: '700',
   },
   check: {
-    color: colors.focus,
-    fontSize: type.body,
+    color: colors.mute,
+    fontSize: type.caption,
     marginTop: space.xs,
   },
-  cta: {
+  checkOn: {
+    color: colors.success,
+    fontWeight: '700',
+  },
+  ctaWrap: {
     alignSelf: 'flex-start',
+  },
+  cta: {
     backgroundColor: colors.accent,
-    paddingHorizontal: space.lg,
+    paddingHorizontal: space.xl,
     paddingVertical: space.md,
   },
   ctaText: {

@@ -24,10 +24,11 @@
                                                        └────────────────────────────────┘
 ```
 
-**The hub.** One household on the server. Three clients:
-- **Fire TV app** (Vega, `apps/tv`) is the screen.
-- **Phone web app** is the keyboard and the camera.
-- **Echo** (Dot Max, Show 8) is the voice. Those devices run Vega OS, and Amazon's Vega app tooling targets Fire TV, so the Echo reaches the household through Alexa (a custom skill or the Huddle MCP), not by installing this app. Echo Dot Max has no screen to design.
+**The hub.** One household on the server. Clients join with a role:
+- **`tv`**: the Fire TV app (Vega, `apps/tv`). It is the main screen.
+- **`phone`**: the companion web app, opened from the QR code. It is the keyboard, the chat box and the Sketch it pen.
+- **`display`** (later): a second screen that mostly reads, such as an Echo Show via an Alexa skill that opens our web page. See [echo-show.md](../research/echo-show.md).
+- **`voice`** (stretch): an Alexa skill backend.
 
 **Principles**
 - The **server is the source of truth**. The TV, phones, and Alexa are views that subscribe to household updates.
@@ -36,9 +37,11 @@
 
 ## 2. Repo layout
 
+npm workspaces. `npm run check` typechecks every workspace and runs all unit tests. Workspace packages ship TypeScript source (`main: src/index.ts`): Metro (TV), Vite (companion) and tsx (server) compile them directly, so there's no build step.
+
 | Path | Stack | Purpose |
 |---|---|---|
-| `apps/tv` | React Native (start from `react-native-multi-tv-app-sample`) | TV app |
+| `apps/tv` | React Native for Vega (SDK 0.24, RN 0.72) | TV app |
 | `apps/companion` | React + Vite + TS | Phone web app |
 | `apps/server` | Node + TS (Fastify + `ws`) | API, realtime, AI orchestration |
 | `packages/shared` | TS | Types (events, models), theme tokens |
@@ -48,17 +51,17 @@
 
 - **Base:** the Vega app in `react-native-multi-tv-app-sample`. Its web target is handy for fast design iteration in a browser. Stay on that sample's React Native version (0.72 until its 0.83 migration lands). SDK 0.24 can scaffold a new app on React Native 0.83, and several Expo libraries are not stabilized there yet.
 - **Navigation:** Amazon's react-navigation packages (skill: `amazon-devices-vega-navigation`)
-- **Focus:** `TVFocusGuideView` / FocusManager (skill: `amazon-devices-vega-focus-management`); reference `vega-tv-interfaces-sample`
+- **Focus:** `@huddle/tv-focus-kit`. `FocusGrid` computes each neighbour in plain TS (`grid.ts`, unit tested) and sets `nextFocus*` on Vega's `Pressable`. Edges fall back to native Cartesian focus. Grids sit inside `TVFocusGuideView autoFocus` so focus coming back from outside lands on the last cell. Verified on the VVD in step 1.
 - **Widgets:** each widget is a module with:
   ```ts
   interface Widget {
-    id: string;              // 'board' | 'agenda' | 'weather' | 'photos' | 'sports'
+    id: string;              // 'clock' | 'calendar' | 'profiles' | 'tonight' | 'sketch' | 'smart-home'
     Tile: React.FC<{ size: 'S' | 'M' | 'L'; focused: boolean }>;
     Expanded: React.FC;      // full-screen view on Select
     dataKey: string;         // which household slice it subscribes to
   }
   ```
-- **Idle timer** → ambient mode; any key press exits.
+  Step 1 has the tiles only (`FocusGridItem.render` + `WidgetTile` chrome). Expanded views come with each widget's step.
 
 ## 4. App launching
 
@@ -107,16 +110,24 @@ Launch flow: `canOpenURL(titleUri)` → open title; else `canOpenURL(appUri)` �
   | `HH#<id>` | `LAUNCH#<ts>` | app launch log |
 - **Pairing:** TV creates household → 6-char code + QR (`https://<host>/h/<code>`) → phone joins. No accounts; a PIN gates settings.
 
-### Realtime events (draft)
-| Direction | Event | Payload |
-|---|---|---|
-| S → clients | `household:state` | full snapshot on connect |
-| Phone → S | `note:create` | `{ text, authorId, expiresAt? }` |
-| Phone → S | `event:create` | `{ text }` (NL) or structured |
-| Phone → S | `photo:uploaded` | `{ s3Key }` |
-| TV → S | `presence:set` | `{ profileIds[] }` |
-| TV → S | `launch:log` | `{ appId, profileIds[] }` |
-| S → clients | `note:created` / `event:created` / `photo:added` | item |
+### Realtime protocol
+Source of truth: [`packages/shared/src/protocol.ts`](../../packages/shared/src/protocol.ts) (types + routing tables, unit tested).
+
+- Envelope: `{v: 1, id, ts, type, payload}`. `parseEnvelope` rejects anything else.
+- Handshake: client → `hello {householdId, client: {clientId, role, label?, profileId?}, capabilities, topics, pairCode?}`. Server → `welcome {snapshot, you}`.
+- Routing: each server message belongs to a topic (`SERVER_MESSAGE_TOPIC`). A client only gets the topics it subscribed to. `DEFAULT_TOPICS` per role.
+- Permissions: `CLIENT_MESSAGE_ROLES`. The server answers anything else with `error {code: 'forbidden'}`.
+
+| Client → server | Who | Server → clients | Topic |
+|---|---|---|---|
+| `profile:switch` | tv, phone, voice | `profile:changed` | household |
+| `message:send` | phone, voice | `message:new` | messages |
+| `chat:ask` | phone, voice, tv | `chat:reply` (streamed, `done`) | chat |
+| `tonight:request` | tv, phone, voice | `tonight:picks` | tonight |
+| `sketch:start` / `sketch:stroke` / `sketch:clear` / `sketch:guess` | tv+phone / phone / phone / phone+voice | `sketch:state` (prompt only to the drawer), `sketch:stroke`, `sketch:clear`, `sketch:guess` | sketch |
+| `smart-home:set` | tv, phone, voice | `smart-home:state` | smart-home |
+| — | | `calendar:updated` | calendar |
+| `subscribe`, `ping` | all | `pong`, `error`, `client:joined/left` | — / household |
 
 ## 6. AI features (Bedrock)
 
@@ -152,6 +163,6 @@ Launch flow: `canOpenURL(titleUri)` → open title; else `canOpenURL(appUri)` �
 
 ## 9. Open questions
 - ~~Vega or Fire OS?~~ **Vega OS** (Oct 7). Demo on the Vega Virtual Device. The Stick HD on Fire OS 8 cannot run this build.
-- ~~Echo app?~~ **No.** Echo Dot Max and Echo Show 8 run Vega, and third-party Echo work goes through Alexa. Phase 3 is a voice client of the same API.
+- ~~Echo app?~~ **No Vega app.** Echo devices run Vega, but there's no third-party app path. An Echo Show can join later as a `display` client through an Alexa skill + `Alexa.Presentation.HTML` ([echo-show.md](../research/echo-show.md)).
 - Which streaming apps support title-level deep links on this device? (spike)
 - Can `react-native-multi-tv-app-sample`'s web target share the same focus code? (matters for fast design iteration)
