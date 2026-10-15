@@ -3,7 +3,7 @@
  * handler, so a malformed frame becomes an `error` reply instead of an exception.
  * Hand-written to keep the TV bundle free of a schema library.
  */
-import {ALL_TOPICS, ClientCapabilities, ClientMessage, ClientRole, Topic} from './protocol';
+import {ALL_TOPICS, ClientCapabilities, ClientMessage, ClientRole, TONIGHT_MOODS, TonightMood, Topic} from './protocol';
 import {isPairCode, normalizePairCode} from './pairing';
 
 export const MESSAGE_MAX_LENGTH = 280;
@@ -149,5 +149,27 @@ export function validateSmartHomeSet(payload: unknown): Validation<PayloadOf<'sm
   return {
     ok: true,
     value: {deviceId: payload.deviceId, ...(on !== undefined ? {on} : {}), ...(level !== undefined ? {level: level as number} : {})},
+  };
+}
+
+export function validateTonightRequest(payload: unknown): Validation<PayloadOf<'tonight:request'>> {
+  if (payload !== undefined && !isRecord(payload)) return fail('tonight:request payload must be an object');
+  const mood = payload?.mood;
+  if (mood === undefined) return {ok: true, value: {}};
+  if (!TONIGHT_MOODS.some(m => m.id === mood)) return fail(`tonight:request.mood must be one of ${TONIGHT_MOODS.map(m => m.id).join(', ')}`);
+  return {ok: true, value: {mood: mood as TonightMood}};
+}
+
+export const CHAT_MAX_LENGTH = 500;
+
+export function validateChatAsk(payload: unknown): Validation<PayloadOf<'chat:ask'>> {
+  if (!isRecord(payload) || typeof payload.text !== 'string') return fail('chat:ask needs text: string');
+  const text = payload.text.trim();
+  if (!text) return fail('chat:ask.text is empty');
+  if ([...text].length > CHAT_MAX_LENGTH) return fail(`chat:ask.text is longer than ${CHAT_MAX_LENGTH} characters`);
+  if (payload.conversationId !== undefined && !isId(payload.conversationId)) return fail('chat:ask.conversationId is not a valid id');
+  return {
+    ok: true,
+    value: {text, ...(payload.conversationId !== undefined ? {conversationId: payload.conversationId as string} : {})},
   };
 }

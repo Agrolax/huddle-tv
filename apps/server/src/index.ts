@@ -1,5 +1,6 @@
 import {createServer} from 'node:http';
 import {WebSocketServer} from 'ws';
+import {createAI} from './ai/index.js';
 import {Hub} from './hub.js';
 import {lanAddress} from './net.js';
 import {DEFAULT_PLACE, pollWeather} from './weather.js';
@@ -9,8 +10,11 @@ const HOST = process.env.HOST ?? '0.0.0.0';
 const LAN = process.env.HUDDLE_LAN_IP ?? lanAddress() ?? 'localhost';
 const COMPANION_URL = process.env.COMPANION_URL ?? `http://${LAN}:5173/`;
 
+const ai = createAI();
+
 const hub = new Hub({
   companionUrl: COMPANION_URL,
+  ai,
   log: (msg, extra) => console.log(`[hub] ${msg}`, extra ?? ''),
 });
 
@@ -49,4 +53,5 @@ http.listen(PORT, HOST, () => {
   console.log(`Huddle server listening on ${HOST}:${PORT}`);
   console.log(`  TV / phones connect to   ws://${LAN}:${PORT}/ws`);
   console.log(`  QR codes point phones to ${COMPANION_URL}`);
+  console.log(`  AI: ${ai.source === 'bedrock' ? `Bedrock (${process.env.AWS_REGION ?? 'us-east-1'})` : 'mock (set HUDDLE_AI=bedrock for Amazon Nova)'}`);
 });

@@ -1,4 +1,14 @@
-import {MESSAGE_MAX_LENGTH, validateEmpty, validateHello, validateMessageSend, validateProfileSwitch, validateSubscribe} from '../src/validate';
+import {
+  CHAT_MAX_LENGTH,
+  MESSAGE_MAX_LENGTH,
+  validateChatAsk,
+  validateEmpty,
+  validateHello,
+  validateMessageSend,
+  validateProfileSwitch,
+  validateSubscribe,
+  validateTonightRequest,
+} from '../src/validate';
 
 const goodHello = {
   householdId: 'demo',
@@ -76,5 +86,29 @@ describe('other payloads', () => {
     expect(validateEmpty('ping', {}).ok).toBe(true);
     expect(validateEmpty('ping', undefined).ok).toBe(true);
     expect(validateEmpty('ping', [1]).ok).toBe(false);
+  });
+});
+
+describe('validateTonightRequest', () => {
+  it('accepts no mood or a known mood', () => {
+    expect(validateTonightRequest({})).toEqual({ok: true, value: {}});
+    expect(validateTonightRequest(undefined)).toEqual({ok: true, value: {}});
+    expect(validateTonightRequest({mood: 'edge-of-seat'})).toEqual({ok: true, value: {mood: 'edge-of-seat'}});
+  });
+  it.each([[{mood: 'sad'}], [{mood: 3}], ['cozy'], [[1]]])('rejects %p', p => {
+    expect(validateTonightRequest(p).ok).toBe(false);
+  });
+});
+
+describe('validateChatAsk', () => {
+  it('trims text and keeps the conversation id', () => {
+    expect(validateChatAsk({text: '  hi ', conversationId: 'c-1'})).toEqual({ok: true, value: {text: 'hi', conversationId: 'c-1'}});
+  });
+  it('caps the length', () => {
+    expect(validateChatAsk({text: 'x'.repeat(CHAT_MAX_LENGTH)}).ok).toBe(true);
+    expect(validateChatAsk({text: 'x'.repeat(CHAT_MAX_LENGTH + 1)}).ok).toBe(false);
+  });
+  it.each([[{}], [{text: '  '}], [{text: 1}], [{text: 'hi', conversationId: '../x'}]])('rejects %p', p => {
+    expect(validateChatAsk(p).ok).toBe(false);
   });
 });

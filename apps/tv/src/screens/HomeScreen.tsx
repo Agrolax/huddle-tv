@@ -4,6 +4,7 @@ import {FocusManager, TVFocusGuideView} from '@amazon-devices/react-native-keple
 import {
   CalendarEvent,
   Profile,
+  TONIGHT_MOODS,
   Weather,
   deviceIsActive,
   deviceStateLabel,
@@ -14,6 +15,7 @@ import {
 import {FocusableCard, FocusGrid, FocusGridHandle, FocusGridItem} from '@huddle/tv-focus-kit';
 import {ConnectOverlay} from '../components/ConnectOverlay';
 import {SmartHomeOverlay} from '../components/SmartHomeOverlay';
+import {TonightOverlay, picksAreFor} from '../components/TonightOverlay';
 import {WidgetTile} from '../components/WidgetTile';
 import {namesFor} from '../data/profiles';
 import {HouseholdActions, HouseholdState, useHousehold} from '../net/HouseholdContext';
@@ -37,12 +39,14 @@ type Props = {
 export function HomeScreen({onSwitchProfiles, onOpenWidget, onFocusChange}: Props) {
   const now = useClock();
   const household = useHousehold();
-  const {activeProfileIds: profileIds, profiles, status, events, devices, weather} = household;
+  const {activeProfileIds: profileIds, profiles, status, events, devices, weather, tonight} = household;
   const names = namesFor(profileIds, profiles);
   const here = useMemo(() => profiles.filter(p => profileIds.includes(p.id)), [profiles, profileIds]);
   const upcoming = useMemo(() => upcomingEvents(events, now, 3), [events, now]);
   const [connectOpen, setConnectOpen] = useState(false);
   const [smartHomeOpen, setSmartHomeOpen] = useState(false);
+  const [tonightOpen, setTonightOpen] = useState(false);
+  const tonightFresh = picksAreFor(tonight, profileIds);
   const connectRef = useRef<View>(null);
   const gridRef = useRef<FocusGridHandle>(null);
   const weatherLine = weatherText(weather);
@@ -57,6 +61,11 @@ export function HomeScreen({onSwitchProfiles, onOpenWidget, onFocusChange}: Prop
     setSmartHomeOpen(false);
     // Give focus back to the Home tile that opened the sheet.
     setTimeout(() => restoreFocus(gridRef.current?.getCell('smart-home') ?? null), 0);
+  }, []);
+
+  const closeTonight = useCallback(() => {
+    setTonightOpen(false);
+    setTimeout(() => restoreFocus(gridRef.current?.getCell('tonight') ?? null), 0);
   }, []);
 
   const items = useMemo<FocusGridItem[]>(
@@ -140,20 +149,34 @@ export function HomeScreen({onSwitchProfiles, onOpenWidget, onFocusChange}: Prop
         row: 1,
         col: 0,
         colSpan: 2,
-        accessibilityLabel: "Tonight picks. Select for picks made for who's here",
-        onPress: () => onOpenWidget?.('tonight'),
+        accessibilityLabel: tonight
+          ? `Tonight picks: ${tonight.picks.map(p => p.title).join(', ')}. Select for more`
+          : "Tonight picks. Select for picks made for who's here",
+        onPress: () => {
+          setTonightOpen(true);
+          onOpenWidget?.('tonight');
+        },
         render: ({focused}) => (
           <WidgetTile
             label="Tonight"
             accent={colors.widget.tonight}
             focused={focused}
-            hint="Select for picks made for who's here">
+            hint={tonight ? (tonightFresh ? 'Select for more picks' : "Select for picks for who's here now") : "Select for picks made for who's here"}>
             <View style={styles.posters}>
-              {['Cozy', 'Funny', 'Edge-of-seat'].map(mood => (
-                <View key={mood} style={styles.poster}>
-                  <Text style={styles.posterText}>{mood}</Text>
-                </View>
-              ))}
+              {tonight
+                ? tonight.picks.map((p, i) => (
+                    <View key={`${p.title}-${i}`} style={styles.poster} testID={`tonight-tile-pick-${i}`}>
+                      <Text style={styles.posterTitle} numberOfLines={3}>
+                        {p.title}
+                      </Text>
+                      {p.service ? <Text style={styles.posterText}>{p.service}</Text> : null}
+                    </View>
+                  ))
+                : TONIGHT_MOODS.map(m => (
+                    <View key={m.id} style={[styles.poster, styles.posterCenter]}>
+                      <Text style={styles.posterText}>{m.label}</Text>
+                    </View>
+                  ))}
             </View>
           </WidgetTile>
         ),
@@ -196,7 +219,7 @@ export function HomeScreen({onSwitchProfiles, onOpenWidget, onFocusChange}: Prop
         ),
       },
     ],
-    [now, names, here, upcoming, profiles, devices, weather, weatherLine, status, onOpenWidget, onSwitchProfiles],
+    [now, names, here, upcoming, profiles, devices, weather, weatherLine, status, tonight, tonightFresh, onOpenWidget, onSwitchProfiles],
   );
 
   return (
@@ -246,6 +269,7 @@ export function HomeScreen({onSwitchProfiles, onOpenWidget, onFocusChange}: Prop
 
       {connectOpen ? <ConnectOverlay onClose={closeConnect} /> : null}
       {smartHomeOpen ? <SmartHomeOverlay onClose={closeSmartHome} /> : null}
+      {tonightOpen ? <TonightOverlay onClose={closeTonight} /> : null}
     </View>
   );
 }
@@ -425,8 +449,17 @@ const styles = StyleSheet.create({
     marginRight: space.sm,
     borderRadius: radius.md,
     backgroundColor: colors.board,
+    padding: space.sm,
+    justifyContent: 'space-between',
+  },
+  posterCenter: {
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  posterTitle: {
+    color: colors.ink,
+    fontSize: type.caption,
+    fontWeight: '700',
   },
   posterText: {
     color: colors.mute,

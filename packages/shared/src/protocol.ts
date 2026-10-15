@@ -100,6 +100,27 @@ export interface TonightPick {
   deepLink?: string;
 }
 
+export type TonightMood = 'cozy' | 'funny' | 'edge-of-seat';
+
+/** The moods the TV sheet and the phone offer, in display order. */
+export const TONIGHT_MOODS: readonly {id: TonightMood; label: string}[] = [
+  {id: 'cozy', label: 'Cozy'},
+  {id: 'funny', label: 'Funny'},
+  {id: 'edge-of-seat', label: 'Edge-of-seat'},
+];
+
+/** The latest Tonight picks for a household. Kept in the snapshot so the tile survives a reconnect. */
+export interface TonightPicks {
+  picks: TonightPick[];
+  mood?: TonightMood;
+  /** Who was here when the picks were made. */
+  forProfileIds: string[];
+  /** ISO 8601 */
+  at: string;
+  /** `mock` when HUDDLE_AI=mock or Bedrock failed and the server fell back. */
+  source: 'bedrock' | 'mock';
+}
+
 export interface Point {
   /** 0..1, relative to the drawer's canvas so every screen can scale it. */
   x: number;
@@ -162,6 +183,8 @@ export interface HouseholdSnapshot {
   devices: SmartDevice[];
   /** `null` until the server's first fetch succeeds. */
   weather: Weather | null;
+  /** `null` until someone asks for picks. */
+  tonight: TonightPicks | null;
   sketch: SketchState;
   clients: ClientInfo[];
 }
@@ -183,6 +206,7 @@ export type ErrorCode =
   | 'pair-code-invalid'
   | 'pair-code-expired'
   | 'tv-claimed' // another TV owns this household and no valid TV token was given
+  | 'busy' // the same request is still running (a chat answer, Tonight picks)
   | 'not-implemented'
   | 'internal';
 
@@ -215,7 +239,7 @@ export type ClientMessage =
   | {type: 'calendar:add'; payload: {title: string; start: string; end?: string; profileIds: string[]}}
   | {type: 'calendar:remove'; payload: {eventId: string}}
   | {type: 'chat:ask'; payload: {text: string; conversationId?: string}}
-  | {type: 'tonight:request'; payload: {mood?: string}}
+  | {type: 'tonight:request'; payload: {mood?: TonightMood}}
   | {type: 'sketch:start'; payload: {drawerProfileId: string}}
   | {type: 'sketch:stroke'; payload: {roundId: string; stroke: Stroke}}
   | {type: 'sketch:clear'; payload: {roundId: string}}
@@ -233,8 +257,10 @@ export type ServerMessage =
   | {type: 'profile:changed'; payload: {profileIds: string[]}}
   | {type: 'calendar:updated'; payload: {events: CalendarEvent[]}}
   | {type: 'message:new'; payload: FamilyMessage}
+  /** Streamed to the asking client only: chunks of `text` in order, then one frame with `done: true`. */
   | {type: 'chat:reply'; payload: {conversationId: string; text: string; done: boolean}}
-  | {type: 'tonight:picks'; payload: {picks: TonightPick[]}}
+  /** Broadcast to the household, so a phone's request shows up on the TV too. */
+  | {type: 'tonight:picks'; payload: TonightPicks}
   | {type: 'sketch:state'; payload: SketchState}
   | {type: 'sketch:stroke'; payload: {roundId: string; stroke: Stroke}}
   | {type: 'sketch:clear'; payload: {roundId: string}}
