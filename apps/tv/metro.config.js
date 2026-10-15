@@ -16,6 +16,8 @@ const config = {
     unstable_enableSymlinks: true,
     nodeModulesPaths: [path.resolve(__dirname, 'node_modules'), path.resolve(workspaceRoot, 'node_modules')],
     disableHierarchicalLookup: false,
+    // Claude Code worktrees hold copies of our packages; Metro must not index them.
+    blockList: [/[\\/]\.claude[\\/]worktrees[\\/].*/],
   },
 };
 

@@ -48,7 +48,7 @@ Edit freely: this is the living plan. Tick boxes as you go. When a date slips, m
 - [x] Smart home (simulated): lamp, thermostat (16–28 °C), front door. Toggle from the phone or from a TV sheet (Select on the Home tile, focus trapped, Back closes); every screen updates live
 - [x] Shared `widgets.ts` helpers so TV, phone and server agree; 155 tests across workspaces
 - [x] Verified end to end: real server + Open-Meteo + phone companion in a phone-sized browser + scripted TV ([screenshot](../screenshots/step-3/))
-- [ ] VVD screenshots of the live tiles and the smart-home sheet
+- [x] On the VVD: live tiles, smart-home sheet (D-pad toggle, Back returns focus to the tile). VVD clock is UTC ([FL-13](../submission/friction-log.md))
 
 ## Step 4: Bedrock (Oct 17–18)
 - [ ] Tonight picks for who's here (Nova), phone AI chat; mock mode without AWS

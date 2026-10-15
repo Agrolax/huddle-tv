@@ -11,7 +11,7 @@ import {
   upcomingEvents,
   weatherSummary,
 } from '@huddle/shared';
-import {FocusableCard, FocusGrid, FocusGridItem} from '@huddle/tv-focus-kit';
+import {FocusableCard, FocusGrid, FocusGridHandle, FocusGridItem} from '@huddle/tv-focus-kit';
 import {ConnectOverlay} from '../components/ConnectOverlay';
 import {SmartHomeOverlay} from '../components/SmartHomeOverlay';
 import {WidgetTile} from '../components/WidgetTile';
@@ -44,19 +44,19 @@ export function HomeScreen({onSwitchProfiles, onOpenWidget, onFocusChange}: Prop
   const [connectOpen, setConnectOpen] = useState(false);
   const [smartHomeOpen, setSmartHomeOpen] = useState(false);
   const connectRef = useRef<View>(null);
+  const gridRef = useRef<FocusGridHandle>(null);
   const weatherLine = weatherText(weather);
 
   const closeConnect = useCallback(() => {
     setConnectOpen(false);
     // Give focus back to the chip that opened the overlay.
-    setTimeout(() => {
-      try {
-        const handle = connectRef.current && findNodeHandle(connectRef.current);
-        if (handle) FocusManager.focus(handle);
-      } catch {
-        // FocusManager is device-only.
-      }
-    }, 0);
+    setTimeout(() => restoreFocus(connectRef.current), 0);
+  }, []);
+
+  const closeSmartHome = useCallback(() => {
+    setSmartHomeOpen(false);
+    // Give focus back to the Home tile that opened the sheet.
+    setTimeout(() => restoreFocus(gridRef.current?.getCell('smart-home') ?? null), 0);
   }, []);
 
   const items = useMemo<FocusGridItem[]>(
@@ -228,6 +228,7 @@ export function HomeScreen({onSwitchProfiles, onOpenWidget, onFocusChange}: Prop
 
       <TVFocusGuideView autoFocus style={styles.gridWrap}>
         <FocusGrid
+          ref={gridRef}
           testID="home-grid"
           items={items}
           gap={space.lg}
@@ -244,7 +245,7 @@ export function HomeScreen({onSwitchProfiles, onOpenWidget, onFocusChange}: Prop
       </TVFocusGuideView>
 
       {connectOpen ? <ConnectOverlay onClose={closeConnect} /> : null}
-      {smartHomeOpen ? <SmartHomeOverlay onClose={() => setSmartHomeOpen(false)} /> : null}
+      {smartHomeOpen ? <SmartHomeOverlay onClose={closeSmartHome} /> : null}
     </View>
   );
 }
@@ -267,6 +268,15 @@ function StatusPill({status, phones}: {status: HouseholdState['status']; phones:
       <Text style={styles.pillText}>{label}</Text>
     </View>
   );
+}
+
+function restoreFocus(node: View | null): void {
+  try {
+    const handle = node && findNodeHandle(node);
+    if (handle) FocusManager.focus(handle);
+  } catch {
+    // FocusManager is device-only.
+  }
 }
 
 /** "12° cloudy", or '' before the first reading. */
