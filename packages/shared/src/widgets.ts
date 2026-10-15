@@ -60,13 +60,13 @@ export function clockTime(d: Date): string {
 
 /**
  * Short "when" for a widget row, in the viewer's local time:
- * today → "4:00", within a week → "Sat", later → "Oct 30".
+ * today → "4:00", tomorrow → "Tomorrow", within a week → "Sat", later → "Oct 30".
  */
 export function eventWhen(startIso: string, now: Date): string {
   const start = new Date(startIso);
   const days = Math.round((startOfDay(start) - startOfDay(now)) / 86_400_000);
   if (days === 0) return clockTime(start);
-  if (days === 1) return 'Tmrw';
+  if (days === 1) return 'Tomorrow';
   if (days > 1 && days < 7) return DAYS[start.getDay()]!;
   return `${MONTHS[start.getMonth()]} ${start.getDate()}`;
 }

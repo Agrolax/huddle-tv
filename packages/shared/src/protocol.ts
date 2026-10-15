@@ -27,7 +27,8 @@ export type Topic =
   | 'tonight' // Bedrock picks
   | 'sketch' // Sketch-it game state, strokes, guesses
   | 'smart-home' // simulated devices
-  | 'weather'; // current conditions for the household's place
+  | 'weather' // current conditions for the household's place
+  | 'door'; // doorbell rings and motion at the door (simulated or Ring)
 
 export const ALL_TOPICS: readonly Topic[] = [
   'household',
@@ -38,6 +39,7 @@ export const ALL_TOPICS: readonly Topic[] = [
   'sketch',
   'smart-home',
   'weather',
+  'door',
 ];
 
 /** What a client can do. Lets the server pick who gets a stroke stream or a TTS clip. */
@@ -162,6 +164,20 @@ export interface SmartDevice {
 }
 
 /** Current conditions from Open-Meteo, refreshed by the server. */
+/** Someone at the door. From the demo button now; from a Ring webhook later. */
+export interface DoorEvent {
+  id: string;
+  kind: 'ring' | 'motion';
+  /** Camera or doorbell name, e.g. "Front door". */
+  camera: string;
+  /** ISO 8601 */
+  at: string;
+  /** `demo` for the phone button, `ring` for a Ring webhook. */
+  source: 'demo' | 'ring';
+  /** Still image from the camera, if the source has one. */
+  snapshotUrl?: string;
+}
+
 export interface Weather {
   place: string;
   tempC: number;
@@ -245,6 +261,7 @@ export type ClientMessage =
   | {type: 'sketch:clear'; payload: {roundId: string}}
   | {type: 'sketch:guess'; payload: {roundId: string; text: string}}
   | {type: 'smart-home:set'; payload: {deviceId: string; on?: boolean; level?: number}}
+  | {type: 'door:simulate'; payload: {kind?: 'ring' | 'motion'}}
   | {type: 'ping'; payload: Record<string, never>};
 
 /** Server → client. */
@@ -270,6 +287,7 @@ export type ServerMessage =
     }
   | {type: 'smart-home:state'; payload: {devices: SmartDevice[]}}
   | {type: 'weather:updated'; payload: Weather}
+  | {type: 'door:event'; payload: DoorEvent}
   | {type: 'error'; payload: {code: ErrorCode; message: string; /** The client frame that caused it. */ replyTo?: string}}
   | {type: 'pong'; payload: Record<string, never>};
 
@@ -306,6 +324,7 @@ export const SERVER_MESSAGE_TOPIC: Record<ServerMessage['type'], Topic | null> =
   'sketch:guess': 'sketch',
   'smart-home:state': 'smart-home',
   'weather:updated': 'weather',
+  'door:event': 'door',
   error: null,
   pong: null,
 };
@@ -326,14 +345,15 @@ export const CLIENT_MESSAGE_ROLES: Record<ClientMessage['type'], readonly Client
   'sketch:clear': ['phone'],
   'sketch:guess': ['phone', 'voice'],
   'smart-home:set': ['tv', 'phone', 'voice'],
+  'door:simulate': ['phone'],
   ping: ['tv', 'phone', 'display', 'voice'],
 };
 
 /** Default subscriptions per role. A display shows the calm stuff unless it asks for more. */
 export const DEFAULT_TOPICS: Record<ClientRole, readonly Topic[]> = {
   tv: ALL_TOPICS,
-  phone: ['household', 'calendar', 'messages', 'chat', 'tonight', 'sketch', 'smart-home', 'weather'],
-  display: ['household', 'calendar', 'messages', 'sketch', 'weather'],
+  phone: ['household', 'calendar', 'messages', 'chat', 'tonight', 'sketch', 'smart-home', 'weather', 'door'],
+  display: ['household', 'calendar', 'messages', 'sketch', 'weather', 'door'],
   voice: ['household', 'calendar', 'tonight', 'weather'],
 };
 

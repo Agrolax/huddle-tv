@@ -7,19 +7,36 @@ export interface FocusRingProps {
   width?: number;
   /** Match the card's border radius. */
   radius?: number;
+  /**
+   * Space between the card and the ring. 0 draws the ring on top of the card's
+   * edge; > 0 draws it outside with a gap, like the Vega OS home.
+   */
+  gap?: number;
 }
 
 /**
- * A border drawn on top of a card instead of around it, so focusing never
- * shifts layout and never depends on `overflow: visible`.
+ * A ring drawn as an absolutely positioned overlay, so focusing never shifts
+ * layout. With a gap it sits outside the card; the parent must not clip it.
  */
-export function FocusRing({visible, color = '#F5A524', width = 4, radius = 16}: FocusRingProps) {
+export function FocusRing({visible, color = '#FFFFFF', width = 4, radius = 16, gap = 0}: FocusRingProps) {
   if (!visible) return null;
+  const outset = gap > 0 ? gap + width : 0;
   return (
     <View
       pointerEvents="none"
       testID="focus-ring"
-      style={[StyleSheet.absoluteFill, {borderColor: color, borderWidth: width, borderRadius: radius}]}
+      style={[
+        StyleSheet.absoluteFill,
+        {
+          top: -outset,
+          left: -outset,
+          right: -outset,
+          bottom: -outset,
+          borderColor: color,
+          borderWidth: width,
+          borderRadius: radius + outset,
+        },
+      ]}
     />
   );
 }

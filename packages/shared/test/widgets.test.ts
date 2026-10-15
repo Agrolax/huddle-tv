@@ -44,9 +44,9 @@ describe('calendar helpers', () => {
     expect(pruneEvents(events, now.getTime()).map(e => e.id)).toEqual(['yesterday']);
   });
 
-  it('eventWhen says time today, Tmrw, weekday, then date', () => {
+  it('eventWhen says time today, Tomorrow, weekday, then date', () => {
     expect(eventWhen(at(2026, 10, 15, 16).toISOString(), now)).toBe('4:00');
-    expect(eventWhen(at(2026, 10, 16, 9).toISOString(), now)).toBe('Tmrw');
+    expect(eventWhen(at(2026, 10, 16, 9).toISOString(), now)).toBe('Tomorrow');
     expect(eventWhen(at(2026, 10, 17, 10).toISOString(), now)).toBe('Sat');
     expect(eventWhen(at(2026, 10, 30, 10).toISOString(), now)).toBe('Oct 30');
   });

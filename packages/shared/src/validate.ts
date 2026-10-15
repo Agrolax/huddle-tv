@@ -173,3 +173,10 @@ export function validateChatAsk(payload: unknown): Validation<PayloadOf<'chat:as
     value: {text, ...(payload.conversationId !== undefined ? {conversationId: payload.conversationId as string} : {})},
   };
 }
+
+export function validateDoorSimulate(payload: unknown): Validation<PayloadOf<'door:simulate'>> {
+  if (payload !== undefined && !isRecord(payload)) return fail('door:simulate payload must be an object');
+  const kind = isRecord(payload) ? payload.kind : undefined;
+  if (kind !== undefined && kind !== 'ring' && kind !== 'motion') return fail('door:simulate.kind must be ring or motion');
+  return {ok: true, value: kind ? {kind: kind as 'ring' | 'motion'} : {}};
+}

@@ -38,10 +38,6 @@ function layoutGrid(getByTestId: (id: string) => any) {
   });
 }
 
-function subline(getByTestId: (id: string) => any): string {
-  return ([] as unknown[]).concat(getByTestId('greeting-subline').props.children).join('');
-}
-
 /** All text under a test id, flattened. */
 function textOf(node: any): string {
   if (typeof node === 'string' || typeof node === 'number') return String(node);
@@ -117,10 +113,10 @@ describe('household connection', () => {
     expect(server.received.filter(m => m.type === 'profile:switch').pop()?.payload).toEqual({profileIds: ['rafi', 'nanu', 'ammu']});
   });
 
-  it('a profile switch from a phone updates the greeting and the profiles tile', async () => {
-    const {getByText, server} = await goHome();
+  it('a profile switch from a phone updates the profiles tile', async () => {
+    const {getByTestId, server} = await goHome();
     act(() => server.push('profile:changed', {profileIds: ['ammu', 'abbu']}));
-    expect(getByText(/, Ammu & Abbu$/)).toBeTruthy();
+    expect(getByTestId('grid-cell-profiles').props.accessibilityLabel).toBe("Who's here: Ammu & Abbu. Select to change");
   });
 
   it("a profile switch from a phone updates Who's here", async () => {
@@ -129,21 +125,18 @@ describe('household connection', () => {
     expect(getByText('Continue with 1')).toBeTruthy();
   });
 
-  it('a message from a phone shows a toast and the greeting subline, then the toast goes', async () => {
+  it('a message from a phone shows a toast, then the toast goes', async () => {
     const {getByTestId, queryByTestId, server} = await goHome();
-    expect(subline(getByTestId)).toMatch(/connect a phone to send messages/);
     jest.useFakeTimers({doNotFake: ['setImmediate', 'nextTick', 'queueMicrotask']});
     act(() =>
       server.push('message:new', {id: 'm1', text: 'Pizza night 🍕', fromProfileId: 'ammu', fromClient: 'phone', at: new Date().toISOString()}),
     );
     expect(getByTestId('message-toast').props.accessibilityLabel).toBe('Message from Ammu: Pizza night 🍕');
-    expect(subline(getByTestId)).toMatch(/Ammu: “Pizza night 🍕”/);
+    expect(textOf(getByTestId('message-toast'))).toMatch(/AmmuPizza night 🍕/);
     act(() => {
       jest.advanceTimersByTime(9000);
     });
     expect(queryByTestId('message-toast')).toBeNull();
-    // The subline keeps the latest message.
-    expect(subline(getByTestId)).toMatch(/Pizza night/);
     jest.useRealTimers();
   });
 });
@@ -183,7 +176,8 @@ describe('Connect overlay', () => {
     await waitFor(() => expect(server.sockets.length).toBeGreaterThan(0));
     fireEvent.press(utils.getByTestId('continue'));
     fireEvent.press(utils.getByTestId('connect-phone'));
-    expect(utils.getByText("The TV can't reach the Huddle server.")).toBeTruthy();
+    expect(utils.getByText('The TV cannot connect to the Huddle server.')).toBeTruthy();
+    expect(utils.getByTestId('status-pill')).toBeTruthy();
     expect(utils.getByText(/^ws:\/\//)).toBeTruthy();
     utils.unmount();
   });
@@ -192,29 +186,29 @@ describe('Connect overlay', () => {
 describe('live widgets', () => {
   it('shows weather from the server on the clock tile and in the greeting', async () => {
     const {getByTestId} = await goHome();
-    expect(textOf(getByTestId('weather-line'))).toBe('12° cloudy · Toronto');
-    expect(subline(getByTestId)).toMatch(/12° cloudy/);
+    expect(textOf(getByTestId('weather-line'))).toBe('12° Cloudy');
   });
 
   it('updates weather when the server pushes new conditions', async () => {
     const {getByTestId, server} = await goHome();
     act(() => server.push('weather:updated', {place: 'Toronto', tempC: 3, code: 71, updatedAt: new Date().toISOString()}));
-    expect(textOf(getByTestId('weather-line'))).toBe('3° snow · Toronto');
+    expect(textOf(getByTestId('weather-line'))).toBe('3° Snow');
   });
 
   it('lists upcoming events, hides past ones, and names who they are for', async () => {
     const {getByTestId, queryByTestId} = await goHome();
     expect(textOf(getByTestId('event-e-movie'))).toMatch(/Movie night/);
-    expect(textOf(getByTestId('event-e-dentist'))).toMatch(/Dentist · Ammu/);
+    expect(textOf(getByTestId('event-e-dentist'))).toMatch(/Dentist/);
+    expect(getByTestId('event-e-dentist-ammu')).toBeTruthy();
     expect(queryByTestId('event-e-past')).toBeNull();
-    expect(subline(getByTestId)).toMatch(/^Movie night (at \d+:\d\d|Tmrw)/);
   });
 
   it('adds an event a phone created', async () => {
     const {getByTestId, server} = await goHome();
     const start = new Date(Date.now() + 3_600_000).toISOString();
     act(() => server.push('calendar:updated', {events: [{id: 'e-new', title: 'Soccer', start, profileIds: ['rafi']}]}));
-    expect(textOf(getByTestId('event-e-new'))).toMatch(/Soccer · Rafi/);
+    expect(textOf(getByTestId('event-e-new'))).toMatch(/Soccer/);
+    expect(getByTestId('event-e-new-rafi')).toBeTruthy();
   });
 
   it('shows device state and follows a phone flipping the lamp', async () => {
@@ -289,7 +283,7 @@ describe('Tonight', () => {
     const server = new FakeServer();
     server.answerTonight = false;
     const {getByTestId, queryByTestId} = await openTonight(server);
-    expect(textOf(getByTestId('tonight-loading'))).toBe('Finding picks for Rafi & Nanu…');
+    expect(textOf(getByTestId('tonight-loading'))).toBe('Getting picks…');
     act(() => server.sendTonight());
     expect(queryByTestId('tonight-loading')).toBeNull();
     expect(getByTestId('tonight-pick-0')).toBeTruthy();
@@ -307,7 +301,7 @@ describe('Tonight', () => {
     const server = new FakeServer();
     server.tonight = {picks: fakePicks('cozy'), mood: 'cozy', forProfileIds: ['nanu', 'rafi'], at: new Date().toISOString(), source: 'bedrock'};
     const utils = await goHome(server);
-    expect(textOf(utils.getByTestId('tonight-tile-pick-0'))).toBe('cozy pick 1Prime Video');
+    expect(textOf(utils.getByTestId('tonight-tile-pick-0'))).toBe('cozy pick 1');
     await waitFor(() => expect(server.tv.readyState).toBe(1));
     fireEvent.press(utils.getByTestId('grid-cell-tonight'));
     expect(requests(server)).toHaveLength(0);
@@ -323,7 +317,7 @@ describe('Tonight', () => {
     const {getByTestId, server} = await goHome();
     await waitFor(() => expect(server.tv.readyState).toBe(1));
     act(() => server.sendTonight('funny'));
-    expect(textOf(getByTestId('tonight-tile-pick-1'))).toBe('funny pick 2Prime Video');
+    expect(textOf(getByTestId('tonight-tile-pick-1'))).toBe('funny pick 2');
   });
 
   it('Back closes the sheet, stays on Home, and the tile keeps the last picks', async () => {
@@ -331,7 +325,7 @@ describe('Tonight', () => {
     expect(pressBack()).toBe(true);
     expect(queryByTestId('tonight-overlay')).toBeNull();
     expect(getByTestId('home-grid')).toBeTruthy();
-    expect(textOf(getByTestId('tonight-tile-pick-0'))).toBe('mix pick 1Prime Video');
+    expect(textOf(getByTestId('tonight-tile-pick-0'))).toBe('mix pick 1');
   });
 
   it('Done closes the sheet too', async () => {
