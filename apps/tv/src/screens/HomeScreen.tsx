@@ -1,8 +1,19 @@
 import React, {useCallback, useMemo, useRef, useState} from 'react';
 import {findNodeHandle, StyleSheet, Text, View} from 'react-native';
 import {FocusManager, TVFocusGuideView} from '@amazon-devices/react-native-kepler';
+import {
+  CalendarEvent,
+  Profile,
+  Weather,
+  deviceIsActive,
+  deviceStateLabel,
+  eventWhen,
+  upcomingEvents,
+  weatherSummary,
+} from '@huddle/shared';
 import {FocusableCard, FocusGrid, FocusGridItem} from '@huddle/tv-focus-kit';
 import {ConnectOverlay} from '../components/ConnectOverlay';
+import {SmartHomeOverlay} from '../components/SmartHomeOverlay';
 import {WidgetTile} from '../components/WidgetTile';
 import {namesFor} from '../data/profiles';
 import {HouseholdActions, HouseholdState, useHousehold} from '../net/HouseholdContext';
@@ -26,11 +37,14 @@ type Props = {
 export function HomeScreen({onSwitchProfiles, onOpenWidget, onFocusChange}: Props) {
   const now = useClock();
   const household = useHousehold();
-  const {activeProfileIds: profileIds, profiles, status} = household;
+  const {activeProfileIds: profileIds, profiles, status, events, devices, weather} = household;
   const names = namesFor(profileIds, profiles);
   const here = useMemo(() => profiles.filter(p => profileIds.includes(p.id)), [profiles, profileIds]);
+  const upcoming = useMemo(() => upcomingEvents(events, now, 3), [events, now]);
   const [connectOpen, setConnectOpen] = useState(false);
+  const [smartHomeOpen, setSmartHomeOpen] = useState(false);
   const connectRef = useRef<View>(null);
+  const weatherLine = weatherText(weather);
 
   const closeConnect = useCallback(() => {
     setConnectOpen(false);
@@ -51,13 +65,20 @@ export function HomeScreen({onSwitchProfiles, onOpenWidget, onFocusChange}: Prop
         id: 'clock',
         row: 0,
         col: 0,
-        accessibilityLabel: `Clock and weather, ${formatTime(now)}, 14 degrees and clear`,
+        accessibilityLabel: `Clock and weather, ${formatTime(now)}${weather ? `, ${weather.tempC} degrees, ${weatherSummary(weather.code)}` : ''}`,
         onPress: () => onOpenWidget?.('clock'),
         render: ({focused}) => (
           <WidgetTile label="Clock & weather" accent={colors.widget.clock} focused={focused}>
             <Text style={styles.clock}>{formatTime(now)}</Text>
             <Text style={styles.body}>{formatDate(now)}</Text>
-            <Text style={styles.mute}>14° clear · Toronto</Text>
+            <Text style={styles.mute} numberOfLines={1} testID="weather-line">
+              {weather ? `${weatherLine} · ${weather.place}` : 'Weather loading…'}
+            </Text>
+            {weather?.highC !== undefined && weather.lowC !== undefined ? (
+              <Text style={styles.mute}>
+                H {weather.highC}° · L {weather.lowC}°
+              </Text>
+            ) : null}
           </WidgetTile>
         ),
       },
@@ -66,7 +87,7 @@ export function HomeScreen({onSwitchProfiles, onOpenWidget, onFocusChange}: Prop
         row: 0,
         col: 1,
         colSpan: 2,
-        accessibilityLabel: 'Family calendar, 3 events coming up',
+        accessibilityLabel: `Family calendar, ${upcoming.length ? upcoming.map(e => `${e.title} ${eventWhen(e.start, now)}`).join(', ') : 'nothing coming up'}`,
         onPress: () => onOpenWidget?.('calendar'),
         render: ({focused}) => (
           <WidgetTile
@@ -74,15 +95,22 @@ export function HomeScreen({onSwitchProfiles, onOpenWidget, onFocusChange}: Prop
             accent={colors.widget.calendar}
             focused={focused}
             hint="Add events from your phone">
-            {CALENDAR.map(e => (
-              <View key={e.time + e.title} style={styles.eventRow}>
-                <Text style={styles.eventTime}>{e.time}</Text>
-                <Text style={styles.body} numberOfLines={1}>
-                  {e.title}
-                </Text>
-                {e.who ? <Text style={styles.mute}> · {e.who}</Text> : null}
-              </View>
-            ))}
+            {upcoming.length ? (
+              upcoming.map(e => {
+                const who = whoFor(e, profiles);
+                return (
+                  <View key={e.id} style={styles.eventRow} testID={`event-${e.id}`}>
+                    <Text style={styles.eventTime}>{eventWhen(e.start, now)}</Text>
+                    <Text style={[styles.body, styles.eventTitle]} numberOfLines={1}>
+                      {e.title}
+                      {who ? <Text style={styles.mute}> · {who}</Text> : null}
+                    </Text>
+                  </View>
+                );
+              })
+            ) : (
+              <Text style={styles.mute}>{status === 'open' ? 'Nothing coming up.' : 'Calendar offline.'}</Text>
+            )}
           </WidgetTile>
         ),
       },
@@ -147,21 +175,28 @@ export function HomeScreen({onSwitchProfiles, onOpenWidget, onFocusChange}: Prop
         id: 'smart-home',
         row: 1,
         col: 3,
-        accessibilityLabel: 'Smart home, simulated. Lamp on, thermostat 21 degrees, front door locked',
-        onPress: () => onOpenWidget?.('smart-home'),
+        accessibilityLabel: `Smart home, simulated. ${devices.map(d => `${d.name} ${deviceStateLabel(d)}`).join(', ') || 'offline'}. Select to control`,
+        onPress: () => {
+          setSmartHomeOpen(true);
+          onOpenWidget?.('smart-home');
+        },
         render: ({focused}) => (
-          <WidgetTile label="Home" accent={colors.widget.smartHome} focused={focused} hint="Simulated devices">
-            {DEVICES.map(d => (
-              <View key={d.name} style={styles.deviceRow}>
-                <Text style={styles.body}>{d.name}</Text>
-                <Text style={[styles.deviceState, d.on && styles.deviceOn]}>{d.state}</Text>
-              </View>
-            ))}
+          <WidgetTile label="Home" accent={colors.widget.smartHome} focused={focused} hint="Select to control">
+            {devices.length ? (
+              devices.map(d => (
+                <View key={d.id} style={styles.deviceRow} testID={`device-${d.id}`}>
+                  <Text style={styles.body}>{d.name}</Text>
+                  <Text style={[styles.deviceState, deviceIsActive(d) && styles.deviceOn]}>{deviceStateLabel(d)}</Text>
+                </View>
+              ))
+            ) : (
+              <Text style={styles.mute}>Devices offline.</Text>
+            )}
           </WidgetTile>
         ),
       },
     ],
-    [now, names, here, onOpenWidget, onSwitchProfiles],
+    [now, names, here, upcoming, profiles, devices, weather, weatherLine, status, onOpenWidget, onSwitchProfiles],
   );
 
   return (
@@ -172,7 +207,7 @@ export function HomeScreen({onSwitchProfiles, onOpenWidget, onFocusChange}: Prop
             {greetingFor(now)}, {names}
           </Text>
           <Text style={styles.sub} numberOfLines={1} testID="greeting-subline">
-            Dinner at 7 · 14° and clear · {sublineFor(household)}
+            {[nextUpText(upcoming[0], now), weatherLine, sublineFor(household)].filter(Boolean).join(' · ')}
           </Text>
         </View>
         <StatusPill status={status} phones={household.companions.filter(c => c.role === 'phone').length} />
@@ -209,6 +244,7 @@ export function HomeScreen({onSwitchProfiles, onOpenWidget, onFocusChange}: Prop
       </TVFocusGuideView>
 
       {connectOpen ? <ConnectOverlay onClose={closeConnect} /> : null}
+      {smartHomeOpen ? <SmartHomeOverlay onClose={() => setSmartHomeOpen(false)} /> : null}
     </View>
   );
 }
@@ -233,17 +269,25 @@ function StatusPill({status, phones}: {status: HouseholdState['status']; phones:
   );
 }
 
-const CALENDAR = [
-  {time: '4:00', title: 'Dentist', who: 'Ammu'},
-  {time: '7:00', title: 'Pizza night', who: ''},
-  {time: 'Sat', title: 'Soccer practice', who: 'Rafi'},
-];
+/** "12° cloudy", or '' before the first reading. */
+export function weatherText(w: Weather | null): string {
+  return w ? `${w.tempC}° ${weatherSummary(w.code).toLowerCase()}` : '';
+}
 
-const DEVICES = [
-  {name: 'Lamp', state: 'On', on: true},
-  {name: 'Thermostat', state: '21°', on: true},
-  {name: 'Front door', state: 'Locked', on: false},
-];
+/** "Pizza night at 7:00" for today, "Dentist Tmrw" otherwise. */
+function nextUpText(e: CalendarEvent | undefined, now: Date): string {
+  if (!e) return '';
+  const when = eventWhen(e.start, now);
+  return /\d:\d\d/.test(when) ? `${e.title} at ${when}` : `${e.title} ${when}`;
+}
+
+/** Names of the people an event is for; '' means the whole family. */
+function whoFor(e: CalendarEvent, profiles: Profile[]): string {
+  return profiles
+    .filter(p => e.profileIds.includes(p.id))
+    .map(p => p.name)
+    .join(', ');
+}
 
 const styles = StyleSheet.create({
   root: {
@@ -337,7 +381,10 @@ const styles = StyleSheet.create({
     color: colors.widget.calendar,
     fontSize: type.body,
     fontWeight: '700',
-    width: 96,
+    width: 120,
+  },
+  eventTitle: {
+    flex: 1,
   },
   avatars: {
     flexDirection: 'row',

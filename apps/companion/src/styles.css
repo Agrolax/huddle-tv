@@ -50,3 +50,16 @@ textarea:focus { outline: none; border-color: var(--accent); }
 .soon small { font-size: 12px; }
 .empty { margin: auto 0; padding: 24px 8px; text-align: center; }
 button:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+.list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.list li { min-height: 44px; }
+.when { min-width: 56px; color: var(--accent); font-weight: 700; }
+.stack { display: flex; flex-direction: column; gap: 10px; }
+input { width: 100%; min-height: 48px; padding: 0 12px; border-radius: 12px; border: 2px solid var(--raised); background: var(--bg); color: var(--ink); font: inherit; }
+input:focus { outline: none; border-color: var(--accent); }
+.small-chip { min-height: 44px; padding: 6px 14px; }
+.switch { min-width: 112px; min-height: 44px; border: 2px solid var(--raised); border-radius: 999px; background: var(--bg); color: var(--mute); font-weight: 700; cursor: pointer; }
+.switch.on { border-color: var(--ok); color: var(--ok); }
+.stepper { gap: 8px; }
+.stepper button { width: 44px; height: 44px; border: 0; border-radius: 50%; background: var(--raised); font-size: 22px; cursor: pointer; }
+.stepper strong { min-width: 48px; text-align: center; }
+button:disabled { cursor: default; }

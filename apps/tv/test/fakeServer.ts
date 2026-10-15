@@ -9,11 +9,23 @@ const PROFILES = [
   {id: 'guest', name: 'Guest', color: '#9AA3B2'},
 ];
 
+const hoursFromNow = (h: number) => new Date(Date.now() + h * 3_600_000).toISOString();
+
+export const DEVICES = [
+  {id: 'living-lamp', name: 'Lamp', room: 'Living room', kind: 'light', on: true, level: 70},
+  {id: 'thermostat', name: 'Thermostat', room: 'Hall', kind: 'thermostat', level: 21},
+  {id: 'front-door', name: 'Front door', room: 'Entry', kind: 'lock', on: true},
+];
+
+export const WEATHER = {place: 'Toronto', tempC: 12, code: 3, highC: 14, lowC: 6, updatedAt: new Date().toISOString()};
+
 /** In-process stand-in for apps/server: answers hello and pair:request, records what the TV sends. */
 export class FakeServer {
   sockets: FakeSocket[] = [];
   received: Array<{type: string; payload: any}> = [];
   online = true;
+  devices: any[] = DEVICES.map(d => ({...d}));
+  weather: any = WEATHER;
 
   createSocket = (url: string): SocketLike => {
     const s = new FakeSocket(url, this);
@@ -40,15 +52,27 @@ export class FakeServer {
           name: 'The Khans',
           profiles: PROFILES,
           activeProfileIds: ['rafi', 'nanu'],
-          events: [],
+          events: [
+            {id: 'e-movie', title: 'Movie night', start: hoursFromNow(0.5), profileIds: []},
+            {id: 'e-dentist', title: 'Dentist', start: hoursFromNow(30), profileIds: ['ammu']},
+            {id: 'e-past', title: 'Breakfast', start: hoursFromNow(-5), profileIds: []},
+          ],
           messages: [],
-          devices: [],
+          devices: this.devices,
+          weather: this.weather,
           sketch: {roundId: null, phase: 'idle', scores: {}},
           clients: [payload.client],
         },
         you: payload.client,
         token: 'tv-token',
       });
+    } else if (type === 'smart-home:set') {
+      this.devices = this.devices.map(d =>
+        d.id === payload.deviceId
+          ? {...d, ...(payload.on !== undefined ? {on: payload.on} : {}), ...(payload.level !== undefined ? {level: payload.level} : {})}
+          : d,
+      );
+      socket.deliver('smart-home:state', {devices: this.devices});
     } else if (type === 'pair:request') {
       socket.deliver('pair:code', {code: 'H7K2QP', expiresAt: Date.now() + 600_000, joinUrl: 'http://10.0.0.5:5173/?h=home&c=H7K2QP'});
     }

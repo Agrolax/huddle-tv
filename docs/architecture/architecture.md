@@ -131,7 +131,8 @@ Source of truth: [`packages/shared/src/protocol.ts`](../../packages/shared/src/p
 | `tonight:request` | tv, phone, voice | `tonight:picks` | tonight |
 | `sketch:start` / `sketch:stroke` / `sketch:clear` / `sketch:guess` | tv+phone / phone / phone / phone+voice | `sketch:state` (prompt only to the drawer), `sketch:stroke`, `sketch:clear`, `sketch:guess` | sketch |
 | `smart-home:set` | tv, phone, voice | `smart-home:state` | smart-home |
-| — | | `calendar:updated` | calendar |
+| `calendar:add` / `calendar:remove` | phone, voice | `calendar:updated` (whole sorted list) | calendar |
+| — (server polls Open-Meteo every 15 min) | | `weather:updated` | weather |
 | `pair:request` | tv | `pair:code` (to that TV only) | — |
 | `subscribe`, `ping` | all | `pong`, `error`, `client:joined/left` | — / household |
 

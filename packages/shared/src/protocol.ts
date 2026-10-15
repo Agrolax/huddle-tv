@@ -26,7 +26,8 @@ export type Topic =
   | 'chat' // AI chat replies
   | 'tonight' // Bedrock picks
   | 'sketch' // Sketch-it game state, strokes, guesses
-  | 'smart-home'; // simulated devices
+  | 'smart-home' // simulated devices
+  | 'weather'; // current conditions for the household's place
 
 export const ALL_TOPICS: readonly Topic[] = [
   'household',
@@ -36,6 +37,7 @@ export const ALL_TOPICS: readonly Topic[] = [
   'tonight',
   'sketch',
   'smart-home',
+  'weather',
 ];
 
 /** What a client can do. Lets the server pick who gets a stroke stream or a TTS clip. */
@@ -138,6 +140,18 @@ export interface SmartDevice {
   level?: number;
 }
 
+/** Current conditions from Open-Meteo, refreshed by the server. */
+export interface Weather {
+  place: string;
+  tempC: number;
+  /** WMO weather interpretation code; `weatherSummary()` turns it into words. */
+  code: number;
+  highC?: number;
+  lowC?: number;
+  /** ISO 8601, when the server fetched it. */
+  updatedAt: string;
+}
+
 export interface HouseholdSnapshot {
   householdId: string;
   name: string;
@@ -146,6 +160,8 @@ export interface HouseholdSnapshot {
   events: CalendarEvent[];
   messages: FamilyMessage[];
   devices: SmartDevice[];
+  /** `null` until the server's first fetch succeeds. */
+  weather: Weather | null;
   sketch: SketchState;
   clients: ClientInfo[];
 }
@@ -196,6 +212,8 @@ export type ClientMessage =
   | {type: 'subscribe'; payload: {topics: Topic[]}}
   | {type: 'profile:switch'; payload: {profileIds: string[]}}
   | {type: 'message:send'; payload: {text: string; fromProfileId?: string}}
+  | {type: 'calendar:add'; payload: {title: string; start: string; end?: string; profileIds: string[]}}
+  | {type: 'calendar:remove'; payload: {eventId: string}}
   | {type: 'chat:ask'; payload: {text: string; conversationId?: string}}
   | {type: 'tonight:request'; payload: {mood?: string}}
   | {type: 'sketch:start'; payload: {drawerProfileId: string}}
@@ -225,6 +243,7 @@ export type ServerMessage =
       payload: {roundId: string; profileId?: string; text: string; correct: boolean};
     }
   | {type: 'smart-home:state'; payload: {devices: SmartDevice[]}}
+  | {type: 'weather:updated'; payload: Weather}
   | {type: 'error'; payload: {code: ErrorCode; message: string; /** The client frame that caused it. */ replyTo?: string}}
   | {type: 'pong'; payload: Record<string, never>};
 
@@ -260,6 +279,7 @@ export const SERVER_MESSAGE_TOPIC: Record<ServerMessage['type'], Topic | null> =
   'sketch:clear': 'sketch',
   'sketch:guess': 'sketch',
   'smart-home:state': 'smart-home',
+  'weather:updated': 'weather',
   error: null,
   pong: null,
 };
@@ -271,6 +291,8 @@ export const CLIENT_MESSAGE_ROLES: Record<ClientMessage['type'], readonly Client
   'pair:request': ['tv'],
   'profile:switch': ['tv', 'phone', 'voice'],
   'message:send': ['phone', 'voice'],
+  'calendar:add': ['phone', 'voice'],
+  'calendar:remove': ['phone', 'voice'],
   'chat:ask': ['phone', 'voice', 'tv'],
   'tonight:request': ['tv', 'phone', 'voice'],
   'sketch:start': ['tv', 'phone'],
@@ -284,9 +306,9 @@ export const CLIENT_MESSAGE_ROLES: Record<ClientMessage['type'], readonly Client
 /** Default subscriptions per role. A display shows the calm stuff unless it asks for more. */
 export const DEFAULT_TOPICS: Record<ClientRole, readonly Topic[]> = {
   tv: ALL_TOPICS,
-  phone: ['household', 'messages', 'chat', 'tonight', 'sketch', 'smart-home'],
-  display: ['household', 'calendar', 'messages', 'sketch'],
-  voice: ['household', 'calendar', 'tonight'],
+  phone: ['household', 'calendar', 'messages', 'chat', 'tonight', 'sketch', 'smart-home', 'weather'],
+  display: ['household', 'calendar', 'messages', 'sketch', 'weather'],
+  voice: ['household', 'calendar', 'tonight', 'weather'],
 };
 
 // ---------------------------------------------------------------------------

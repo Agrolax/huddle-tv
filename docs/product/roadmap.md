@@ -1,6 +1,6 @@
 # Roadmap
 
-Today: Oct 14 · Submit: **Oct 22** · Hard deadline: Oct 23, 3:00pm EDT
+Today: Oct 15 · Submit: **Oct 22** · Hard deadline: Oct 23, 3:00pm EDT
 
 Scope locked Oct 14 ([PRD §2](PRD.md#2-pitch)): widgets (clock/weather, family calendar, Bedrock Tonight, profiles), phone companion via QR (switch profile, message the TV, AI chat), one game (Sketch it), simulated smart-home widget. Polly/Transcribe are stretch.
 
@@ -41,8 +41,14 @@ Edit freely: this is the living plan. Tick boxes as you go. When a date slips, m
 - [ ] Scan with a real phone on the same Wi-Fi (needs a person with a phone)
 - [ ] **Verify Bedrock access** (quota-0 risk) before step 4
 
-## Step 3: Widgets live (Oct 16–17)
-- [ ] Weather (Open-Meteo), calendar from server, profiles from server, smart home simulated + toggled from the phone
+## Step 3: Widgets live (Oct 15) ✅
+- [x] Weather: server polls Open-Meteo every 15 min (no key), pushes `weather:updated`; clock tile shows temp, summary, high/low; greeting subline uses it
+- [x] Family calendar from the server: three demo events placed relative to today; phone adds (title, day, time, who) and removes; TV shows the next three with "4:00 / Tmrw / Sat" and who it's for
+- [x] Profiles from the server (since step 2); calendar rows name their people
+- [x] Smart home (simulated): lamp, thermostat (16–28 °C), front door. Toggle from the phone or from a TV sheet (Select on the Home tile, focus trapped, Back closes); every screen updates live
+- [x] Shared `widgets.ts` helpers so TV, phone and server agree; 155 tests across workspaces
+- [x] Verified end to end: real server + Open-Meteo + phone companion in a phone-sized browser + scripted TV ([screenshot](../screenshots/step-3/))
+- [ ] VVD screenshots of the live tiles and the smart-home sheet
 
 ## Step 4: Bedrock (Oct 17–18)
 - [ ] Tonight picks for who's here (Nova), phone AI chat; mock mode without AWS
@@ -81,3 +87,4 @@ Edit freely: this is the living plan. Tick boxes as you go. When a date slips, m
 | Oct 14 | **Scope locked**: widgets (clock/weather, family calendar, Bedrock Tonight, profiles), phone companion via QR (switch profile, message TV, AI chat), Sketch it (phone draws, TV shows, phones guess, Bedrock prompts), simulated smart-home widget. Polly/Transcribe stretch. Board, photos, agenda, apps row, trivia, Echo voice phase dropped or moved to stretch. Plan is now steps, one PR each |
 | Oct 14 | Step 1 shell: npm workspaces monorepo, `tv-focus-kit`, home grid on the VVD, shared protocol with a `display` role. Echo Show researched: no Vega app path; Alexa skill + HTML web app is the route ([echo-show.md](../research/echo-show.md)) |
 | Oct 14 | Step 2 pairing: server pair codes + TV claim/tokens + validation, TV Connect overlay with QR, live profile switch and phone → TV messages. QR lib, async-storage and mmkv aren't in `vega project install`'s OS 1.2 profile even though the docs list them (FL-09); installed by version. Hint text raised to 24 px |
+| Oct 15 | Step 3 widgets live: Open-Meteo weather, server calendar with phone add/remove, simulated smart home controlled from phone and TV. Protocol adds `calendar:add/remove`, `weather` topic |
