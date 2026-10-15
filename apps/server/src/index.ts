@@ -2,6 +2,7 @@ import {createServer} from 'node:http';
 import {WebSocketServer} from 'ws';
 import {Hub} from './hub.js';
 import {lanAddress} from './net.js';
+import {DEFAULT_PLACE, pollWeather} from './weather.js';
 
 const PORT = Number(process.env.PORT ?? 8787);
 const HOST = process.env.HOST ?? '0.0.0.0';
@@ -22,6 +23,16 @@ const http = createServer((req, res) => {
   res.writeHead(404);
   res.end();
 });
+
+// Open-Meteo needs no key. Override the place with HUDDLE_PLACE / HUDDLE_LAT / HUDDLE_LON.
+const place = {
+  name: process.env.HUDDLE_PLACE ?? DEFAULT_PLACE.name,
+  latitude: Number(process.env.HUDDLE_LAT ?? DEFAULT_PLACE.latitude),
+  longitude: Number(process.env.HUDDLE_LON ?? DEFAULT_PLACE.longitude),
+};
+if (process.env.HUDDLE_WEATHER !== 'off') {
+  pollWeather(place, w => hub.setWeather(w), {log: msg => console.warn(`[weather] ${msg}`)});
+}
 
 const wss = new WebSocketServer({server: http, path: '/ws', maxPayload: 64 * 1024});
 

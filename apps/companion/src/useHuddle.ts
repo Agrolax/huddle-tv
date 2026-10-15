@@ -1,11 +1,14 @@
 import {useCallback, useEffect, useRef, useState} from 'react';
 import {
+  CalendarEvent,
   ConnectionStatus,
   FamilyMessage,
   HouseholdSnapshot,
   HuddleSocket,
   MESSAGE_MAX_LENGTH,
   ServerEnvelope,
+  SmartDevice,
+  Weather,
   parseJoinParams,
 } from '@huddle/shared';
 import {Session, loadSession, newClientId, saveSession, serverUrl} from './session';
@@ -15,6 +18,9 @@ export interface HuddleState {
   error?: {code: string; message: string};
   snapshot: HouseholdSnapshot | null;
   activeProfileIds: string[];
+  events: CalendarEvent[];
+  devices: SmartDevice[];
+  weather: Weather | null;
   meId?: string;
   /** Last message this phone sent that the server echoed back. */
   lastSent?: FamilyMessage;
@@ -27,6 +33,9 @@ export function useHuddle() {
     status: session ? 'idle' : 'unpaired',
     snapshot: null,
     activeProfileIds: [],
+    events: [],
+    devices: [],
+    weather: null,
     meId: session?.meId,
   });
   const socketRef = useRef<HuddleSocket | null>(null);
@@ -57,7 +66,7 @@ export function useHuddle() {
           ...(sessionRef.current?.meId ? {profileId: sessionRef.current.meId} : {}),
         },
         capabilities: {touch: true, text: true, screen: 'phone'},
-        topics: ['household', 'messages'],
+        topics: ['household', 'messages', 'calendar', 'smart-home', 'weather'],
         ...(sessionRef.current?.pairCode ? {pairCode: sessionRef.current.pairCode} : {}),
       }),
       onToken: token => update({token}),
@@ -67,9 +76,25 @@ export function useHuddle() {
         switch (msg.type) {
           case 'welcome': {
             const {snapshot} = msg.payload as {snapshot: HouseholdSnapshot};
-            setState(s => ({...s, snapshot, activeProfileIds: snapshot.activeProfileIds}));
+            setState(s => ({
+              ...s,
+              snapshot,
+              activeProfileIds: snapshot.activeProfileIds,
+              events: snapshot.events,
+              devices: snapshot.devices,
+              weather: snapshot.weather ?? s.weather,
+            }));
             break;
           }
+          case 'calendar:updated':
+            setState(s => ({...s, events: (msg.payload as {events: CalendarEvent[]}).events}));
+            break;
+          case 'smart-home:state':
+            setState(s => ({...s, devices: (msg.payload as {devices: SmartDevice[]}).devices}));
+            break;
+          case 'weather:updated':
+            setState(s => ({...s, weather: msg.payload as Weather}));
+            break;
           case 'profile:changed':
             setState(s => ({...s, activeProfileIds: (msg.payload as {profileIds: string[]}).profileIds}));
             break;
@@ -107,6 +132,19 @@ export function useHuddle() {
     [],
   );
 
+  const addEvent = useCallback((event: {title: string; start: string; profileIds: string[]}) => {
+    const title = event.title.trim();
+    if (!title || Number.isNaN(Date.parse(event.start))) return false;
+    return socketRef.current?.send('calendar:add', {...event, title}) ?? false;
+  }, []);
+
+  const removeEvent = useCallback((eventId: string) => socketRef.current?.send('calendar:remove', {eventId}) ?? false, []);
+
+  const setDevice = useCallback(
+    (deviceId: string, change: {on?: boolean; level?: number}) => socketRef.current?.send('smart-home:set', {deviceId, ...change}) ?? false,
+    [],
+  );
+
   const setMe = useCallback(
     (meId: string) => {
       const changed = sessionRef.current?.meId !== meId;
@@ -122,7 +160,7 @@ export function useHuddle() {
     [update],
   );
 
-  return {...state, switchProfiles, sendMessage, setMe};
+  return {...state, switchProfiles, sendMessage, addEvent, removeEvent, setDevice, setMe};
 }
 
 function resolveSession(): Session | null {

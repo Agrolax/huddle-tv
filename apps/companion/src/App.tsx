@@ -1,6 +1,7 @@
 import {useEffect, useState} from 'react';
-import {MESSAGE_MAX_LENGTH, Profile} from '@huddle/shared';
+import {MESSAGE_MAX_LENGTH, Profile, weatherSummary} from '@huddle/shared';
 import {useHuddle} from './useHuddle';
+import {CalendarCard, SmartHomeCard} from './Widgets';
 
 export function App() {
   const huddle = useHuddle();
@@ -38,6 +39,11 @@ export function App() {
       <header className="header">
         <p className="eyebrow">Huddle</p>
         <h1>{snapshot.name}</h1>
+        {huddle.weather ? (
+          <p className="muted small" data-testid="weather">
+            {huddle.weather.tempC}° {weatherSummary(huddle.weather.code).toLowerCase()} · {huddle.weather.place}
+          </p>
+        ) : null}
         <p className={`pill ${status === 'open' ? 'ok' : 'warn'}`} data-testid="status">
           <span className="dot" /> {status === 'open' ? 'Connected to the TV' : 'Reconnecting…'}
         </p>
@@ -45,6 +51,15 @@ export function App() {
       <WhoAmI profiles={snapshot.profiles} meId={huddle.meId} onPick={huddle.setMe} />
       <WhoIsWatching profiles={snapshot.profiles} active={huddle.activeProfileIds} onChange={huddle.switchProfiles} disabled={status !== 'open'} />
       <SendMessage onSend={huddle.sendMessage} disabled={status !== 'open'} lastSentAt={huddle.lastSent?.at} />
+      <CalendarCard
+        events={huddle.events}
+        profiles={snapshot.profiles}
+        meId={huddle.meId}
+        onAdd={huddle.addEvent}
+        onRemove={huddle.removeEvent}
+        disabled={status !== 'open'}
+      />
+      <SmartHomeCard devices={huddle.devices} onSet={huddle.setDevice} disabled={status !== 'open'} />
       <section className="card soon">
         <button disabled>Ask the AI <small>coming soon</small></button>
         <button disabled>Sketch it <small>coming soon</small></button>

@@ -1,5 +1,6 @@
 import React, {createContext, useCallback, useContext, useEffect, useMemo, useRef, useState} from 'react';
 import {
+  CalendarEvent,
   ClientMessage,
   ConnectionStatus,
   FamilyMessage,
@@ -8,6 +9,8 @@ import {
   PairCode,
   Profile,
   ServerEnvelope,
+  SmartDevice,
+  Weather,
 } from '@huddle/shared';
 import {HOUSEHOLD_ID, SERVER_URL} from '../config.generated';
 import {PROFILES} from '../data/profiles';
@@ -29,6 +32,9 @@ export interface HouseholdState {
   pairCode: PairCode | null;
   /** Newest message from a phone; drives the toast and the greeting subline. */
   latestMessage: FamilyMessage | null;
+  events: CalendarEvent[];
+  devices: SmartDevice[];
+  weather: Weather | null;
 }
 
 export interface HouseholdActions {
@@ -36,6 +42,8 @@ export interface HouseholdActions {
   requestPairCode: () => void;
   /** Set who's here locally and tell the server. */
   switchProfiles: (ids: string[]) => void;
+  /** Flip or set a simulated device. The tile updates when the server echoes `smart-home:state`. */
+  setDevice: (deviceId: string, change: {on?: boolean; level?: number}) => void;
   senderName: (msg: FamilyMessage) => string;
 }
 
@@ -69,6 +77,9 @@ export function HouseholdProvider({children, initialProfileIds, createSocket, se
     companions: [],
     pairCode: null,
     latestMessage: null,
+    events: [],
+    devices: [],
+    weather: null,
   });
   const socketRef = useRef<HuddleSocket | null>(null);
   const wantPairCode = useRef(false);
@@ -89,6 +100,9 @@ export function HouseholdProvider({children, initialProfileIds, createSocket, se
           householdName: snapshot.name,
           profiles: snapshot.profiles.length ? snapshot.profiles : s.profiles,
           companions: snapshot.clients.filter(c => c.role !== 'tv'),
+          events: snapshot.events,
+          devices: snapshot.devices,
+          weather: snapshot.weather ?? s.weather,
         }));
         if (wantPairCode.current) socketRef.current?.send('pair:request', {});
         break;
@@ -102,6 +116,15 @@ export function HouseholdProvider({children, initialProfileIds, createSocket, se
         setState(s => ({...s, activeProfileIds: profileIds}));
         break;
       }
+      case 'calendar:updated':
+        setState(s => ({...s, events: (msg.payload as {events: CalendarEvent[]}).events}));
+        break;
+      case 'smart-home:state':
+        setState(s => ({...s, devices: (msg.payload as {devices: SmartDevice[]}).devices}));
+        break;
+      case 'weather:updated':
+        setState(s => ({...s, weather: msg.payload as Weather}));
+        break;
       case 'message:new':
         setState(s => ({...s, latestMessage: msg.payload as FamilyMessage}));
         break;
@@ -173,14 +196,18 @@ export function HouseholdProvider({children, initialProfileIds, createSocket, se
     socketRef.current?.send<Extract<ClientMessage, {type: 'profile:switch'}>>('profile:switch', {profileIds: ids});
   }, []);
 
+  const setDevice = useCallback((deviceId: string, change: {on?: boolean; level?: number}) => {
+    socketRef.current?.send<Extract<ClientMessage, {type: 'smart-home:set'}>>('smart-home:set', {deviceId, ...change});
+  }, []);
+
   const senderName = useCallback(
     (msg: FamilyMessage) => state.profiles.find(p => p.id === msg.fromProfileId)?.name ?? 'A phone',
     [state.profiles],
   );
 
   const value = useMemo(
-    () => ({...state, requestPairCode, switchProfiles, senderName}),
-    [state, requestPairCode, switchProfiles, senderName],
+    () => ({...state, requestPairCode, switchProfiles, setDevice, senderName}),
+    [state, requestPairCode, switchProfiles, setDevice, senderName],
   );
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

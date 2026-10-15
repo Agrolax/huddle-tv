@@ -38,6 +38,18 @@ function layoutGrid(getByTestId: (id: string) => any) {
   });
 }
 
+function subline(getByTestId: (id: string) => any): string {
+  return ([] as unknown[]).concat(getByTestId('greeting-subline').props.children).join('');
+}
+
+/** All text under a test id, flattened. */
+function textOf(node: any): string {
+  if (typeof node === 'string' || typeof node === 'number') return String(node);
+  if (!node) return '';
+  const children = node.children ?? [];
+  return children.map(textOf).join('');
+}
+
 async function goHome() {
   const utils = await renderApp();
   fireEvent.press(utils.getByTestId('continue'));
@@ -119,19 +131,19 @@ describe('household connection', () => {
 
   it('a message from a phone shows a toast and the greeting subline, then the toast goes', async () => {
     const {getByTestId, queryByTestId, server} = await goHome();
-    expect(getByTestId('greeting-subline').props.children.join('')).toMatch(/connect a phone to send messages/);
+    expect(subline(getByTestId)).toMatch(/connect a phone to send messages/);
     jest.useFakeTimers({doNotFake: ['setImmediate', 'nextTick', 'queueMicrotask']});
     act(() =>
       server.push('message:new', {id: 'm1', text: 'Pizza night 🍕', fromProfileId: 'ammu', fromClient: 'phone', at: new Date().toISOString()}),
     );
     expect(getByTestId('message-toast').props.accessibilityLabel).toBe('Message from Ammu: Pizza night 🍕');
-    expect(getByTestId('greeting-subline').props.children.join('')).toMatch(/Ammu: “Pizza night 🍕”/);
+    expect(subline(getByTestId)).toMatch(/Ammu: “Pizza night 🍕”/);
     act(() => {
       jest.advanceTimersByTime(9000);
     });
     expect(queryByTestId('message-toast')).toBeNull();
     // The subline keeps the latest message.
-    expect(getByTestId('greeting-subline').props.children.join('')).toMatch(/Pizza night/);
+    expect(subline(getByTestId)).toMatch(/Pizza night/);
     jest.useRealTimers();
   });
 });
@@ -174,5 +186,76 @@ describe('Connect overlay', () => {
     expect(utils.getByText("The TV can't reach the Huddle server.")).toBeTruthy();
     expect(utils.getByText(/^ws:\/\//)).toBeTruthy();
     utils.unmount();
+  });
+});
+
+describe('live widgets', () => {
+  it('shows weather from the server on the clock tile and in the greeting', async () => {
+    const {getByTestId} = await goHome();
+    expect(textOf(getByTestId('weather-line'))).toBe('12° cloudy · Toronto');
+    expect(subline(getByTestId)).toMatch(/12° cloudy/);
+  });
+
+  it('updates weather when the server pushes new conditions', async () => {
+    const {getByTestId, server} = await goHome();
+    act(() => server.push('weather:updated', {place: 'Toronto', tempC: 3, code: 71, updatedAt: new Date().toISOString()}));
+    expect(textOf(getByTestId('weather-line'))).toBe('3° snow · Toronto');
+  });
+
+  it('lists upcoming events, hides past ones, and names who they are for', async () => {
+    const {getByTestId, queryByTestId} = await goHome();
+    expect(textOf(getByTestId('event-e-movie'))).toMatch(/Movie night/);
+    expect(textOf(getByTestId('event-e-dentist'))).toMatch(/Dentist · Ammu/);
+    expect(queryByTestId('event-e-past')).toBeNull();
+    expect(subline(getByTestId)).toMatch(/^Movie night (at \d+:\d\d|Tmrw)/);
+  });
+
+  it('adds an event a phone created', async () => {
+    const {getByTestId, server} = await goHome();
+    const start = new Date(Date.now() + 3_600_000).toISOString();
+    act(() => server.push('calendar:updated', {events: [{id: 'e-new', title: 'Soccer', start, profileIds: ['rafi']}]}));
+    expect(textOf(getByTestId('event-e-new'))).toMatch(/Soccer · Rafi/);
+  });
+
+  it('shows device state and follows a phone flipping the lamp', async () => {
+    const {getByTestId, server} = await goHome();
+    expect(textOf(getByTestId('device-living-lamp'))).toBe('LampOn');
+    expect(textOf(getByTestId('device-front-door'))).toBe('Front doorLocked');
+    act(() => server.push('smart-home:state', {devices: server.devices.map(d => (d.id === 'living-lamp' ? {...d, on: false} : d))}));
+    expect(textOf(getByTestId('device-living-lamp'))).toBe('LampOff');
+  });
+});
+
+describe('Smart home sheet', () => {
+  async function openSheet() {
+    const utils = await goHome();
+    await waitFor(() => expect(utils.server.tv.readyState).toBe(1));
+    const tile = utils.getByTestId('grid-cell-smart-home');
+    fireEvent.press(tile);
+    expect(utils.getByTestId('smart-home-overlay')).toBeTruthy();
+    return utils;
+  }
+
+  it('Select on the Home tile opens the sheet; toggling the lamp tells the server', async () => {
+    const {getByTestId, server} = await openSheet();
+    fireEvent.press(getByTestId('smart-living-lamp'));
+    expect(server.received.filter(m => m.type === 'smart-home:set').pop()?.payload).toEqual({deviceId: 'living-lamp', on: false});
+    expect(textOf(getByTestId('smart-state-living-lamp'))).toBe('Off');
+  });
+
+  it('Warmer raises the thermostat; Unlock opens the door', async () => {
+    const {getByTestId, server} = await openSheet();
+    fireEvent.press(getByTestId('smart-thermostat-up'));
+    expect(textOf(getByTestId('smart-state-thermostat'))).toBe('22°');
+    fireEvent.press(getByTestId('smart-front-door'));
+    expect(server.received.filter(m => m.type === 'smart-home:set').pop()?.payload).toEqual({deviceId: 'front-door', on: false});
+    expect(textOf(getByTestId('smart-state-front-door'))).toBe('Unlocked');
+  });
+
+  it('Back closes the sheet and stays on Home', async () => {
+    const {queryByTestId, getByTestId} = await openSheet();
+    expect(pressBack()).toBe(true);
+    expect(queryByTestId('smart-home-overlay')).toBeNull();
+    expect(getByTestId('home-grid')).toBeTruthy();
   });
 });

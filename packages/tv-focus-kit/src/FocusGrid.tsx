@@ -1,4 +1,4 @@
-import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
+import React, {forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState} from 'react';
 import {findNodeHandle, LayoutChangeEvent, StyleProp, StyleSheet, View, ViewStyle} from 'react-native';
 import {FocusableCard, FocusableCardProps} from './FocusableCard';
 import {buildNeighborMap, GridCell, gridSize, readingOrder, rememberFocus, RowMemory, validateGrid} from './grid';
@@ -32,12 +32,18 @@ export interface FocusGridProps
   testID?: string;
 }
 
+/** Imperative access, e.g. to hand focus back to a cell after an overlay closes. */
+export interface FocusGridHandle {
+  /** The cell's focusable view, once laid out. */
+  getCell: (id: string) => View | null;
+}
+
 /**
  * A widget grid laid out in rows × columns (cells may span), with
  * deterministic D-pad navigation from `grid.ts` wired into `nextFocus*`.
  * Edges hand focus back to the platform so it can leave the grid.
  */
-export function FocusGrid({
+export const FocusGrid = forwardRef<FocusGridHandle, FocusGridProps>(function FocusGrid({
   items,
   gap = 24,
   columns,
@@ -50,7 +56,7 @@ export function FocusGrid({
   cellStyle,
   testID,
   ...cardProps
-}: FocusGridProps) {
+}, ref) {
   if (__DEV__) validateGrid(items);
 
   const size = useMemo(() => gridSize(items), [items]);
@@ -61,6 +67,7 @@ export function FocusGrid({
   const [memory, setMemory] = useState<RowMemory>({});
   const [handles, setHandles] = useState<Record<string, number>>({});
   const refs = useRef<Record<string, View | null>>({});
+  useImperativeHandle(ref, () => ({getCell: id => refs.current[id] ?? null}), []);
 
   const onLayout = useCallback((e: LayoutChangeEvent) => {
     const {width, height} = e.nativeEvent.layout;
@@ -138,7 +145,7 @@ export function FocusGrid({
         : null}
     </View>
   );
-}
+});
 
 const styles = StyleSheet.create({
   root: {

@@ -75,7 +75,7 @@ Built in steps. Each step ends with a PR, running on the Vega Virtual Device wit
 |---|---|---|
 | 1 | **Shell**: npm workspaces monorepo, `tv-focus-kit` (FocusableCard, FocusGrid, focus ring), home screen with placeholder widget tiles, "Who's here?", shared protocol types, Echo Show research | ✅ Oct 14 |
 | 2 | **Server + companion pairing**: `apps/server` WebSocket hub, QR pairing, phone switches profile, phone → TV message | ✅ Oct 14 |
-| 3 | **Widgets live**: clock/weather (Open-Meteo), family calendar (server data), profiles, smart-home (simulated, toggled from the phone) | |
+| 3 | **Widgets live**: clock/weather (Open-Meteo), family calendar (server data), profiles, smart-home (simulated, toggled from the phone) | ✅ Oct 15 |
 | 4 | **Bedrock**: Tonight picks for who's here, phone AI chat | |
 | 5 | **Sketch it**: phone draws, strokes stream to the TV, phones guess, Bedrock prompts, scores | |
 | 6 | Polish, focus/Back audit, judge setup, demo video | |

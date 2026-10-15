@@ -16,3 +16,6 @@ npm test -w @huddle/server        # node:test against a real ws server on a rand
 | `PORT` / `HOST` | `8787` / `0.0.0.0` |
 | `HUDDLE_LAN_IP` | detected (en* interfaces first) |
 | `COMPANION_URL` | `http://<LAN IP>:5173/` (the QR encodes this + `?h=&c=`) |
+| `HUDDLE_PLACE` / `HUDDLE_LAT` / `HUDDLE_LON` | `Toronto` / `43.65` / `-79.38` (Open-Meteo, no key) |
+| `HUDDLE_WEATHER` | on; `off` skips the poller (offline demos) |
+| `TZ` | system. Demo calendar events are placed in server-local time, so set it on a hosted box |

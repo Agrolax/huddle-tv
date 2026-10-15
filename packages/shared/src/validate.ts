@@ -105,3 +105,49 @@ export function validateEmpty(type: string, payload: unknown): Validation<Record
   if (payload !== undefined && !isRecord(payload)) return fail(`${type} payload must be an object`);
   return {ok: true, value: {}};
 }
+
+export const EVENT_TITLE_MAX_LENGTH = 80;
+
+function isIsoDate(v: unknown): v is string {
+  return typeof v === 'string' && v.length <= 40 && !Number.isNaN(Date.parse(v));
+}
+
+export function validateCalendarAdd(payload: unknown): Validation<PayloadOf<'calendar:add'>> {
+  if (!isRecord(payload) || typeof payload.title !== 'string') return fail('calendar:add needs title: string');
+  const title = payload.title.trim();
+  if (!title) return fail('calendar:add.title is empty');
+  if ([...title].length > EVENT_TITLE_MAX_LENGTH) return fail(`calendar:add.title is longer than ${EVENT_TITLE_MAX_LENGTH} characters`);
+  if (!isIsoDate(payload.start)) return fail('calendar:add.start must be an ISO 8601 date');
+  if (payload.end !== undefined) {
+    if (!isIsoDate(payload.end)) return fail('calendar:add.end must be an ISO 8601 date');
+    if (Date.parse(payload.end) < Date.parse(payload.start)) return fail('calendar:add.end is before start');
+  }
+  const ids = payload.profileIds ?? [];
+  if (!Array.isArray(ids) || ids.length > 20 || !ids.every(isId)) return fail('calendar:add.profileIds must be valid ids');
+  return {
+    ok: true,
+    value: {
+      title,
+      start: new Date(payload.start).toISOString(),
+      ...(payload.end !== undefined ? {end: new Date(payload.end as string).toISOString()} : {}),
+      profileIds: [...new Set(ids as string[])],
+    },
+  };
+}
+
+export function validateCalendarRemove(payload: unknown): Validation<PayloadOf<'calendar:remove'>> {
+  if (!isRecord(payload) || !isId(payload.eventId)) return fail('calendar:remove needs eventId');
+  return {ok: true, value: {eventId: payload.eventId}};
+}
+
+export function validateSmartHomeSet(payload: unknown): Validation<PayloadOf<'smart-home:set'>> {
+  if (!isRecord(payload) || !isId(payload.deviceId)) return fail('smart-home:set needs deviceId');
+  const {on, level} = payload;
+  if (on !== undefined && typeof on !== 'boolean') return fail('smart-home:set.on must be a boolean');
+  if (level !== undefined && (typeof level !== 'number' || !Number.isFinite(level))) return fail('smart-home:set.level must be a number');
+  if (on === undefined && level === undefined) return fail('smart-home:set needs on or level');
+  return {
+    ok: true,
+    value: {deviceId: payload.deviceId, ...(on !== undefined ? {on} : {}), ...(level !== undefined ? {level: level as number} : {})},
+  };
+}

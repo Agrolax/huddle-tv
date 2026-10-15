@@ -17,10 +17,16 @@ import {
   isClientMessageType,
   parseEnvelope,
   shouldDeliver,
+  Weather,
+  applyDeviceSet,
+  pruneEvents,
+  validateCalendarAdd,
+  validateCalendarRemove,
   validateEmpty,
   validateHello,
   validateMessageSend,
   validateProfileSwitch,
+  validateSmartHomeSet,
   validateSubscribe,
 } from '@huddle/shared';
 import {demoHousehold} from './household.js';
@@ -74,6 +80,7 @@ export class Hub {
   private readonly households = new Map<string, Household>();
   private readonly connections = new Set<Connection>();
   private nextConnId = 1;
+  private weather: Weather | null = null;
   private readonly now: () => number;
   private readonly random: () => number;
   private readonly pairTtlMs: number;
@@ -98,6 +105,15 @@ export class Hub {
 
   get connectionCount(): number {
     return this.connections.size;
+  }
+
+  /** New conditions from the weather poller: stored for new households and pushed to every live one. */
+  setWeather(weather: Weather): void {
+    this.weather = weather;
+    for (const hh of this.households.values()) {
+      hh.snapshot.weather = weather;
+      this.broadcast(hh, 'weather:updated', weather);
+    }
   }
 
   /** For tests and the health endpoint. */
@@ -171,8 +187,7 @@ export class Hub {
       case 'profile:switch': {
         const v = validateProfileSwitch(payload);
         if (!v.ok) return this.error(conn, 'bad-request', v.error, frameId);
-        const known = new Set(hh.snapshot.profiles.map(p => p.id));
-        const unknown = v.value.profileIds.filter(id => !known.has(id));
+        const unknown = this.unknownProfiles(hh, v.value.profileIds);
         if (unknown.length) return this.error(conn, 'bad-request', `unknown profile(s): ${unknown.join(', ')}`, frameId);
         hh.snapshot.activeProfileIds = v.value.profileIds;
         this.broadcast(hh, 'profile:changed', {profileIds: hh.snapshot.activeProfileIds});
@@ -196,10 +211,45 @@ export class Hub {
         this.broadcast(hh, 'message:new', message);
         return;
       }
+      case 'calendar:add': {
+        const v = validateCalendarAdd(payload);
+        if (!v.ok) return this.error(conn, 'bad-request', v.error, frameId);
+        const unknown = this.unknownProfiles(hh, v.value.profileIds);
+        if (unknown.length) return this.error(conn, 'bad-request', `unknown profile(s): ${unknown.join(', ')}`, frameId);
+        hh.snapshot.events = pruneEvents([...hh.snapshot.events, {id: frameId, ...v.value}], this.now());
+        this.broadcast(hh, 'calendar:updated', {events: hh.snapshot.events});
+        return;
+      }
+      case 'calendar:remove': {
+        const v = validateCalendarRemove(payload);
+        if (!v.ok) return this.error(conn, 'bad-request', v.error, frameId);
+        const events = hh.snapshot.events.filter(e => e.id !== v.value.eventId);
+        if (events.length === hh.snapshot.events.length) {
+          return this.error(conn, 'bad-request', `unknown event ${v.value.eventId}`, frameId);
+        }
+        hh.snapshot.events = events;
+        this.broadcast(hh, 'calendar:updated', {events});
+        return;
+      }
+      case 'smart-home:set': {
+        const v = validateSmartHomeSet(payload);
+        if (!v.ok) return this.error(conn, 'bad-request', v.error, frameId);
+        const device = hh.snapshot.devices.find(d => d.id === v.value.deviceId);
+        if (!device) return this.error(conn, 'bad-request', `unknown device ${v.value.deviceId}`, frameId);
+        const next = applyDeviceSet(device, v.value);
+        hh.snapshot.devices = hh.snapshot.devices.map(d => (d.id === device.id ? next : d));
+        this.broadcast(hh, 'smart-home:state', {devices: hh.snapshot.devices});
+        return;
+      }
       default:
-        // Chat, Tonight, Sketch it and smart home land in later steps.
+        // Chat, Tonight and Sketch it land in later steps.
         this.error(conn, 'not-implemented', `${type} is not implemented yet`, frameId);
     }
+  }
+
+  private unknownProfiles(hh: Household, ids: readonly string[]): string[] {
+    const known = new Set(hh.snapshot.profiles.map(p => p.id));
+    return ids.filter(id => !known.has(id));
   }
 
   private hello(conn: Connection, payload: unknown, frameId: string): void {
@@ -277,7 +327,7 @@ export class Hub {
   }
 
   private createHousehold(id: string): Household {
-    const hh: Household = {snapshot: demoHousehold(id), tvToken: null, pairCodes: new Map(), tokens: new Map()};
+    const hh: Household = {snapshot: demoHousehold(id, this.now(), this.weather), tvToken: null, pairCodes: new Map(), tokens: new Map()};
     this.households.set(id, hh);
     return hh;
   }

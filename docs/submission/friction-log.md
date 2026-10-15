@@ -122,3 +122,12 @@ Severity: **Blocker** · **Major** · **Minor** · **Papercut**
 - **Severity:** Minor
 - **Workaround:** Probed with `vega exec vda shell "curl -s http://<host>:<port>/"`, then used the LAN IP so the phone and the TV share one address (README › Networking).
 - **Suggestion:** A "Networking from the Virtual Device" page: host aliases, cleartext policy, required privileges (if any), and `vda reverse` for real devices.
+
+### FL-13 — The Vega Virtual Device clock runs in UTC
+- **Tool / SDK:** Vega Virtual Device (SDK 0.24.12112)
+- **Task attempted:** Show the family calendar and a clock in local time on the TV.
+- **Expected:** The VVD uses the host Mac's time zone (Toronto, EDT), like the Android emulator does by default.
+- **Actual:** `new Date()` on the VVD reports UTC. The clock showed 6:24 when the Mac showed 2:24 pm, and a 7 pm event showed as 11:00. Nothing in `vega virtual-device start --help` or the VVD docs sets the time zone.
+- **Severity:** Minor (demo screenshots look wrong; real devices use the user's zone)
+- **Workaround:** None yet. Times are correct relative to each other; we record the demo with this in mind.
+- **Suggestion:** Inherit the host time zone, or add a `--timezone` option to `vega virtual-device start`.

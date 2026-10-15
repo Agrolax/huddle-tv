@@ -4,3 +4,4 @@ export * from './protocol';
 export * from './pairing';
 export * from './validate';
 export * from './socket';
+export * from './widgets';
