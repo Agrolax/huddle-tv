@@ -21,6 +21,7 @@ export function demoHousehold(householdId: string, now = Date.now(), weather: We
       {id: 'front-door', name: 'Front door', room: 'Entry', kind: 'lock', on: true},
     ],
     weather,
+    tonight: null,
     sketch: {roundId: null, phase: 'idle', scores: {}},
     clients: [],
   };

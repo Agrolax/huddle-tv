@@ -1,6 +1,7 @@
 import {useEffect, useState} from 'react';
 import {MESSAGE_MAX_LENGTH, Profile, weatherSummary} from '@huddle/shared';
 import {useHuddle} from './useHuddle';
+import {ChatCard, TonightCard} from './AI';
 import {CalendarCard, SmartHomeCard} from './Widgets';
 
 export function App() {
@@ -51,6 +52,15 @@ export function App() {
       <WhoAmI profiles={snapshot.profiles} meId={huddle.meId} onPick={huddle.setMe} />
       <WhoIsWatching profiles={snapshot.profiles} active={huddle.activeProfileIds} onChange={huddle.switchProfiles} disabled={status !== 'open'} />
       <SendMessage onSend={huddle.sendMessage} disabled={status !== 'open'} lastSentAt={huddle.lastSent?.at} />
+      <ChatCard chat={huddle.chat} onAsk={huddle.ask} onReset={huddle.resetChat} disabled={status !== 'open'} />
+      <TonightCard
+        tonight={huddle.tonight}
+        loading={huddle.tonightLoading}
+        profiles={snapshot.profiles}
+        activeProfileIds={huddle.activeProfileIds}
+        onRequest={huddle.requestTonight}
+        disabled={status !== 'open'}
+      />
       <CalendarCard
         events={huddle.events}
         profiles={snapshot.profiles}
@@ -61,7 +71,6 @@ export function App() {
       />
       <SmartHomeCard devices={huddle.devices} onSet={huddle.setDevice} disabled={status !== 'open'} />
       <section className="card soon">
-        <button disabled>Ask the AI <small>coming soon</small></button>
         <button disabled>Sketch it <small>coming soon</small></button>
       </section>
     </Shell>

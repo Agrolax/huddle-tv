@@ -20,14 +20,15 @@ sleep "${SETTLE:-0.8}"
 
 read -r window_id window_h < <(swift - <<'SWIFT'
 import CoreGraphics
-let list = CGWindowListCopyWindowInfo([.optionOnScreenOnly], kCGNullWindowID) as! [[String: Any]]
+// .optionAll also finds the window on another Space or behind the Claude app; screencapture -l still grabs it.
+let list = CGWindowListCopyWindowInfo([.optionAll], kCGNullWindowID) as! [[String: Any]]
 for w in list where (w[kCGWindowName as String] as? String) == "Vega Virtual Device" {
   let bounds = w[kCGWindowBounds as String] as! [String: Any]
   print(w[kCGWindowNumber as String] as! Int, bounds["Height"] as! Int); break
 }
 SWIFT
 )
-[ -n "$window_id" ] || { echo "Vega Virtual Device window not found (is it on screen?)" >&2; exit 1; }
+[ -n "$window_id" ] || { echo "Vega Virtual Device window not found (is the VVD running?)" >&2; exit 1; }
 
 screencapture -x -o -l "$window_id" "$out"
 # Window = title bar + 16:9 screen + remote panel. Keep the screen only, at 1920x1080.

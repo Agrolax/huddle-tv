@@ -26,6 +26,10 @@ export class FakeServer {
   online = true;
   devices: any[] = DEVICES.map(d => ({...d}));
   weather: any = WEATHER;
+  tonight: any = null;
+  /** When false, `tonight:request` is recorded but not answered, so tests can see the loading state. */
+  answerTonight = true;
+  activeProfileIds = ['rafi', 'nanu'];
 
   createSocket = (url: string): SocketLike => {
     const s = new FakeSocket(url, this);
@@ -43,6 +47,18 @@ export class FakeServer {
     this.tv.deliver(type, payload);
   }
 
+  /** Broadcast picks like the hub does after Bedrock answers. */
+  sendTonight(mood?: string): void {
+    this.tonight = {
+      picks: fakePicks(mood),
+      ...(mood ? {mood} : {}),
+      forProfileIds: this.activeProfileIds,
+      at: new Date().toISOString(),
+      source: 'mock',
+    };
+    this.tv.deliver('tonight:picks', this.tonight);
+  }
+
   handle(socket: FakeSocket, type: string, payload: any): void {
     this.received.push({type, payload});
     if (type === 'hello') {
@@ -51,7 +67,7 @@ export class FakeServer {
           householdId: 'home',
           name: 'The Khans',
           profiles: PROFILES,
-          activeProfileIds: ['rafi', 'nanu'],
+          activeProfileIds: this.activeProfileIds,
           events: [
             {id: 'e-movie', title: 'Movie night', start: hoursFromNow(0.5), profileIds: []},
             {id: 'e-dentist', title: 'Dentist', start: hoursFromNow(30), profileIds: ['ammu']},
@@ -60,6 +76,7 @@ export class FakeServer {
           messages: [],
           devices: this.devices,
           weather: this.weather,
+          tonight: this.tonight,
           sketch: {roundId: null, phase: 'idle', scores: {}},
           clients: [payload.client],
         },
@@ -73,10 +90,20 @@ export class FakeServer {
           : d,
       );
       socket.deliver('smart-home:state', {devices: this.devices});
+    } else if (type === 'profile:switch') {
+      this.activeProfileIds = payload.profileIds;
+      socket.deliver('profile:changed', {profileIds: this.activeProfileIds});
+    } else if (type === 'tonight:request') {
+      if (this.answerTonight) this.sendTonight(payload.mood);
     } else if (type === 'pair:request') {
       socket.deliver('pair:code', {code: 'H7K2QP', expiresAt: Date.now() + 600_000, joinUrl: 'http://10.0.0.5:5173/?h=home&c=H7K2QP'});
     }
   }
+}
+
+export function fakePicks(mood?: string) {
+  const tag = mood ?? 'mix';
+  return [0, 1, 2].map(i => ({title: `${tag} pick ${i + 1}`, year: 2020 + i, service: 'Prime Video', why: `Good for Rafi & Nanu (${tag}).`}));
 }
 
 export class FakeSocket implements SocketLike {

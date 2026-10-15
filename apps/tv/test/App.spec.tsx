@@ -2,7 +2,7 @@ import React from 'react';
 import {act, fireEvent, render, waitFor} from '@testing-library/react-native';
 import {BackHandler} from 'react-native';
 import {App} from '../src/App';
-import {FakeServer} from './fakeServer';
+import {FakeServer, fakePicks} from './fakeServer';
 
 // Vega's jest setup mocks addEventListener without returning a subscription.
 // Handlers run newest-first, like React Native's BackHandler.
@@ -50,8 +50,8 @@ function textOf(node: any): string {
   return children.map(textOf).join('');
 }
 
-async function goHome() {
-  const utils = await renderApp();
+async function goHome(server = new FakeServer()) {
+  const utils = await renderApp(server);
   fireEvent.press(utils.getByTestId('continue'));
   layoutGrid(utils.getByTestId);
   return utils;
@@ -257,5 +257,86 @@ describe('Smart home sheet', () => {
     expect(pressBack()).toBe(true);
     expect(queryByTestId('smart-home-overlay')).toBeNull();
     expect(getByTestId('home-grid')).toBeTruthy();
+  });
+});
+
+describe('Tonight', () => {
+  async function openTonight(server = new FakeServer()) {
+    const utils = await goHome(server);
+    await waitFor(() => expect(utils.server.tv.readyState).toBe(1));
+    fireEvent.press(utils.getByTestId('grid-cell-tonight'));
+    expect(utils.getByTestId('tonight-overlay')).toBeTruthy();
+    return utils;
+  }
+  const requests = (server: FakeServer) => server.received.filter(m => m.type === 'tonight:request');
+
+  it('the tile shows mood placeholders before any picks', async () => {
+    const {getByTestId, queryByTestId} = await goHome();
+    expect(textOf(getByTestId('grid-cell-tonight'))).toMatch(/CozyFunnyEdge-of-seat/);
+    expect(queryByTestId('tonight-tile-pick-0')).toBeNull();
+  });
+
+  it('Select on the tile opens the sheet and asks for picks for who is here', async () => {
+    const {getByTestId, server} = await openTonight();
+    expect(requests(server)).toEqual([{type: 'tonight:request', payload: {}}]);
+    expect(textOf(getByTestId('tonight-overlay'))).toMatch(/For Rafi & Nanu/);
+    expect(textOf(getByTestId('tonight-pick-0'))).toBe('mix pick 12020 · Prime VideoGood for Rafi & Nanu (mix).');
+    expect(getByTestId('tonight-pick-2')).toBeTruthy();
+    expect(getByTestId('tonight-demo-note')).toBeTruthy();
+  });
+
+  it('shows a loading line until the picks arrive', async () => {
+    const server = new FakeServer();
+    server.answerTonight = false;
+    const {getByTestId, queryByTestId} = await openTonight(server);
+    expect(textOf(getByTestId('tonight-loading'))).toBe('Finding picks for Rafi & Nanu…');
+    act(() => server.sendTonight());
+    expect(queryByTestId('tonight-loading')).toBeNull();
+    expect(getByTestId('tonight-pick-0')).toBeTruthy();
+  });
+
+  it('a mood button asks again with that mood', async () => {
+    const {getByTestId, server} = await openTonight();
+    fireEvent.press(getByTestId('tonight-mood-edge-of-seat'));
+    expect(requests(server).pop()?.payload).toEqual({mood: 'edge-of-seat'});
+    expect(textOf(getByTestId('tonight-pick-0'))).toMatch(/^edge-of-seat pick 1/);
+    expect(getByTestId('tonight-mood-edge-of-seat').props.accessibilityLabel).toBe('Edge-of-seat picks, selected');
+  });
+
+  it('reuses picks that already fit the room, and asks again when the room changes', async () => {
+    const server = new FakeServer();
+    server.tonight = {picks: fakePicks('cozy'), mood: 'cozy', forProfileIds: ['nanu', 'rafi'], at: new Date().toISOString(), source: 'bedrock'};
+    const utils = await goHome(server);
+    expect(textOf(utils.getByTestId('tonight-tile-pick-0'))).toBe('cozy pick 1Prime Video');
+    await waitFor(() => expect(server.tv.readyState).toBe(1));
+    fireEvent.press(utils.getByTestId('grid-cell-tonight'));
+    expect(requests(server)).toHaveLength(0);
+    expect(utils.queryByTestId('tonight-demo-note')).toBeNull();
+    pressBack();
+
+    act(() => server.push('profile:changed', {profileIds: ['ammu']}));
+    fireEvent.press(utils.getByTestId('grid-cell-tonight'));
+    expect(requests(server)).toHaveLength(1);
+  });
+
+  it('picks a phone asked for show up on the tile', async () => {
+    const {getByTestId, server} = await goHome();
+    await waitFor(() => expect(server.tv.readyState).toBe(1));
+    act(() => server.sendTonight('funny'));
+    expect(textOf(getByTestId('tonight-tile-pick-1'))).toBe('funny pick 2Prime Video');
+  });
+
+  it('Back closes the sheet, stays on Home, and the tile keeps the last picks', async () => {
+    const {queryByTestId, getByTestId} = await openTonight();
+    expect(pressBack()).toBe(true);
+    expect(queryByTestId('tonight-overlay')).toBeNull();
+    expect(getByTestId('home-grid')).toBeTruthy();
+    expect(textOf(getByTestId('tonight-tile-pick-0'))).toBe('mix pick 1Prime Video');
+  });
+
+  it('Done closes the sheet too', async () => {
+    const {queryByTestId, getByTestId} = await openTonight();
+    fireEvent.press(getByTestId('tonight-done'));
+    expect(queryByTestId('tonight-overlay')).toBeNull();
   });
 });

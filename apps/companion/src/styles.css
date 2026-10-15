@@ -63,3 +63,12 @@ input:focus { outline: none; border-color: var(--accent); }
 .stepper button { width: 44px; height: 44px; border: 0; border-radius: 50%; background: var(--raised); font-size: 22px; cursor: pointer; }
 .stepper strong { min-width: 48px; text-align: center; }
 button:disabled { cursor: default; }
+.chat { display: flex; flex-direction: column; gap: 8px; max-height: 50dvh; overflow-y: auto; }
+.bubble { margin: 0; padding: 10px 14px; border-radius: 16px; max-width: 85%; white-space: pre-wrap; }
+.bubble.user { align-self: flex-end; background: var(--accent); }
+.bubble.assistant { align-self: flex-start; background: var(--raised); }
+.caret { display: inline-block; width: 8px; height: 1em; margin-left: 2px; vertical-align: text-bottom; background: var(--mute); animation: blink 1s steps(1) infinite; }
+@keyframes blink { 50% { opacity: 0; } }
+.picks li { display: block; padding: 8px 0; border-top: 1px solid var(--raised); }
+.picks li:first-child { border-top: 0; }
+.picks p { margin: 4px 0 0; }

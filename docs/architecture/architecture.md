@@ -127,8 +127,8 @@ Source of truth: [`packages/shared/src/protocol.ts`](../../packages/shared/src/p
 |---|---|---|---|
 | `profile:switch` | tv, phone, voice | `profile:changed` | household |
 | `message:send` | phone, voice | `message:new` | messages |
-| `chat:ask` | phone, voice, tv | `chat:reply` (streamed, `done`) | chat |
-| `tonight:request` | tv, phone, voice | `tonight:picks` | tonight |
+| `chat:ask {text, conversationId?}` | phone, voice, tv | `chat:reply` chunks then `done`, to the asker only | chat |
+| `tonight:request {mood?}` | tv, phone, voice | `tonight:picks {picks, mood?, forProfileIds, at, source}` to everyone; also in the snapshot | tonight |
 | `sketch:start` / `sketch:stroke` / `sketch:clear` / `sketch:guess` | tv+phone / phone / phone / phone+voice | `sketch:state` (prompt only to the drawer), `sketch:stroke`, `sketch:clear`, `sketch:guess` | sketch |
 | `smart-home:set` | tv, phone, voice | `smart-home:state` | smart-home |
 | `calendar:add` / `calendar:remove` | phone, voice | `calendar:updated` (whole sorted list) | calendar |
@@ -144,6 +144,8 @@ Source of truth: [`packages/shared/src/protocol.ts`](../../packages/shared/src/p
 | **Daily brief** | agenda, board, weather, sports | `{ greeting, lines[] }` per profile | Precomputed hourly / on change |
 | **NL → event** | "dentist Thursday 4pm for Ammu" | `{ title, start, profileIds }` | Phone input |
 | **Pattern phrasing** | launch stats | `"Saturday mornings are YouTube Kids time"` | Precomputed |
+
+**Built in step 4** (`apps/server/src/ai/`): the hub talks to a `HouseholdAI` interface. `BedrockAI` calls Nova through the Converse API (Tonight: `us.amazon.nova-lite-v1:0`, JSON-only prompt, parsed and clipped by hand; chat: `us.amazon.nova-micro-v1:0` via ConverseStream). `MockAI` gives deterministic picks from a small catalog and rule-based answers from the household context. `HUDDLE_AI=bedrock` turns Bedrock on; the mock is the default and the per-request fallback (10 s Tonight timeout, 25 s chat). Tonight picks are broadcast on the `tonight` topic and kept in the snapshot; chat replies go only to the client that asked. The picks are not yet checked against a watch-provider source (below).
 
 - **Model choice:** start with **Amazon Nova** (Lite/Micro) on Bedrock: first-party, cheap, definitely covered by credits. Third-party models (e.g. Claude) on Bedrock may be billed via AWS Marketplace, which promotional credits often don't cover, so check the Billing console after one test call before relying on them.
 - Validate every response with `zod`; retry once on invalid JSON.

@@ -87,7 +87,7 @@ Built in steps. Each step ends with a PR, running on the Vega Virtual Device wit
 | Clock & weather | Real clock, static weather | Open-Meteo |
 | Family calendar | Three demo events | Server events, added from the phone |
 | Who's here (profiles) | Avatars of the selected profiles; Select opens "Who's here?" | Profile switch from the phone too |
-| Tonight | Three mood placeholders | Bedrock picks for the people present |
+| Tonight | Three mood placeholders | Three Bedrock picks for the people present, by mood (Cozy / Funny / Edge-of-seat); a deterministic mock when Bedrock is off |
 | Sketch it | Entry tile | Live canvas + guesses |
 | Home (smart home) | Three simulated devices | Toggle from phone; state on TV |
 
@@ -105,7 +105,9 @@ Real accounts/auth (household code only), replacing the system launcher, reading
 
 **Message:** Phone → "Send to TV" → "Pizza night 🍕" → appears on the TV with who sent it.
 
-**Tonight:** Home → Tonight → Bedrock returns 3–5 picks for the people present, each with a one-line "why".
+**Tonight:** Home → Tonight → Bedrock returns 3 picks for the people present, each with a one-line "why". Pick a mood to ask again. A phone can ask too ("Get Tonight picks"); the picks land on the TV tile.
+
+**Ask the AI:** Phone → "Ask the AI" → "What should we watch?" / "Do I need a jacket?" → the answer streams in. It knows who's here, the calendar, the weather and the home devices.
 
 **Sketch it:** Home → Sketch it → the TV picks a drawer → their phone shows the secret prompt (from Bedrock) → strokes appear live on the TV → others type guesses on their phones → first correct guess scores.
 
@@ -134,4 +136,5 @@ See [wireframes](../design/wireframes.html). Screenshots from the Vega Virtual D
 | Looks like "just another launcher" | Lead the demo with household adaptation + phone → TV + ambient |
 | Watch-provider data is incomplete | Show "available on" only when known; otherwise "search in Netflix" |
 | Scope creep (hub + games + AI) | Scope locked Oct 14 (§2). Steps are sequential; the demo is the last finished step. Polly/Transcribe/Echo are stretch only. |
+| Bedrock quota 0 on new accounts, or no access on demo day | Every AI call sits behind one interface with a deterministic mock (`HUDDLE_AI=mock`, the default). Bedrock failures fall back to the mock per request, and the TV labels demo picks. Access still unverified as of Oct 15 (no credentials on the dev Mac) |
 | Judges never run it | They may score from the text and video alone: make the video the priority; keep the hosted demo live through Nov 20 with zero-setup judge access |

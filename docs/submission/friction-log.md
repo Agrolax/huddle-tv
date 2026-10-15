@@ -34,6 +34,7 @@ Severity: **Blocker** · **Major** · **Minor** · **Papercut**
 - **Severity:** Major (screenshots and recordings are core to docs, bug reports and demo videos)
 - **Workaround:** `scripts/vvd-capture.sh`: send keys with `inputd-cli`, find the VVD window with CoreGraphics, `screencapture -l <window>`, crop off the title bar and the remote panel. macOS only.
 - **Suggestion:** Add `vega device screenshot --out file.png` (and `screenrecord`) that works on both the VVD and devices.
+- **Update (Oct 15, step 4):** The workaround breaks as soon as the VVD window is on another macOS Space or behind another app: the on-screen window list doesn't include it, so the script found nothing. We now look the window up in the full list (`screencapture -l` still grabs it), but an off-screen window captures at 1x, so the 1920×1080 output is upscaled and soft. A real screenshot command would avoid all of this.
 
 ### FL-02 — Vega app template pins Jest 28, but the SDK's jest setup needs Jest 29
 - **Tool / SDK:** `@amazon-devices/react-native-kepler` 2.1.0+rn0.72.0 `jest/setup.js`; the Vega helloWorld template (`jest ^28`)

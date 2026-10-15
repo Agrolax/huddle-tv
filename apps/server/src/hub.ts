@@ -17,10 +17,14 @@ import {
   isClientMessageType,
   parseEnvelope,
   shouldDeliver,
+  TonightMood,
+  TonightPicks,
   Weather,
   applyDeviceSet,
+  isId,
   pruneEvents,
   validateCalendarAdd,
+  validateChatAsk,
   validateCalendarRemove,
   validateEmpty,
   validateHello,
@@ -28,7 +32,9 @@ import {
   validateProfileSwitch,
   validateSmartHomeSet,
   validateSubscribe,
+  validateTonightRequest,
 } from '@huddle/shared';
+import {ChatContext, ChatTurn, HouseholdAI, MockAI, Person} from './ai/index.js';
 import {demoHousehold} from './household.js';
 
 /** The parts of a `ws` WebSocket the hub uses. Tests can pass the real thing. */
@@ -46,6 +52,12 @@ export interface HubOptions {
   /** For the pair code alphabet; crypto-backed by default. */
   random?: () => number;
   log?: (msg: string, extra?: unknown) => void;
+  /** Tonight picks and chat. Defaults to the mock. */
+  ai?: HouseholdAI;
+  /** Used when `ai` fails, so the demo never shows an error. Defaults to the mock. */
+  fallbackAI?: HouseholdAI;
+  tonightTimeoutMs?: number;
+  chatTimeoutMs?: number;
 }
 
 interface Connection {
@@ -57,6 +69,8 @@ interface Connection {
     client: ClientInfo;
     topics: Topic[];
   };
+  /** Set while a chat answer streams to this client; aborted if it disconnects. */
+  chat?: AbortController;
 }
 
 interface Household {
@@ -67,6 +81,9 @@ interface Household {
   pairCodes: Map<string, number>;
   /** Session tokens handed out in `welcome`, so phones can reconnect after their code expires. */
   tokens: Map<string, {role: ClientInfo['role']; clientId: string}>;
+  tonightPending: boolean;
+  /** `<clientId>:<conversationId>` → recent turns, so follow-up questions have context. */
+  chats: Map<string, ChatTurn[]>;
 }
 
 type ServerPayloads = {[M in ServerMessage as M['type']]: M['payload']};
@@ -75,6 +92,8 @@ const OPEN = 1;
 /** Close codes (4000–4999 are application-defined). */
 export const CLOSE = {rejected: 4001, replaced: 4002} as const;
 const MAX_FRAME_BYTES = 16 * 1024;
+const CHAT_TURNS_KEPT = 12;
+const CHATS_KEPT = 50;
 
 export class Hub {
   private readonly households = new Map<string, Household>();
@@ -85,12 +104,16 @@ export class Hub {
   private readonly random: () => number;
   private readonly pairTtlMs: number;
   private readonly log: NonNullable<HubOptions['log']>;
+  private readonly ai: HouseholdAI;
+  private readonly fallbackAI: HouseholdAI;
 
   constructor(private readonly opts: HubOptions) {
     this.now = opts.now ?? Date.now;
     this.random = opts.random ?? (() => randomInt(0, 2 ** 31) / 2 ** 31);
     this.pairTtlMs = opts.pairTtlMs ?? PAIR_CODE_TTL_MS;
     this.log = opts.log ?? (() => {});
+    this.fallbackAI = opts.fallbackAI ?? new MockAI();
+    this.ai = opts.ai ?? this.fallbackAI;
   }
 
   /** Register a socket. Returns the callbacks to wire to its `message` and `close` events. */
@@ -241,10 +264,104 @@ export class Hub {
         this.broadcast(hh, 'smart-home:state', {devices: hh.snapshot.devices});
         return;
       }
+      case 'tonight:request': {
+        const v = validateTonightRequest(payload);
+        if (!v.ok) return this.error(conn, 'bad-request', v.error, frameId);
+        // Whoever asked gets the picks with everyone else when they land.
+        if (hh.tonightPending) return this.error(conn, 'busy', 'Tonight picks are already on their way', frameId);
+        this.makeTonight(hh, v.value.mood).catch(e => this.log('tonight crashed', e));
+        return;
+      }
+      case 'chat:ask': {
+        const v = validateChatAsk(payload);
+        if (!v.ok) return this.error(conn, 'bad-request', v.error, frameId);
+        if (conn.chat) return this.error(conn, 'busy', 'wait for the current answer', frameId);
+        const conversationId = v.value.conversationId ?? (isId(frameId) ? frameId : `c${conn.id}-${this.now().toString(36)}`);
+        this.answer(conn, hh, conversationId, v.value.text).catch(e => this.log('chat crashed', e));
+        return;
+      }
       default:
-        // Chat, Tonight and Sketch it land in later steps.
+        // Sketch it lands in step 5.
         this.error(conn, 'not-implemented', `${type} is not implemented yet`, frameId);
     }
+  }
+
+  private people(hh: Household, ids: readonly string[]): Person[] {
+    return hh.snapshot.profiles.filter(p => ids.includes(p.id)).map(p => ({id: p.id, name: p.name}));
+  }
+
+  /** Ask the AI for picks for whoever is here, fall back to the mock on failure, and broadcast them. */
+  private async makeTonight(hh: Household, mood: TonightMood | undefined): Promise<void> {
+    hh.tonightPending = true;
+    const forProfileIds = [...hh.snapshot.activeProfileIds];
+    const ctx = {people: this.people(hh, forProfileIds), ...(mood ? {mood} : {}), now: new Date(this.now())};
+    let source = this.ai.source;
+    let picks;
+    try {
+      picks = await this.ai.tonight(ctx, AbortSignal.timeout(this.opts.tonightTimeoutMs ?? 10_000));
+    } catch (e) {
+      this.log(`tonight via ${this.ai.source} failed, using the mock`, errorText(e));
+      source = 'mock';
+      picks = await this.fallbackAI.tonight(ctx);
+    } finally {
+      hh.tonightPending = false;
+    }
+    const result: TonightPicks = {picks, ...(mood ? {mood} : {}), forProfileIds, at: new Date(this.now()).toISOString(), source};
+    hh.snapshot.tonight = result;
+    this.broadcast(hh, 'tonight:picks', result);
+  }
+
+  /** Stream an answer to the asking client only, then `done`. */
+  private async answer(conn: Connection, hh: Household, conversationId: string, text: string): Promise<void> {
+    const session = conn.session!;
+    const key = `${session.client.clientId}:${conversationId}`;
+    const turns: ChatTurn[] = [...(hh.chats.get(key) ?? []), {role: 'user', text}];
+    const askedBy = session.client.profileId ? this.people(hh, [session.client.profileId])[0] : undefined;
+    const ctx: ChatContext = {
+      householdName: hh.snapshot.name,
+      people: this.people(hh, hh.snapshot.activeProfileIds),
+      ...(askedBy ? {askedBy} : {}),
+      events: hh.snapshot.events,
+      devices: hh.snapshot.devices,
+      weather: hh.snapshot.weather,
+      now: new Date(this.now()),
+      turns,
+    };
+    const controller = new AbortController();
+    conn.chat = controller;
+    const timer = setTimeout(() => controller.abort(), this.opts.chatTimeoutMs ?? 25_000);
+    let reply = '';
+    const pipe = async (chunks: AsyncIterable<string>) => {
+      for await (const chunk of chunks) {
+        if (controller.signal.aborted) break;
+        reply += chunk;
+        this.send(conn, 'chat:reply', {conversationId, text: chunk, done: false});
+      }
+    };
+    try {
+      await pipe(this.ai.chat(ctx, controller.signal));
+    } catch (e) {
+      this.log(`chat via ${this.ai.source} failed`, errorText(e));
+      try {
+        if (!reply && !controller.signal.aborted && this.ai !== this.fallbackAI) {
+          await pipe(this.fallbackAI.chat(ctx, controller.signal));
+        } else {
+          const sorry = reply ? ' … sorry, I lost my train of thought.' : "Sorry, I couldn't answer that. Try again?";
+          reply += sorry;
+          this.send(conn, 'chat:reply', {conversationId, text: sorry, done: false});
+        }
+      } catch (e2) {
+        this.log('chat fallback failed', errorText(e2));
+      }
+    } finally {
+      clearTimeout(timer);
+      conn.chat = undefined;
+    }
+    this.send(conn, 'chat:reply', {conversationId, text: '', done: true});
+    hh.chats.delete(key);
+    hh.chats.set(key, [...turns, {role: 'assistant' as const, text: reply}].slice(-CHAT_TURNS_KEPT));
+    // Maps keep insertion order, so the first key is the least recently used conversation.
+    if (hh.chats.size > CHATS_KEPT) hh.chats.delete(hh.chats.keys().next().value!);
   }
 
   private unknownProfiles(hh: Household, ids: readonly string[]): string[] {
@@ -314,6 +431,7 @@ export class Hub {
 
   private disconnect(conn: Connection): void {
     if (!this.connections.delete(conn)) return;
+    conn.chat?.abort();
     const session = conn.session;
     if (!session) return;
     const hh = this.households.get(session.householdId);
@@ -327,7 +445,14 @@ export class Hub {
   }
 
   private createHousehold(id: string): Household {
-    const hh: Household = {snapshot: demoHousehold(id, this.now(), this.weather), tvToken: null, pairCodes: new Map(), tokens: new Map()};
+    const hh: Household = {
+      snapshot: demoHousehold(id, this.now(), this.weather),
+      tvToken: null,
+      pairCodes: new Map(),
+      tokens: new Map(),
+      tonightPending: false,
+      chats: new Map(),
+    };
     this.households.set(id, hh);
     return hh;
   }
@@ -382,4 +507,8 @@ export class Hub {
     conn.socket.close(CLOSE.rejected, code);
     this.connections.delete(conn);
   }
+}
+
+function errorText(e: unknown): string {
+  return e instanceof Error ? `${e.name}: ${e.message}` : String(e);
 }

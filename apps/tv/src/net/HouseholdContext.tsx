@@ -10,6 +10,8 @@ import {
   Profile,
   ServerEnvelope,
   SmartDevice,
+  TonightMood,
+  TonightPicks,
   Weather,
 } from '@huddle/shared';
 import {HOUSEHOLD_ID, SERVER_URL} from '../config.generated';
@@ -35,6 +37,10 @@ export interface HouseholdState {
   events: CalendarEvent[];
   devices: SmartDevice[];
   weather: Weather | null;
+  /** Latest Tonight picks, from this TV or a phone. */
+  tonight: TonightPicks | null;
+  /** A `tonight:request` is out and no picks have come back yet. */
+  tonightLoading: boolean;
 }
 
 export interface HouseholdActions {
@@ -44,8 +50,13 @@ export interface HouseholdActions {
   switchProfiles: (ids: string[]) => void;
   /** Flip or set a simulated device. The tile updates when the server echoes `smart-home:state`. */
   setDevice: (deviceId: string, change: {on?: boolean; level?: number}) => void;
+  /** Ask for picks for whoever is here. Returns false while offline. */
+  requestTonight: (mood?: TonightMood) => boolean;
   senderName: (msg: FamilyMessage) => string;
 }
+
+/** Give up waiting for picks after this long (the server answers or falls back well before). */
+const TONIGHT_WAIT_MS = 20_000;
 
 const Ctx = createContext<(HouseholdState & HouseholdActions) | null>(null);
 
@@ -80,10 +91,13 @@ export function HouseholdProvider({children, initialProfileIds, createSocket, se
     events: [],
     devices: [],
     weather: null,
+    tonight: null,
+    tonightLoading: false,
   });
   const socketRef = useRef<HuddleSocket | null>(null);
   const wantPairCode = useRef(false);
   const activeRef = useRef(initialProfileIds);
+  const tonightTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const onMessage = useCallback((msg: ServerEnvelope) => {
     switch (msg.type) {
@@ -103,6 +117,7 @@ export function HouseholdProvider({children, initialProfileIds, createSocket, se
           events: snapshot.events,
           devices: snapshot.devices,
           weather: snapshot.weather ?? s.weather,
+          tonight: snapshot.tonight ?? s.tonight,
         }));
         if (wantPairCode.current) socketRef.current?.send('pair:request', {});
         break;
@@ -125,6 +140,10 @@ export function HouseholdProvider({children, initialProfileIds, createSocket, se
       case 'weather:updated':
         setState(s => ({...s, weather: msg.payload as Weather}));
         break;
+      case 'tonight:picks':
+        if (tonightTimer.current) clearTimeout(tonightTimer.current);
+        setState(s => ({...s, tonight: msg.payload as TonightPicks, tonightLoading: false}));
+        break;
       case 'message:new':
         setState(s => ({...s, latestMessage: msg.payload as FamilyMessage}));
         break;
@@ -142,6 +161,8 @@ export function HouseholdProvider({children, initialProfileIds, createSocket, se
       case 'error': {
         const {code, message} = msg.payload as {code: string; message: string};
         console.warn(`[huddle] server error ${code}: ${message}`);
+        // "busy" means picks are already coming; anything else about Tonight won't be answered.
+        if (code !== 'busy' && /tonight/i.test(message)) setState(s => ({...s, tonightLoading: false}));
         break;
       }
     }
@@ -173,6 +194,7 @@ export function HouseholdProvider({children, initialProfileIds, createSocket, se
             statusDetail: info.error?.message,
             // A code from before a reconnect may belong to a restarted server.
             pairCode: status === 'open' ? s.pairCode : null,
+            tonightLoading: status === 'open' ? s.tonightLoading : false,
           })),
       });
       socketRef.current = socket;
@@ -180,6 +202,7 @@ export function HouseholdProvider({children, initialProfileIds, createSocket, se
     })();
     return () => {
       cancelled = true;
+      if (tonightTimer.current) clearTimeout(tonightTimer.current);
       socketRef.current?.stop();
       socketRef.current = null;
     };
@@ -200,14 +223,28 @@ export function HouseholdProvider({children, initialProfileIds, createSocket, se
     socketRef.current?.send<Extract<ClientMessage, {type: 'smart-home:set'}>>('smart-home:set', {deviceId, ...change});
   }, []);
 
+  const requestTonight = useCallback((mood?: TonightMood) => {
+    // Loading goes on before the send, so picks that come back right away turn it off again.
+    setState(s => ({...s, tonightLoading: true}));
+    const sent =
+      socketRef.current?.send<Extract<ClientMessage, {type: 'tonight:request'}>>('tonight:request', mood ? {mood} : {}) ?? false;
+    if (tonightTimer.current) clearTimeout(tonightTimer.current);
+    if (!sent) {
+      setState(s => ({...s, tonightLoading: false}));
+      return false;
+    }
+    tonightTimer.current = setTimeout(() => setState(s => ({...s, tonightLoading: false})), TONIGHT_WAIT_MS);
+    return true;
+  }, []);
+
   const senderName = useCallback(
     (msg: FamilyMessage) => state.profiles.find(p => p.id === msg.fromProfileId)?.name ?? 'A phone',
     [state.profiles],
   );
 
   const value = useMemo(
-    () => ({...state, requestPairCode, switchProfiles, setDevice, senderName}),
-    [state, requestPairCode, switchProfiles, setDevice, senderName],
+    () => ({...state, requestPairCode, switchProfiles, setDevice, requestTonight, senderName}),
+    [state, requestPairCode, switchProfiles, setDevice, requestTonight, senderName],
   );
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

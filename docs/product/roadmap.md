@@ -15,7 +15,7 @@ Edit freely: this is the living plan. Tick boxes as you go. When a date slips, m
 - [x] Devpost submission draft started ('Untitled'): [edit it](https://devpost.com/submit-to/30992-build-ship-shape-amazon-developer-hackathon/manage/submissions/1217824/edit). Fill in as you build; finalize by Oct 22
 - [x] Registered for **Office Hours #1: Tue Oct 6, 1:30–2:30pm EDT** ([Zoom](https://amazon.zoom.us/webinar/register/WN_ny5v5N4GQNGeMMaJRLKerQ)). Ask: launching other apps from ours on Fire OS / Vega, judging of Vega vs Fire OS. **Attended**; our questions weren't answered (ask on Devpost forum / Discord). Notes: [office-hours.md](../research/office-hours.md)
 - [ ] Post our two questions (app launching, Vega vs Fire OS judging) on the Devpost forum / Discord
-- [ ] **Verify Bedrock access now** (call a model from the new AWS account; other participants got all quotas = 0 with no escalation path, see [community-research.md](../research/community-research.md#7c-devpost-forum-answers-from-the-organizers-emerson-sklar-janet-fang)). If blocked, ask u/AWSSupport and plan a mock mode
+- [ ] **Verify Bedrock access now** (call a model from the new AWS account; other participants got all quotas = 0 with no escalation path, see [community-research.md](../research/community-research.md#7c-devpost-forum-answers-from-the-organizers-emerson-sklar-janet-fang)). If blocked, ask u/AWSSupport and plan a mock mode. **Oct 15: still unverified.** The Mac has no AWS credentials (`aws sts get-caller-identity` → `NoCredentials`), so no Nova call could be made. Mock mode is built (step 4); see the step 4 checklist for the one command to run once credentials are set
 - [x] Mac tooling (Oct 7: awscli, Vega prerequisites, Vega Studio extension, AWS Knowledge MCP; **Oct 9: Vega SDK 0.24.12112 + CLI 1.4.4 installed, Vega Virtual Device boots** via `vega virtual-device start`). Installer was blocked on disk space until Oct 9
 - [ ] Run the Vega target of `react-native-multi-tv-app-sample` on the Vega Virtual Device (`scripts/fetch-references.sh` clones it)
 - [ ] **Spike: app launching.** From a test screen, `Linking.openURL` into Netflix, Prime Video, YouTube (app + a specific title). Record what works in [architecture § App launching](../architecture/architecture.md#4-app-launching)
@@ -39,7 +39,7 @@ Edit freely: this is the living plan. Tick boxes as you go. When a date slips, m
 - [x] LAN networking documented (README › Networking); VVD reaches the Mac on its LAN IP and 10.0.2.2
 - [x] Verified end to end: QR decoded from a VVD screenshot → phone-sized browser on the LAN → profile switch + message on the TV ([screenshots](../screenshots/step-2/))
 - [ ] Scan with a real phone on the same Wi-Fi (needs a person with a phone)
-- [ ] **Verify Bedrock access** (quota-0 risk) before step 4
+- [ ] **Verify Bedrock access** (quota-0 risk) before step 4. Not done: no credentials on the Mac (Oct 15); step 4 shipped on the mock
 
 ## Step 3: Widgets live (Oct 15) ✅
 - [x] Weather: server polls Open-Meteo every 15 min (no key), pushes `weather:updated`; clock tile shows temp, summary, high/low; greeting subline uses it
@@ -50,8 +50,16 @@ Edit freely: this is the living plan. Tick boxes as you go. When a date slips, m
 - [x] Verified end to end: real server + Open-Meteo + phone companion in a phone-sized browser + scripted TV ([screenshot](../screenshots/step-3/))
 - [x] On the VVD: live tiles, smart-home sheet (D-pad toggle, Back returns focus to the tile). VVD clock is UTC ([FL-13](../submission/friction-log.md))
 
-## Step 4: Bedrock (Oct 17–18)
-- [ ] Tonight picks for who's here (Nova), phone AI chat; mock mode without AWS
+## Step 4: Bedrock (Oct 15) ✅ on the mock, Bedrock unverified
+- [ ] **Bedrock access check (Oct 15): blocked on credentials, not on quota.** The Mac has no AWS credentials (`aws sts get-caller-identity` → `NoCredentials`), so we couldn't call Nova or see the quota. To check: `aws login` (or set `AWS_PROFILE`), then `aws bedrock-runtime converse --region us-east-1 --model-id us.amazon.nova-micro-v1:0 --messages '[{"role":"user","content":[{"text":"Say hi"}]}]'`, then run the server with `HUDDLE_AI=bedrock`. If it returns quota 0 / AccessDenied, the mock stays the demo path and we say so in the submission
+- [x] Server: `HouseholdAI` interface with two implementations: `BedrockAI` (Nova Lite for Tonight via Converse, Nova Micro for chat via ConverseStream) and a deterministic `MockAI` (`HUDDLE_AI=mock`, the default). Bedrock errors or timeouts fall back to the mock, so the demo never shows an error
+- [x] `tonight:request {mood?}` → `tonight:picks` (3 picks: title, year, why, service) for the profiles present, broadcast to the TV and every phone and kept in the snapshot. Moods: Cozy / Funny / Edge-of-seat. Model JSON is parsed defensively and clipped
+- [x] `chat:ask` → streamed `chat:reply` chunks, then `done`, to the asking phone only. The prompt carries who's here, who's asking, the calendar, weather and devices; the last 12 turns of a conversation are kept. One answer at a time per phone (`busy`)
+- [x] TV: Select on Tonight opens a sheet (moods, three pick cards, Done; focus trapped, Back closes, focus returns to the tile). Asks for fresh picks when the people changed; the tile shows the last picks
+- [x] Phone: "Ask the AI" chat card that streams (suggested questions, New chat) and a Tonight card with mood chips and **Get Tonight picks**
+- [x] 197 tests across workspaces (server AI + hub tests, validators, 8 TV Jest tests for the sheet)
+- [x] Verified end to end on the mock: VVD + server + phone-sized browser; the phone's request updates the TV tile live ([screenshots](../screenshots/step-4/))
+- [ ] Run once against Bedrock when credentials exist, and check the call bills against the credits
 
 ## Step 5: Sketch it (Oct 18–20)
 - [ ] Phone canvas → `sketch:stroke` → TV canvas (normalised points), guesses from phones, Bedrock prompts, scores
@@ -90,3 +98,4 @@ Edit freely: this is the living plan. Tick boxes as you go. When a date slips, m
 | Oct 15 | Step 3 widgets live: Open-Meteo weather, server calendar with phone add/remove, simulated smart home controlled from phone and TV. Protocol adds `calendar:add/remove`, `weather` topic |
 | Oct 15 | Demo script rewritten for the locked scope: Who's here, live widgets, phone via QR (profile, message, calendar, lamp), Tonight + AI chat (after step 4), Sketch it (after step 5), architecture slide. Cut apps row, ambient photos and streaming-app launch. Added shot list, macOS recording how-to and export checklist ([demo-script.md](../submission/demo-script.md)) |
 | Oct 15 | Design references: Fire TV / Vega OS screenshots and a moodboard (Jackbox, Kahoot, Skylight, Google TV ambient, Apple TV top shelf) in [`docs/design/references/`](../design/references/README.md); Vega conventions to match vs differ in [references.md](../design/references.md); UI copy standard (Simplified Technical English, terms, do/don't, strings to change) in the [design guide](../design/design-guide.md#ui-copy-standard). Notes for the final design pass, no app code changed |
+| Oct 15 | Step 4 Bedrock on the mock: Tonight picks (TV sheet + phone) and streamed phone chat behind a `HouseholdAI` interface, Nova via Converse when `HUDDLE_AI=bedrock`. Bedrock access is still unverified (no AWS credentials on the Mac), so the mock is the default and the fallback. Protocol: snapshot gains `tonight`, `tonight:picks` carries mood/people/source, new `busy` error |
