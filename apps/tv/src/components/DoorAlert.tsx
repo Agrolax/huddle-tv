@@ -11,7 +11,8 @@ export function doorTitle(ev: DoorEvent): string {
 }
 
 /**
- * Doorbell ring or motion, top right so it never covers a message toast.
+ * Doorbell ring or motion, bottom left: away from the header (Connect phone)
+ * and opposite the message toast (bottom right).
  * Not focusable: it tells the room, it does not take the remote.
  */
 export function DoorAlert() {
@@ -37,7 +38,7 @@ export function DoorAlert() {
   return (
     <Animated.View
       pointerEvents="none"
-      style={[styles.card, {opacity, transform: [{translateY: opacity.interpolate({inputRange: [0, 1], outputRange: [-24, 0]})}]}]}
+      style={[styles.card, {opacity, transform: [{translateY: opacity.interpolate({inputRange: [0, 1], outputRange: [24, 0]})}]}]}
       testID="door-alert"
       accessibilityLiveRegion="assertive"
       accessibilityLabel={`${title}. ${meta}`}>
@@ -56,8 +57,8 @@ export function DoorAlert() {
 const styles = StyleSheet.create({
   card: {
     position: 'absolute',
-    top: space.safeY,
-    right: space.safeX,
+    bottom: space.safeY,
+    left: space.safeX,
     width: 640,
     borderRadius: radius.lg,
     backgroundColor: colors.surfaceRaised,

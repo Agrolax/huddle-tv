@@ -65,8 +65,8 @@ Edit freely: this is the living plan. Tick boxes as you go. When a date slips, m
 - [x] Neutral chrome like the Fire TV home on Vega OS: near-black page, flat grey tiles, white outset focus ring with a gap, one blue primary button. Color comes from people and posters, not widgets (per-widget accents removed)
 - [x] Shared TV `Sheet` / `Button` / `Avatar` (`apps/tv/src/components/ui.tsx`); Connect, Tonight and Home sheets use them; less text on Home, Who's here and the sheets
 - [x] Every string in the design guide's "strings to change" list fixed on the TV and the phone ([copy standard](../design/design-guide.md#ui-copy-standard))
-- [x] Demo doorbell: phone **Ring** button (Home card) → `door:simulate` → `door:event` → TV alert top right ("Someone is at the door · Front door · 7:42"), 15 s, never takes focus. `DoorEvent` has `snapshotUrl` and `source: 'ring'` for a real Ring webhook later
-- [ ] Screenshots of the new look on the VVD in `docs/screenshots/design-pass/`
+- [x] Demo doorbell: phone **Ring** button (Home card) → `door:simulate` → `door:event` → TV alert bottom left ("Someone is at the door · Front door · 7:42"), 15 s, never takes focus. `DoorEvent` has `snapshotUrl` and `source: 'ring'` for a real Ring webhook later
+- [x] Screenshots of the new look on the VVD in [`docs/screenshots/design-pass/`](../screenshots/design-pass/) (door alert sent by a Node script acting as a phone: the in-app browser could not open a WebSocket)
 
 ## Step 5: Sketch it (Oct 18–20)
 - [ ] Phone canvas → `sketch:stroke` → TV canvas (normalised points), guesses from phones, Bedrock prompts, scores

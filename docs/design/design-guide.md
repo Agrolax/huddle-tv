@@ -49,7 +49,7 @@ Locked Oct 14. Built in step 1 with placeholder content ([screenshots](../screen
 
 Focus starts on Clock. Left/Right stay in a row; Up/Down go to the tile with the most overlap, or back to the one you last used in that row. Up from the top row reaches "Connect phone". Focus state (design pass, Oct 16): scale 1.04, 4px white ring outset by a 4px gap (the Vega platform treatment), lighter surface. Chrome is neutral (near-black page, flat grey tiles); colour comes from people's avatars and posters, not per-widget accents. One blue primary button per screen. Shared TV pieces live in `apps/tv/src/components/ui.tsx` (`Sheet`, `Button`, `Avatar`, `focusLook`).
 
-**Door alert:** a doorbell ring or motion shows a card top right for 15 s (title, camera, time; snapshot when the source has one). It never takes focus, and it sits opposite the message toast (bottom right) so both can show.
+**Door alert:** a doorbell ring or motion shows a card bottom left for 15 s (title, camera, time; snapshot when the source has one). It never takes focus. Bottom left keeps it off the header (Connect phone is often focused) and opposite the message toast (bottom right) so both can show.
 
 Draw the phase 1 frames in the `Saf` or `Laurier` Figma team, 1920×1080, content inside a 5% safe area. The low-fi to trace is the first TV frame in [wireframes.html](wireframes.html).
 
