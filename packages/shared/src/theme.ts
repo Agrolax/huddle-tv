@@ -4,28 +4,24 @@ export const screen = {
   height: 1080,
 } as const;
 
+/**
+ * Neutral chrome like the Fire TV home on Vega OS: near-black page, flat grey
+ * tiles, white text, white focus ring. Color comes from content (people's
+ * avatar colors, posters), not from chrome. One accent for primary buttons.
+ */
 export const colors = {
-  bg: '#0E1218',
-  surface: '#1A222D',
-  surfaceRaised: '#243041',
-  ink: '#F4F1EA',
-  mute: '#9AA3B2',
-  focus: '#F5A524',
-  focusRing: '#FFE0A3',
+  bg: '#0F1111',
+  surface: '#1C1F23',
+  /** Focused tile, list row, or pressed button. */
+  surfaceRaised: '#2B2F35',
+  ink: '#FFFFFF',
+  mute: '#A7ADB5',
+  /** Focus ring: white with a gap, the Vega platform treatment. */
+  focusRing: '#FFFFFF',
+  /** Primary buttons and the one highlighted value per screen. */
   accent: '#3D8BFF',
-  board: '#2A3340',
   success: '#3DCF8E',
   danger: '#E85D5D',
-  /** Widget accents, used for the tile's icon chip and top rule. */
-  widget: {
-    clock: '#3D8BFF',
-    calendar: '#3DCF8E',
-    tonight: '#B57BFF',
-    profiles: '#F5A524',
-    sketch: '#FF7A59',
-    smartHome: '#2EC4C4',
-    phone: '#9AA3B2',
-  },
 } as const;
 
 export const space = {
@@ -41,8 +37,8 @@ export const space = {
 } as const;
 
 export const type = {
-  hero: 56,
-  title: 40,
+  hero: 48,
+  title: 36,
   body: 28,
   caption: 22,
   chip: 24,
@@ -56,8 +52,10 @@ export const radius = {
 } as const;
 
 export const focus = {
-  scale: 1.05,
+  scale: 1.04,
   borderWidth: 4,
+  /** Space between the element and its ring. */
+  gap: 4,
   /** ms. Focus moves feel instant at 150–250ms. */
   duration: 160,
 } as const;

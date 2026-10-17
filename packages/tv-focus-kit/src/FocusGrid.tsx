@@ -12,7 +12,7 @@ export interface FocusGridItem extends GridCell {
 }
 
 export interface FocusGridProps
-  extends Pick<FocusableCardProps, 'focusScale' | 'ringColor' | 'ringWidth' | 'radius' | 'animationDuration' | 'focusedStyle'> {
+  extends Pick<FocusableCardProps, 'focusScale' | 'ringColor' | 'ringWidth' | 'ringGap' | 'radius' | 'animationDuration' | 'focusedStyle'> {
   items: FocusGridItem[];
   /** Gap between cells in px. Leave room for the focus scale. */
   gap?: number;

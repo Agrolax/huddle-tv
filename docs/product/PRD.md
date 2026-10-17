@@ -28,7 +28,7 @@ The TV is the one screen the whole household shares, but its home screen is buil
 1. **Widgets on the TV**: Clock + weather, Family calendar, **Tonight** picks from Amazon Bedrock for whoever is in the room, and Profiles ("Who's here?").
 2. **Phone companion via QR**: scan the code on the TV, no install. From the phone: switch profile, send a message to the TV, chat with the household AI.
 3. **One game, Sketch it**: one phone draws, the strokes stream live to the TV, everyone else guesses from their phones. Bedrock writes the prompts.
-4. **Smart home widget (simulated)**: lights, thermostat, door lock you can see on the TV and flip from the phone. Simulated devices, real interaction model.
+4. **Smart home widget (simulated)**: lights, thermostat, door lock you can see on the TV and flip from the phone, plus a demo doorbell (Ring on the phone → "Someone is at the door" on the TV). Simulated devices, real interaction model.
 
 **Stretch only:** Polly (TV speaks a line) and Transcribe (hold-to-talk on the phone). Echo Show as a second display is researched in [echo-show.md](../research/echo-show.md) and comes after Sketch it.
 
@@ -89,7 +89,7 @@ Built in steps. Each step ends with a PR, running on the Vega Virtual Device wit
 | Who's here (profiles) | Avatars of the selected profiles; Select opens "Who's here?" | Profile switch from the phone too |
 | Tonight | Three mood placeholders | Three Bedrock picks for the people present, by mood (Cozy / Funny / Edge-of-seat); a deterministic mock when Bedrock is off |
 | Sketch it | Entry tile | Live canvas + guesses |
-| Home (smart home) | Three simulated devices | Toggle from phone; state on TV |
+| Home (smart home) | Three simulated devices | Toggle from phone; state on TV; demo doorbell alert |
 
 ### Phone companion
 Join by QR → pick yourself → switch profile · send a message to the TV · chat with the AI · draw / guess in Sketch it · flip a simulated device.

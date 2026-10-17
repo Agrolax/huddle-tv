@@ -38,7 +38,7 @@ export function MessageToast() {
         <Text style={styles.avatarLetter}>{sender[0]}</Text>
       </View>
       <View style={styles.body}>
-        <Text style={styles.from}>{sender} sent a message</Text>
+        <Text style={styles.from}>{sender}</Text>
         <Text style={styles.text} numberOfLines={3}>
           {shown.text}
         </Text>

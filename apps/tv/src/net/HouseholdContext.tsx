@@ -3,6 +3,7 @@ import {
   CalendarEvent,
   ClientMessage,
   ConnectionStatus,
+  DoorEvent,
   FamilyMessage,
   HouseholdSnapshot,
   HuddleSocket,
@@ -34,6 +35,8 @@ export interface HouseholdState {
   pairCode: PairCode | null;
   /** Newest message from a phone; drives the toast and the greeting subline. */
   latestMessage: FamilyMessage | null;
+  /** Newest doorbell ring or motion; drives the door alert. */
+  latestDoor: DoorEvent | null;
   events: CalendarEvent[];
   devices: SmartDevice[];
   weather: Weather | null;
@@ -88,6 +91,7 @@ export function HouseholdProvider({children, initialProfileIds, createSocket, se
     companions: [],
     pairCode: null,
     latestMessage: null,
+    latestDoor: null,
     events: [],
     devices: [],
     weather: null,
@@ -146,6 +150,9 @@ export function HouseholdProvider({children, initialProfileIds, createSocket, se
         break;
       case 'message:new':
         setState(s => ({...s, latestMessage: msg.payload as FamilyMessage}));
+        break;
+      case 'door:event':
+        setState(s => ({...s, latestDoor: msg.payload as DoorEvent}));
         break;
       case 'client:joined': {
         const client = msg.payload as HouseholdSnapshot['clients'][number];

@@ -1,6 +1,6 @@
 # Roadmap
 
-Today: Oct 15 · Submit: **Oct 22** · Hard deadline: Oct 23, 3:00pm EDT
+Today: Oct 16 · Submit: **Oct 22** · Hard deadline: Oct 23, 3:00pm EDT
 
 Scope locked Oct 14 ([PRD §2](PRD.md#2-pitch)): widgets (clock/weather, family calendar, Bedrock Tonight, profiles), phone companion via QR (switch profile, message the TV, AI chat), one game (Sketch it), simulated smart-home widget. Polly/Transcribe are stretch.
 
@@ -61,6 +61,13 @@ Edit freely: this is the living plan. Tick boxes as you go. When a date slips, m
 - [x] Verified end to end on the mock: VVD + server + phone-sized browser; the phone's request updates the TV tile live ([screenshots](../screenshots/step-4/))
 - [ ] Run once against Bedrock when credentials exist, and check the call bills against the credits
 
+## Design pass (Oct 15–16)
+- [x] Neutral chrome like the Fire TV home on Vega OS: near-black page, flat grey tiles, white outset focus ring with a gap, one blue primary button. Color comes from people and posters, not widgets (per-widget accents removed)
+- [x] Shared TV `Sheet` / `Button` / `Avatar` (`apps/tv/src/components/ui.tsx`); Connect, Tonight and Home sheets use them; less text on Home, Who's here and the sheets
+- [x] Every string in the design guide's "strings to change" list fixed on the TV and the phone ([copy standard](../design/design-guide.md#ui-copy-standard))
+- [x] Demo doorbell: phone **Ring** button (Home card) → `door:simulate` → `door:event` → TV alert bottom left ("Someone is at the door · Front door · 7:42"), 15 s, never takes focus. `DoorEvent` has `snapshotUrl` and `source: 'ring'` for a real Ring webhook later
+- [x] Screenshots of the new look on the VVD in [`docs/screenshots/design-pass/`](../screenshots/design-pass/) (door alert sent by a Node script acting as a phone: the in-app browser could not open a WebSocket)
+
 ## Step 5: Sketch it (Oct 18–20)
 - [ ] Phone canvas → `sketch:stroke` → TV canvas (normalised points), guesses from phones, Bedrock prompts, scores
 - [x] Registered for **Office Hours #2: Mon Oct 19, 12–1pm EDT** ([Zoom](https://amazon.zoom.us/webinar/register/WN_kh9CSYi0QtuN31d8nsTuOQ)): bring Sketch it
@@ -99,3 +106,4 @@ Edit freely: this is the living plan. Tick boxes as you go. When a date slips, m
 | Oct 15 | Demo script rewritten for the locked scope: Who's here, live widgets, phone via QR (profile, message, calendar, lamp), Tonight + AI chat (after step 4), Sketch it (after step 5), architecture slide. Cut apps row, ambient photos and streaming-app launch. Added shot list, macOS recording how-to and export checklist ([demo-script.md](../submission/demo-script.md)) |
 | Oct 15 | Design references: Fire TV / Vega OS screenshots and a moodboard (Jackbox, Kahoot, Skylight, Google TV ambient, Apple TV top shelf) in [`docs/design/references/`](../design/references/README.md); Vega conventions to match vs differ in [references.md](../design/references.md); UI copy standard (Simplified Technical English, terms, do/don't, strings to change) in the [design guide](../design/design-guide.md#ui-copy-standard). Notes for the final design pass, no app code changed |
 | Oct 15 | Step 4 Bedrock on the mock: Tonight picks (TV sheet + phone) and streamed phone chat behind a `HouseholdAI` interface, Nova via Converse when `HUDDLE_AI=bedrock`. Bedrock access is still unverified (no AWS credentials on the Mac), so the mock is the default and the fallback. Protocol: snapshot gains `tonight`, `tonight:picks` carries mood/people/source, new `busy` error |
+| Oct 16 | Design pass: neutral Vega-style chrome, white focus ring, shared sheet/button/avatar, copy standard applied on TV and phone. Added a demo doorbell (phone Ring button → TV alert) to the smart-home widget; a real Ring integration stays out of scope |

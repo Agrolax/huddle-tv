@@ -26,6 +26,8 @@ export interface FocusableCardProps extends TVFocusProps {
   focusScale?: number;
   ringColor?: string;
   ringWidth?: number;
+  /** Gap between card and ring. 0 (default) draws the ring on the card edge. */
+  ringGap?: number;
   radius?: number;
   /** ms. Default 160. Set 0 to respect reduce-motion. */
   animationDuration?: number;
@@ -49,6 +51,7 @@ export const FocusableCard = forwardRef<View, FocusableCardProps>(function Focus
     focusScale = 1.05,
     ringColor,
     ringWidth,
+    ringGap = 0,
     radius = 16,
     animationDuration = 160,
     accessibilityLabel,
@@ -98,8 +101,10 @@ export const FocusableCard = forwardRef<View, FocusableCardProps>(function Focus
         style={[styles.card, {borderRadius: radius}, style, focused && focusedStyle]}
         {...tvPassThrough}>
         {typeof children === 'function' ? children({focused}) : children}
-        <FocusRing visible={focused} color={ringColor} width={ringWidth} radius={radius} />
+        {ringGap > 0 ? null : <FocusRing visible={focused} color={ringColor} width={ringWidth} radius={radius} />}
       </Pressable>
+      {/* The card clips its children, so an outset ring lives beside it. */}
+      {ringGap > 0 ? <FocusRing visible={focused} color={ringColor} width={ringWidth} radius={radius} gap={ringGap} /> : null}
     </Animated.View>
   );
 });
