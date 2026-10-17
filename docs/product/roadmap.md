@@ -1,8 +1,10 @@
 # Roadmap
 
-Today: Oct 16 · Submit: **Oct 22** · Hard deadline: Oct 23, 3:00pm EDT
+Today: Oct 17 · Submit: **Oct 22** · Hard deadline: Oct 23, 3:00pm EDT
 
 Scope locked Oct 14 ([PRD §2](PRD.md#2-pitch)): widgets (clock/weather, family calendar, Bedrock Tonight, profiles), phone companion via QR (switch profile, message the TV, AI chat), one game (Sketch it), simulated smart-home widget. Polly/Transcribe are stretch.
+
+**Sharpened Oct 17** ([differentiation research](../research/differentiation.md)): Alexa+, X-Ray Recaps and Luna GameNight already cover single-viewer picks and generic phone party games, so Huddle leads with the group. Game night = **household quiz** (Kahoot-style, questions about the movie you watched and your own week) + **Sketch the pick** (Sketch it with Tonight candidates as prompts). Tonight gains **secret veto** and **bedtime-aware** picks. App launching is demoted.
 
 Work ships as one PR per step, each running on the Vega Virtual Device with screenshots in `docs/screenshots/<step>/`.
 
@@ -68,20 +70,33 @@ Edit freely: this is the living plan. Tick boxes as you go. When a date slips, m
 - [x] Demo doorbell: phone **Ring** button (Home card) → `door:simulate` → `door:event` → TV alert bottom left ("Someone is at the door · Front door · 7:42"), 15 s, never takes focus. `DoorEvent` has `snapshotUrl` and `source: 'ring'` for a real Ring webhook later
 - [x] Screenshots of the new look on the VVD in [`docs/screenshots/design-pass/`](../screenshots/design-pass/) (door alert sent by a Node script acting as a phone: the in-app browser could not open a WebSocket)
 
-## Step 5: Sketch it (Oct 18–20)
-- [ ] Phone canvas → `sketch:stroke` → TV canvas (normalised points), guesses from phones, Bedrock prompts, scores
-- [x] Registered for **Office Hours #2: Mon Oct 19, 12–1pm EDT** ([Zoom](https://amazon.zoom.us/webinar/register/WN_kh9CSYi0QtuN31d8nsTuOQ)): bring Sketch it
+## Step 5: Game night, household quiz (Oct 17–18)
+- [ ] Game engine on the server, shared by both games: `game:start` / `game:round` / `game:answer` / `game:reveal` / `game:end`, players = phones present, per-round timer, scores
+- [ ] Family league: scores kept per person across nights (in the snapshot; DynamoDB later)
+- [ ] Question sources: *Watched It* (the last Tonight pick, or a title picked on the phone) and *Our Week* (calendar + messages). Bedrock writes 5 multiple-choice questions as JSON; the mock has fixed sets so the demo never fails
+- [ ] TV: Game night tile → choose a game; question screen (big text, A–D, timer, who has answered), reveal, league table. Focus + Back like the other sheets
+- [ ] Phone: A–D answer pad, "Correct" / "Not this time", your score
+- [ ] Tests (engine, validators, mock questions, TV Jest) + VVD screenshots in `docs/screenshots/step-5/`
 
-## Step 6: Ship (Oct 20–22)
+## Step 6: Sketch the pick + secret veto (Oct 19–20)
+- [ ] Sketch on the step 5 engine: phone canvas → `sketch:stroke` → TV canvas (normalised points), guesses from phones, scores into the league
+- [ ] Prompts are tonight's candidates; the last round's movie becomes the Tonight pick
+- [ ] Secret veto: `tonight:vote` from phones (private yes/no), TV shows who has voted (not how), reveal the overlap; sudden-death between the top two if none
+- [ ] Bedtime-aware: Tonight reads tomorrow's earliest event and a child present → "ends by" time; picks that run long are dropped
+- [x] Registered for **Office Hours #2: Mon Oct 19, 12–1pm EDT** ([Zoom](https://amazon.zoom.us/webinar/register/WN_kh9CSYi0QtuN31d8nsTuOQ)): bring game night
+- If time runs out, ship the quiz alone and cut the drawing; secret veto is the next most important
+
+## Step 7: Ship (Oct 20–22)
 - [ ] Focus + Back audit, `amazon-devices-scalable-ui-audit`, judge setup (hosted server + companion live through Nov 20, `.vpkg` + VVD steps)
 - [ ] Open Source: publish `tv-focus-kit` (see [checklist](../submission/checklist.md))
 - [ ] Oct 20–21: record and edit the [demo video](../submission/demo-script.md)
 - [ ] Oct 22: submit everything
 
-## Stretch (only if step 5 is green)
+## Stretch (only if step 6 is green)
 - [ ] Polly line on the TV, Transcribe hold-to-talk on the phone
 - [ ] Echo Show as a `display` client via an Alexa skill + `Alexa.Presentation.HTML` ([research](../research/echo-show.md)); first a 30-min WebSocket spike
-- [ ] Launch a Tonight pick into its streaming app (`Linking` spike)
+- [ ] Launch a Tonight pick into its streaming app (`Linking` spike). Demoted Oct 17: Alexa+ already opens titles; one "Open" button only if `Linking` works first try
+- [ ] Personalization onboarding: proposal in [onboarding-plan.md](onboarding-plan.md); a ~1 day minimal slice (age band + genres + 👍/👎 feed Tonight) if step 5 lands early
 
 ## Change log
 | Date | Change |
@@ -107,3 +122,5 @@ Edit freely: this is the living plan. Tick boxes as you go. When a date slips, m
 | Oct 15 | Design references: Fire TV / Vega OS screenshots and a moodboard (Jackbox, Kahoot, Skylight, Google TV ambient, Apple TV top shelf) in [`docs/design/references/`](../design/references/README.md); Vega conventions to match vs differ in [references.md](../design/references.md); UI copy standard (Simplified Technical English, terms, do/don't, strings to change) in the [design guide](../design/design-guide.md#ui-copy-standard). Notes for the final design pass, no app code changed |
 | Oct 15 | Step 4 Bedrock on the mock: Tonight picks (TV sheet + phone) and streamed phone chat behind a `HouseholdAI` interface, Nova via Converse when `HUDDLE_AI=bedrock`. Bedrock access is still unverified (no AWS credentials on the Mac), so the mock is the default and the fallback. Protocol: snapshot gains `tonight`, `tonight:picks` carries mood/people/source, new `busy` error |
 | Oct 16 | Design pass: neutral Vega-style chrome, white focus ring, shared sheet/button/avatar, copy standard applied on TV and phone. Added a demo doorbell (phone Ring button → TV alert) to the smart-home widget; a real Ring integration stays out of scope |
+| Oct 16 | Proposed personalization onboarding ([onboarding-plan.md](onboarding-plan.md)): phone-led household setup, per-person tastes, services; tastes feed Tonight and chat. Not in scope yet; minimal slice listed under Stretch |
+| Oct 17 | Scope sharpened after [differentiation research](../research/differentiation.md): Sketch it → game night (household quiz + Sketch the pick on one engine, family league); Tonight gains secret veto + bedtime-aware picks; app-launch spike demoted. Steps renumbered: 5 quiz, 6 Sketch the pick + veto, 7 ship |

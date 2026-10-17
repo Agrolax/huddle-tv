@@ -2,9 +2,10 @@
 
 Family home-screen app for Fire TV on Vega OS (Amazon Developer Hackathon, Fire TV track; submit Oct 22, hard deadline Oct 23 2026 3pm EDT).
 Locked scope (Oct 14): widgets (clock/weather, family calendar, Bedrock Tonight picks, profiles), phone companion via QR (switch profile, message the TV, AI chat), one game "Sketch it" (phone draws, TV shows, phones guess), simulated smart-home widget. Polly/Transcribe are stretch.
+Sharpened Oct 17 (`docs/research/differentiation.md`): game night = household quiz (Kahoot-style, questions about your movie/week) + Sketch the pick, on one engine with a family league; Tonight adds secret veto (private phone votes) and bedtime-aware picks; app launching demoted.
 
 ## Where things are
-- Product: `docs/product/PRD.md` (what/why), `docs/product/roadmap.md` (plan, checkboxes), `docs/product/ideas-backlog.md`
+- Product: `docs/product/PRD.md` (what/why), `docs/product/roadmap.md` (plan, checkboxes), `docs/product/ideas-backlog.md`, `docs/product/onboarding-plan.md` (proposal)
 - Tech: `docs/architecture/architecture.md`
 - Design: `docs/design/design-guide.md`, `docs/design/wireframes.html`
 - Links/samples: `docs/research/references.md`; sample apps cloned in `reference/` (gitignored; run `scripts/fetch-references.sh`)
