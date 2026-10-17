@@ -26,6 +26,7 @@ import {
   validateCalendarAdd,
   validateChatAsk,
   validateCalendarRemove,
+  validateDoorSimulate,
   validateEmpty,
   validateHello,
   validateMessageSend,
@@ -262,6 +263,18 @@ export class Hub {
         const next = applyDeviceSet(device, v.value);
         hh.snapshot.devices = hh.snapshot.devices.map(d => (d.id === device.id ? next : d));
         this.broadcast(hh, 'smart-home:state', {devices: hh.snapshot.devices});
+        return;
+      }
+      case 'door:simulate': {
+        const v = validateDoorSimulate(payload);
+        if (!v.ok) return this.error(conn, 'bad-request', v.error, frameId);
+        this.broadcast(hh, 'door:event', {
+          id: frameId,
+          kind: v.value.kind ?? 'ring',
+          camera: 'Front door',
+          at: new Date(this.now()).toISOString(),
+          source: 'demo',
+        });
         return;
       }
       case 'tonight:request': {

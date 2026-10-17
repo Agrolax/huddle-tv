@@ -20,7 +20,7 @@ Figma notes: work in the `Saf` or `Laurier` team (full seats). The Starter plan 
 
 ## 10-foot UI rules
 - Canvas **1920×1080**. Keep content inside a **~5% safe margin** (TV overscan).
-- Body text ≥ 28px, titles ≥ 48px at 1080p. Test readability from 3 m.
+- Body text ≥ 28px, tile and card titles ≥ 36px, screen headlines ≥ 48px at 1080p. Test readability from 3 m.
 - **Focus is the cursor**: every focusable element needs an unmistakable focus state (scale ~1.05–1.1 + outline/glow + elevation). No hover states.
 - Remote keys: ↑ ↓ ← → · Select · Back · Home (system, not ours) · Menu · Play/Pause.
 - **Back** always goes one level up; from Home it asks before exiting.
@@ -47,7 +47,9 @@ Locked Oct 14. Built in step 1 with placeholder content ([screenshots](../screen
 └────────────────────────────────┴──────────────┴──────────────────────┘
 ```
 
-Focus starts on Clock. Left/Right stay in a row; Up/Down go to the tile with the most overlap, or back to the one you last used in that row. Up from the top row reaches "Connect phone". Focus state: scale 1.05, 4px amber inset ring, lighter surface. Each widget has an accent colour (`colors.widget.*`) for its top rule and label.
+Focus starts on Clock. Left/Right stay in a row; Up/Down go to the tile with the most overlap, or back to the one you last used in that row. Up from the top row reaches "Connect phone". Focus state (design pass, Oct 16): scale 1.04, 4px white ring outset by a 4px gap (the Vega platform treatment), lighter surface. Chrome is neutral (near-black page, flat grey tiles); colour comes from people's avatars and posters, not per-widget accents. One blue primary button per screen. Shared TV pieces live in `apps/tv/src/components/ui.tsx` (`Sheet`, `Button`, `Avatar`, `focusLook`).
+
+**Door alert:** a doorbell ring or motion shows a card top right for 15 s (title, camera, time; snapshot when the source has one). It never takes focus, and it sits opposite the message toast (bottom right) so both can show.
 
 Draw the phase 1 frames in the `Saf` or `Laurier` Figma team, 1920×1080, content inside a 5% safe area. The low-fi to trace is the first TV frame in [wireframes.html](wireframes.html).
 
@@ -127,7 +129,7 @@ Use one word for one thing, on both screens.
 Already good, keep: "Connect phone", "Connect your phone", "Getting a code…", "Select to start", "Draw on your phone.", "Add events from your phone", "Here" / "Not here", "Send", "Sent to the TV ✓", "Cancel", "Turn on" / "Turn off", "Lock" / "Unlock", "Cooler" / "Warmer", "Rafi sent a message".
 
 ### Strings to change (for the design pass)
-App code is not changed yet; fix these during the final design pass. Strings come from branch `step-3-widgets`.
+Done in the design pass (Oct 16). Kept as a record; new strings follow the rules above.
 
 - `apps/tv/src/screens/WhoHereScreen.tsx`: subline (row 1 above).
 - `apps/tv/src/screens/HomeScreen.tsx`: tile hints "Select to switch" and "Select for picks made for who's here"; "The room guesses on the TV."; "Weather loading…"; "Nothing coming up."; "Calendar offline."; "Devices offline."; subline "phones offline" → "Phones are offline"; "connect a phone to send messages" → "Connect a phone to send messages"; accessibility label "Connect a phone" → "Connect phone" (match the chip).

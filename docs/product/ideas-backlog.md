@@ -8,7 +8,7 @@ AI-hosted party trivia, plus a folder other people can drop a game into. See the
 - Contributor contract: `games/<id>/manifest.json` with `id`, `title`, `minPlayers`, `maxPlayers`
 
 ## Other ideas
-- **Ring tile**: doorbell event → TV overlay "Someone's at the door" with snapshot (Ring API / simulator)
+- **Ring tile**: doorbell event → TV overlay "Someone's at the door" with snapshot (Ring API / simulator). *Simulator done in the design pass (Oct 16); `DoorEvent.snapshotUrl` / `source: 'ring'` wait for a real Ring webhook*
 - **MCP server for Huddle**: tools like `post_to_board`, `add_event`, `whats_on_tonight`, so external agents (Claude, Alexa+-style assistants) can act on the household
 - **Chore rotation** widget with streaks for kids
 - **Cooking timer** widget, controllable from phone

@@ -107,7 +107,7 @@ export function mockAnswer(ctx: ChatContext): string {
 function describeWhen(startIso: string, now: Date): string {
   const when = eventWhen(startIso, now);
   if (/\d:\d\d/.test(when)) return `today at ${when}`;
-  if (when === 'Tmrw') return 'tomorrow';
+  if (when === 'Tomorrow') return 'tomorrow';
   return `on ${when}`;
 }
 

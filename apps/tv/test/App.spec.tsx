@@ -139,6 +139,20 @@ describe('household connection', () => {
     expect(queryByTestId('message-toast')).toBeNull();
     jest.useRealTimers();
   });
+
+  it('a doorbell ring shows the door alert, then it goes', async () => {
+    const {getByTestId, queryByTestId, server} = await goHome();
+    jest.useFakeTimers({doNotFake: ['setImmediate', 'nextTick', 'queueMicrotask']});
+    act(() =>
+      server.push('door:event', {id: 'd1', kind: 'ring', camera: 'Front door', at: new Date().toISOString(), source: 'demo'}),
+    );
+    expect(textOf(getByTestId('door-alert'))).toMatch(/^Someone is at the doorFront door · /);
+    act(() => {
+      jest.advanceTimersByTime(16000);
+    });
+    expect(queryByTestId('door-alert')).toBeNull();
+    jest.useRealTimers();
+  });
 });
 
 describe('Connect overlay', () => {

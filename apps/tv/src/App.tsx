@@ -1,5 +1,6 @@
 import React, {useEffect, useState} from 'react';
 import {BackHandler, View} from 'react-native';
+import {DoorAlert} from './components/DoorAlert';
 import {MessageToast} from './components/MessageToast';
 import {HouseholdProvider, useHousehold} from './net/HouseholdContext';
 import {HomeScreen} from './screens/HomeScreen';
@@ -53,6 +54,7 @@ function Screens() {
         <HomeScreen onSwitchProfiles={() => setScreen({name: 'who'})} />
       )}
       <MessageToast />
+      <DoorAlert />
     </View>
   );
 }

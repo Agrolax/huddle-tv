@@ -50,7 +50,7 @@ export function CalendarCard({
         <h2 className="grow">Family calendar</h2>
         {!adding ? (
           <button className="link" onClick={() => setAdding(true)} disabled={disabled}>
-            + Add
+            Add event
           </button>
         ) : null}
       </div>
@@ -72,7 +72,7 @@ export function CalendarCard({
           ))}
         </ul>
       ) : (
-        <p className="muted small">Nothing coming up.</p>
+        <p className="muted small">No events.</p>
       )}
       {adding ? (
         <form
@@ -98,7 +98,7 @@ export function CalendarCard({
             <input aria-label="Day" type="date" value={date} onChange={e => setWhen(w => ({...w, date: e.target.value}))} />
             <input aria-label="Time" type="time" value={time} onChange={e => setWhen(w => ({...w, time: e.target.value}))} />
           </div>
-          <p className="muted small">Who's it for? {who.length ? '' : 'Nobody picked means the whole family.'}</p>
+          <p className="muted small">Who is it for? {who.length ? '' : 'If you select no one, the event is for everyone.'}</p>
           <div className="chips">
             {profiles.map(p => {
               const on = who.includes(p.id);
@@ -132,17 +132,19 @@ export function CalendarCard({
 export function SmartHomeCard({
   devices,
   onSet,
+  onRingDoor,
   disabled,
 }: {
   devices: SmartDevice[];
   onSet: (id: string, change: {on?: boolean; level?: number}) => boolean;
+  onRingDoor: () => boolean;
   disabled: boolean;
 }) {
   if (!devices.length) return null;
   return (
     <section className="card">
       <h2>Home</h2>
-      <p className="muted small">Simulated devices. The TV shows changes right away.</p>
+      <p className="muted small">These devices are not real. The TV shows changes immediately.</p>
       <ul className="list">
         {devices.map(d => (
           <li key={d.id} className="row device">
@@ -179,6 +181,15 @@ export function SmartHomeCard({
             )}
           </li>
         ))}
+        <li className="row device">
+          <span className="grow">
+            Doorbell
+            <span className="muted small"> · Front door</span>
+          </span>
+          <button disabled={disabled} onClick={onRingDoor}>
+            Ring
+          </button>
+        </li>
       </ul>
     </section>
   );

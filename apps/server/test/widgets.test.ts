@@ -116,6 +116,27 @@ describe('smart home', () => {
   });
 });
 
+describe('door', () => {
+  it('a phone rings the demo doorbell and the TV hears it', async () => {
+    const {tv, phone} = await tvAndPhone();
+    phone.send('door:simulate', {});
+    const ev = await tv.nextOf('door:event');
+    assert.equal(ev.payload.kind, 'ring');
+    assert.equal(ev.payload.source, 'demo');
+    assert.equal(ev.payload.camera, 'Front door');
+    tv.close();
+    phone.close();
+  });
+
+  it('only phones can ring it', async () => {
+    const {tv, phone} = await tvAndPhone();
+    tv.send('door:simulate', {kind: 'motion'});
+    assert.equal((await tv.nextOf('error')).payload.code, 'forbidden');
+    tv.close();
+    phone.close();
+  });
+});
+
 describe('weather', () => {
   const reading: Weather = {place: 'Toronto', tempC: 12, code: 3, highC: 14, lowC: 6, updatedAt: '2026-10-15T12:00:00.000Z'};
 

@@ -199,6 +199,9 @@ export function useHuddle() {
     [],
   );
 
+  /** Demo doorbell: the TV shows "Someone is at the door". */
+  const ringDoor = useCallback(() => socketRef.current?.send('door:simulate', {kind: 'ring'}) ?? false, []);
+
   const requestTonight = useCallback((mood?: TonightMood) => {
     const sent = socketRef.current?.send('tonight:request', mood ? {mood} : {}) ?? false;
     if (sent) setState(s => ({...s, tonightLoading: true}));
@@ -237,7 +240,7 @@ export function useHuddle() {
     [update],
   );
 
-  return {...state, switchProfiles, sendMessage, addEvent, removeEvent, setDevice, setMe, requestTonight, ask, resetChat};
+  return {...state, switchProfiles, sendMessage, addEvent, removeEvent, setDevice, ringDoor, setMe, requestTonight, ask, resetChat};
 }
 
 function resolveSession(): Session | null {

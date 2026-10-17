@@ -11,7 +11,7 @@ export function App() {
   if (status === 'unpaired') {
     return (
       <Shell>
-        <Empty title="Scan the code on your TV" body={'On the TV, open Huddle and choose "Connect phone". Point your camera at the QR code.'} />
+        <Empty title="Scan the code on your TV" body="On the TV, open Huddle and select Connect phone. Scan the code with your camera." />
       </Shell>
     );
   }
@@ -20,8 +20,8 @@ export function App() {
     return (
       <Shell>
         <Empty
-          title={error?.code === 'pair-code-expired' ? 'That code expired' : "Couldn't join"}
-          body={`${error?.message ?? 'The TV did not accept this phone.'} Open "Connect phone" on the TV and scan the new code.`}
+          title={error?.code === 'pair-code-expired' ? 'The code expired' : 'Cannot connect to the TV'}
+          body={`${error?.message ?? 'The TV did not accept this phone.'} On the TV, select Connect phone. Scan the new code.`}
         />
       </Shell>
     );
@@ -30,7 +30,7 @@ export function App() {
   if (!snapshot) {
     return (
       <Shell>
-        <Empty title="Connecting to your TV…" body={status === 'reconnecting' ? 'Still trying. Is your phone on the same Wi-Fi as the TV?' : ''} />
+        <Empty title="Connecting to your TV…" body={status === 'reconnecting' ? 'Still trying. Use the same Wi-Fi on your phone and TV.' : ''} />
       </Shell>
     );
   }
@@ -69,9 +69,9 @@ export function App() {
         onRemove={huddle.removeEvent}
         disabled={status !== 'open'}
       />
-      <SmartHomeCard devices={huddle.devices} onSet={huddle.setDevice} disabled={status !== 'open'} />
+      <SmartHomeCard devices={huddle.devices} onSet={huddle.setDevice} onRingDoor={huddle.ringDoor} disabled={status !== 'open'} />
       <section className="card soon">
-        <button disabled>Sketch it <small>coming soon</small></button>
+        <button disabled>Sketch it <small>Not ready yet</small></button>
       </section>
     </Shell>
   );
@@ -151,8 +151,8 @@ function WhoIsWatching({
   const [hint, setHint] = useState('');
   return (
     <section className="card">
-      <h2>Who's watching</h2>
-      <p className="muted small">Tap to add or remove. The TV updates right away.</p>
+      <h2>Who's here</h2>
+      <p className="muted small">Tap a person to add or remove them. The TV changes immediately.</p>
       <div className="grid">
         {profiles.map(p => {
           const on = active.includes(p.id);
@@ -165,7 +165,7 @@ function WhoIsWatching({
               onClick={() => {
                 const next = on ? active.filter(id => id !== p.id) : [...active, p.id];
                 if (!next.length) {
-                  setHint('Someone has to be watching.');
+                  setHint('Select at least one person.');
                   return;
                 }
                 setHint('');
