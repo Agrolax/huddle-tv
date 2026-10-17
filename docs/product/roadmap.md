@@ -70,13 +70,15 @@ Edit freely: this is the living plan. Tick boxes as you go. When a date slips, m
 - [x] Demo doorbell: phone **Ring** button (Home card) → `door:simulate` → `door:event` → TV alert bottom left ("Someone is at the door · Front door · 7:42"), 15 s, never takes focus. `DoorEvent` has `snapshotUrl` and `source: 'ring'` for a real Ring webhook later
 - [x] Screenshots of the new look on the VVD in [`docs/screenshots/design-pass/`](../screenshots/design-pass/) (door alert sent by a Node script acting as a phone: the in-app browser could not open a WebSocket)
 
-## Step 5: Game night, household quiz (Oct 17–18)
-- [ ] Game engine on the server, shared by both games: `game:start` / `game:round` / `game:answer` / `game:reveal` / `game:end`, players = phones present, per-round timer, scores
-- [ ] Family league: scores kept per person across nights (in the snapshot; DynamoDB later)
-- [ ] Question sources: *Watched It* (the last Tonight pick, or a title picked on the phone) and *Our Week* (calendar + messages). Bedrock writes 5 multiple-choice questions as JSON; the mock has fixed sets so the demo never fails
-- [ ] TV: Game night tile → choose a game; question screen (big text, A–D, timer, who has answered), reveal, league table. Focus + Back like the other sheets
-- [ ] Phone: A–D answer pad, "Correct" / "Not this time", your score
-- [ ] Tests (engine, validators, mock questions, TV Jest) + VVD screenshots in `docs/screenshots/step-5/`
+## Step 5: Game night, household quiz (Oct 17) ✅
+- [x] Game engine on the server (`apps/server/src/quiz/engine.ts`): `game:start` / `game:answer` / `game:next` / `game:end` → `game:state` (`loading → question ⇄ reveal → final`). 20 s questions, 7 s reveals; the reveal starts early once every phone with a person has answered. Kahoot-style points: 500 for right + up to 500 for speed. The answer never leaves the server before the reveal
+- [x] Family league: totals, wins and games per person in the snapshot (`league:updated`); only finished games count (DynamoDB later)
+- [x] *Our Week*: questions straight from the calendar, messages, weather, thermostat and people, no AI, so the answers are always right (who has Dentist tomorrow, when is Soccer, who sent "Pizza night", today's high…). Five questions even in an empty week
+- [x] *Watched It*: Bedrock (Nova Lite, `HUDDLE_QUIZ_MODEL`) writes 5 questions as JSON about the latest Tonight pick or a title from the phone; parsed and sanitized; fewer than 3 usable → mock. The mock has hand-written sets for five catalog titles and family movie trivia for anything else
+- [x] TV: Home tile is now **Game night** (live round / last winner / league leader). Sheet: Our Week, Watched It, family league; question with A–D (letter + color), who answered and seconds left; reveal says "Right answer" in words and shows points; final scores + league. A game started from a phone opens on the TV. Remote only starts, skips and ends
+- [x] Phone: Game night card (moves to the top during a game), A–D answer pad in the same colors, "Correct. +850 points." / "Not this time. The answer is D.", final scores, league
+- [x] Tests: 97 shared, 72 server (engine over the wire, sources, parsing, fallback), 37 TV Jest; VVD screenshots in [`docs/screenshots/step-5/`](../screenshots/step-5/) played by two scripted phones; phone card checked in a phone-sized browser
+- [ ] Run *Watched It* once against Bedrock (still no AWS credentials on the Mac)
 
 ## Step 6: Sketch the pick + secret veto (Oct 19–20)
 - [ ] Sketch on the step 5 engine: phone canvas → `sketch:stroke` → TV canvas (normalised points), guesses from phones, scores into the league
@@ -124,3 +126,4 @@ Edit freely: this is the living plan. Tick boxes as you go. When a date slips, m
 | Oct 16 | Design pass: neutral Vega-style chrome, white focus ring, shared sheet/button/avatar, copy standard applied on TV and phone. Added a demo doorbell (phone Ring button → TV alert) to the smart-home widget; a real Ring integration stays out of scope |
 | Oct 16 | Proposed personalization onboarding ([onboarding-plan.md](onboarding-plan.md)): phone-led household setup, per-person tastes, services; tastes feed Tonight and chat. Not in scope yet; minimal slice listed under Stretch |
 | Oct 17 | Scope sharpened after [differentiation research](../research/differentiation.md): Sketch it → game night (household quiz + Sketch the pick on one engine, family league); Tonight gains secret veto + bedtime-aware picks; app-launch spike demoted. Steps renumbered: 5 quiz, 6 Sketch the pick + veto, 7 ship |
+| Oct 17 | Step 5 done: game night household quiz (Our Week from household data, Watched It via Bedrock with a mock fallback), family league, TV sheet + phone answer pad; Home's Sketch it tile became Game night |

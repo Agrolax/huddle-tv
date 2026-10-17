@@ -26,6 +26,7 @@ export type Topic =
   | 'chat' // AI chat replies
   | 'tonight' // Bedrock picks
   | 'sketch' // Sketch-it game state, strokes, guesses
+  | 'game' // game night: quiz rounds, answers, the family league
   | 'smart-home' // simulated devices
   | 'weather' // current conditions for the household's place
   | 'door'; // doorbell rings and motion at the door (simulated or Ring)
@@ -37,6 +38,7 @@ export const ALL_TOPICS: readonly Topic[] = [
   'chat',
   'tonight',
   'sketch',
+  'game',
   'smart-home',
   'weather',
   'door',
@@ -151,6 +153,68 @@ export interface SketchState {
   scores: Record<string, number>;
 }
 
+/** Where quiz questions come from. */
+export type QuizSource = 'watched-it' | 'our-week';
+
+export const QUIZ_SOURCES: readonly {id: QuizSource; label: string}[] = [
+  {id: 'our-week', label: 'Our Week'},
+  {id: 'watched-it', label: 'Watched It'},
+];
+
+export const QUIZ_CHOICES = 4;
+export const QUIZ_ROUNDS = 5;
+
+/** A question as players see it. The answer stays on the server until the reveal. */
+export interface QuizQuestion {
+  id: string;
+  text: string;
+  /** Exactly `QUIZ_CHOICES` short options, shown as A–D. */
+  choices: string[];
+}
+
+/** idle → loading (writing questions) → question ⇄ reveal → final. */
+export type GamePhase = 'idle' | 'loading' | 'question' | 'reveal' | 'final';
+
+/** One game night game, as every screen sees it. */
+export interface GameState {
+  gameId: string | null;
+  phase: GamePhase;
+  kind?: 'quiz';
+  source?: QuizSource;
+  /** "Our Week" or "Watched It: Paddington 2". */
+  title?: string;
+  /** 1-based; 0 before the first question. */
+  round: number;
+  rounds: number;
+  question?: QuizQuestion;
+  /** ISO 8601 end of the current question or reveal. */
+  endsAt?: string;
+  /** Profiles that answered this question (not what they chose). */
+  answered: string[];
+  /** Set in `reveal`: index of the right choice. */
+  correct?: number;
+  /** Set in `reveal`: what each profile chose. */
+  choices?: Record<string, number>;
+  /** Set in `reveal`: points each profile won this question. */
+  gained?: Record<string, number>;
+  /** Points in this game so far. */
+  scores: Record<string, number>;
+  /** `mock` when the questions came from the fallback. */
+  aiSource?: 'bedrock' | 'mock';
+}
+
+/** Family league: totals that carry over from night to night. */
+export interface LeagueEntry {
+  points: number;
+  /** Games this person won (ties count for everyone tied). */
+  wins: number;
+  games: number;
+}
+
+export type League = Record<string, LeagueEntry>;
+
+export const IDLE_GAME: GameState = {gameId: null, phase: 'idle', round: 0, rounds: QUIZ_ROUNDS, answered: [], scores: {}};
+
 export type SmartDeviceKind = 'light' | 'thermostat' | 'lock' | 'plug';
 
 export interface SmartDevice {
@@ -202,6 +266,8 @@ export interface HouseholdSnapshot {
   /** `null` until someone asks for picks. */
   tonight: TonightPicks | null;
   sketch: SketchState;
+  game: GameState;
+  league: League;
   clients: ClientInfo[];
 }
 
@@ -261,6 +327,13 @@ export type ClientMessage =
   | {type: 'sketch:clear'; payload: {roundId: string}}
   | {type: 'sketch:guess'; payload: {roundId: string; text: string}}
   | {type: 'smart-home:set'; payload: {deviceId: string; on?: boolean; level?: number}}
+  /** `title` is the movie for Watched It; the server uses the latest Tonight pick when it is missing. */
+  | {type: 'game:start'; payload: {kind: 'quiz'; source: QuizSource; title?: string}}
+  /** `profileId` defaults to the phone's own person. */
+  | {type: 'game:answer'; payload: {gameId: string; round: number; choice: number; profileId?: string}}
+  /** Skip ahead: question → reveal, reveal → next question. */
+  | {type: 'game:next'; payload: {gameId: string}}
+  | {type: 'game:end'; payload: {gameId: string}}
   | {type: 'door:simulate'; payload: {kind?: 'ring' | 'motion'}}
   | {type: 'ping'; payload: Record<string, never>};
 
@@ -286,6 +359,8 @@ export type ServerMessage =
       payload: {roundId: string; profileId?: string; text: string; correct: boolean};
     }
   | {type: 'smart-home:state'; payload: {devices: SmartDevice[]}}
+  | {type: 'game:state'; payload: GameState}
+  | {type: 'league:updated'; payload: League}
   | {type: 'weather:updated'; payload: Weather}
   | {type: 'door:event'; payload: DoorEvent}
   | {type: 'error'; payload: {code: ErrorCode; message: string; /** The client frame that caused it. */ replyTo?: string}}
@@ -323,6 +398,8 @@ export const SERVER_MESSAGE_TOPIC: Record<ServerMessage['type'], Topic | null> =
   'sketch:clear': 'sketch',
   'sketch:guess': 'sketch',
   'smart-home:state': 'smart-home',
+  'game:state': 'game',
+  'league:updated': 'game',
   'weather:updated': 'weather',
   'door:event': 'door',
   error: null,
@@ -345,6 +422,10 @@ export const CLIENT_MESSAGE_ROLES: Record<ClientMessage['type'], readonly Client
   'sketch:clear': ['phone'],
   'sketch:guess': ['phone', 'voice'],
   'smart-home:set': ['tv', 'phone', 'voice'],
+  'game:start': ['tv', 'phone'],
+  'game:answer': ['phone'],
+  'game:next': ['tv', 'phone'],
+  'game:end': ['tv', 'phone'],
   'door:simulate': ['phone'],
   ping: ['tv', 'phone', 'display', 'voice'],
 };
@@ -352,8 +433,8 @@ export const CLIENT_MESSAGE_ROLES: Record<ClientMessage['type'], readonly Client
 /** Default subscriptions per role. A display shows the calm stuff unless it asks for more. */
 export const DEFAULT_TOPICS: Record<ClientRole, readonly Topic[]> = {
   tv: ALL_TOPICS,
-  phone: ['household', 'calendar', 'messages', 'chat', 'tonight', 'sketch', 'smart-home', 'weather', 'door'],
-  display: ['household', 'calendar', 'messages', 'sketch', 'weather', 'door'],
+  phone: ['household', 'calendar', 'messages', 'chat', 'tonight', 'sketch', 'game', 'smart-home', 'weather', 'door'],
+  display: ['household', 'calendar', 'messages', 'sketch', 'game', 'weather', 'door'],
   voice: ['household', 'calendar', 'tonight', 'weather'],
 };
 

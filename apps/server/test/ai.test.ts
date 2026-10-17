@@ -2,7 +2,7 @@ import {after, before, beforeEach, describe, it} from 'node:test';
 import assert from 'node:assert/strict';
 import {ConverseCommand, ConverseStreamCommand} from '@aws-sdk/client-bedrock-runtime';
 import type {TonightPick} from '@huddle/shared';
-import {BedrockAI, ChatContext, HouseholdAI, MockAI, TonightContext, createAI, mockAnswer, mockTonight} from '../src/ai/index.js';
+import {BedrockAI, ChatContext, HouseholdAI, MockAI, QuizContext, QuizResult, TonightContext, createAI, mockAnswer, mockTonight} from '../src/ai/index.js';
 import {chatSystem, toMessages, tonightPrompt} from '../src/ai/bedrock.js';
 import {joinNames, parsePicksJson, sanitizePicks} from '../src/ai/types.js';
 import {demoHousehold} from '../src/household.js';
@@ -25,6 +25,12 @@ class ScriptedAI implements HouseholdAI {
   chat(ctx: ChatContext) {
     this.chatCalls.push(ctx);
     return this.chatImpl(ctx);
+  }
+  quizCalls: QuizContext[] = [];
+  quizImpl: (ctx: QuizContext) => Promise<QuizResult> = async () => ({title: '', items: []});
+  quiz(ctx: QuizContext) {
+    this.quizCalls.push(ctx);
+    return this.quizImpl(ctx);
   }
 }
 

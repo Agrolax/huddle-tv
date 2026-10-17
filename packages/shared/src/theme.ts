@@ -22,6 +22,8 @@ export const colors = {
   accent: '#3D8BFF',
   success: '#3DCF8E',
   danger: '#E85D5D',
+  /** Quiz answers A–D, the same on the TV and the phone. Always shown with the letter, never color alone. */
+  choice: ['#E5484D', '#3D8BFF', '#E2A400', '#2FB37A'],
 } as const;
 
 export const space = {

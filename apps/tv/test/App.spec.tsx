@@ -69,7 +69,7 @@ describe('screens', () => {
 
   it('shows the six widget tiles on Home', async () => {
     const {getByTestId} = await goHome();
-    for (const id of ['clock', 'calendar', 'profiles', 'tonight', 'sketch', 'smart-home']) {
+    for (const id of ['clock', 'calendar', 'profiles', 'tonight', 'game', 'smart-home']) {
       expect(getByTestId(`grid-cell-${id}`)).toBeTruthy();
     }
   });
@@ -346,5 +346,90 @@ describe('Tonight', () => {
     const {queryByTestId, getByTestId} = await openTonight();
     fireEvent.press(getByTestId('tonight-done'));
     expect(queryByTestId('tonight-overlay')).toBeNull();
+  });
+});
+
+describe('Game night', () => {
+  const question = {
+    gameId: 'g1',
+    phase: 'question',
+    kind: 'quiz',
+    source: 'our-week',
+    title: 'Our Week',
+    round: 2,
+    rounds: 5,
+    question: {id: 'g1-2', text: 'Who has Dentist tomorrow?', choices: ['Rafi', 'Ammu', 'Nanu', 'Abbu']},
+    endsAt: new Date(Date.now() + 20_000).toISOString(),
+    answered: ['rafi'],
+    scores: {rafi: 0},
+  };
+
+  async function openGame(server = new FakeServer()) {
+    const utils = await goHome(server);
+    await waitFor(() => expect(utils.server.tv.readyState).toBe(1));
+    fireEvent.press(utils.getByTestId('grid-cell-game'));
+    expect(utils.getByTestId('game-overlay')).toBeTruthy();
+    return utils;
+  }
+  const sent = (server: FakeServer, type: string) => server.received.filter(m => m.type === type);
+
+  it('the tile invites a quiz, then shows who leads the league', async () => {
+    const server = new FakeServer();
+    const {getByTestId} = await goHome(server);
+    expect(textOf(getByTestId('game-tile-line'))).toBe('Play a quiz on your phones.');
+    act(() => server.push('league:updated', {nanu: {points: 2400, wins: 2, games: 2}, rafi: {points: 900, wins: 0, games: 2}}));
+    expect(textOf(getByTestId('game-tile-line'))).toBe('Nanu leads the league.');
+  });
+
+  it('Select opens the menu; Our Week and Watched It start a quiz', async () => {
+    const server = new FakeServer();
+    server.tonight = {picks: fakePicks('cozy'), mood: 'cozy', forProfileIds: ['rafi', 'nanu'], at: new Date().toISOString(), source: 'mock'};
+    const {getByTestId} = await openGame(server);
+    expect(textOf(getByTestId('game-league'))).toMatch(/Play a quiz to start the league\./);
+    fireEvent.press(getByTestId('game-start-our-week'));
+    expect(sent(server, 'game:start').pop()?.payload).toEqual({kind: 'quiz', source: 'our-week'});
+    expect(textOf(getByTestId('game-start-watched-it'))).toBe('Watched It: cozy pick 1');
+    fireEvent.press(getByTestId('game-start-watched-it'));
+    expect(sent(server, 'game:start').pop()?.payload).toEqual({kind: 'quiz', source: 'watched-it', title: 'cozy pick 1'});
+  });
+
+  it('a game a phone starts opens on the TV, with the question and who answered', async () => {
+    const server = new FakeServer();
+    const {getByTestId} = await goHome(server);
+    act(() => server.push('game:state', question));
+    expect(textOf(getByTestId('game-overlay'))).toMatch(/Our WeekQuestion 2 of 5Who has Dentist tomorrow\?/);
+    expect(getByTestId('game-choice-1').props.accessibilityLabel).toBe('B: Ammu');
+    expect(textOf(getByTestId('game-answered'))).toMatch(/R1 answered · \d+ s/);
+    fireEvent.press(getByTestId('game-next'));
+    expect(sent(server, 'game:next').pop()?.payload).toEqual({gameId: 'g1'});
+  });
+
+  it('the reveal marks the right answer in words and shows points', async () => {
+    const server = new FakeServer();
+    const {getByTestId} = await goHome(server);
+    act(() =>
+      server.push('game:state', {...question, phase: 'reveal', correct: 1, choices: {rafi: 1, nanu: 0}, gained: {rafi: 850, nanu: 0}, scores: {rafi: 850, nanu: 0}}),
+    );
+    expect(getByTestId('game-choice-1').props.accessibilityLabel).toBe('B: Ammu, right answer');
+    expect(textOf(getByTestId('game-choice-1'))).toMatch(/Right answer/);
+    expect(textOf(getByTestId('game-gained'))).toBe('R+850N0');
+    expect(textOf(getByTestId('game-next'))).toBe('Next question');
+  });
+
+  it('final scores, then the league; Back closes the sheet and End game ends it', async () => {
+    const server = new FakeServer();
+    const {getByTestId, queryByTestId} = await goHome(server);
+    act(() => server.push('game:state', question));
+    act(() => server.push('game:state', {...question, phase: 'final', round: 5, answered: [], scores: {rafi: 850, nanu: 1700}}));
+    act(() => server.push('league:updated', {rafi: {points: 850, wins: 0, games: 1}, nanu: {points: 1700, wins: 1, games: 1}}));
+    expect(textOf(getByTestId('game-final'))).toBe('1NNanu17002RRafi850');
+    expect(textOf(getByTestId('game-league'))).toMatch(/Family league1NNanu1 win17002RRafi850/);
+    expect(textOf(getByTestId('game-tile-line'))).toBe('Nanu won the quiz.');
+    expect(pressBack()).toBe(true);
+    expect(queryByTestId('game-overlay')).toBeNull();
+
+    act(() => server.push('game:state', {...question, gameId: 'g2'}));
+    fireEvent.press(getByTestId('game-end'));
+    expect(sent(server, 'game:end').pop()?.payload).toEqual({gameId: 'g2'});
   });
 });

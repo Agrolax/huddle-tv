@@ -3,7 +3,11 @@ import {
   CalendarEvent,
   ConnectionStatus,
   FamilyMessage,
+  GameState,
   HouseholdSnapshot,
+  IDLE_GAME,
+  League,
+  QuizSource,
   HuddleSocket,
   MESSAGE_MAX_LENGTH,
   ServerEnvelope,
@@ -30,6 +34,10 @@ export interface HuddleState {
   tonight: TonightPicks | null;
   tonightLoading: boolean;
   chat: ChatState;
+  game: GameState;
+  league: League;
+  /** This phone's answer to the current question, until the next one. */
+  myAnswer?: {gameId: string; round: number; choice: number};
 }
 
 export interface ChatLine {
@@ -62,6 +70,8 @@ export function useHuddle() {
     tonight: null,
     tonightLoading: false,
     chat: newChat(),
+    game: IDLE_GAME,
+    league: {},
   });
   const socketRef = useRef<HuddleSocket | null>(null);
   const sessionRef = useRef(session);
@@ -91,7 +101,7 @@ export function useHuddle() {
           ...(sessionRef.current?.meId ? {profileId: sessionRef.current.meId} : {}),
         },
         capabilities: {touch: true, text: true, screen: 'phone'},
-        topics: ['household', 'messages', 'calendar', 'smart-home', 'weather', 'tonight', 'chat'],
+        topics: ['household', 'messages', 'calendar', 'smart-home', 'weather', 'tonight', 'chat', 'game'],
         ...(sessionRef.current?.pairCode ? {pairCode: sessionRef.current.pairCode} : {}),
       }),
       onToken: token => update({token}),
@@ -115,6 +125,8 @@ export function useHuddle() {
               devices: snapshot.devices,
               weather: snapshot.weather ?? s.weather,
               tonight: snapshot.tonight ?? s.tonight,
+              game: snapshot.game ?? IDLE_GAME,
+              league: snapshot.league ?? {},
             }));
             break;
           }
@@ -135,6 +147,12 @@ export function useHuddle() {
             if (m.fromClient === 'phone') setState(s => ({...s, lastSent: m}));
             break;
           }
+          case 'game:state':
+            setState(s => ({...s, game: msg.payload as GameState}));
+            break;
+          case 'league:updated':
+            setState(s => ({...s, league: msg.payload as League}));
+            break;
           case 'tonight:picks':
             setState(s => ({...s, tonight: msg.payload as TonightPicks, tonightLoading: false}));
             break;
@@ -223,6 +241,21 @@ export function useHuddle() {
     return true;
   }, []);
 
+  const startQuiz = useCallback(
+    (source: QuizSource, title?: string) =>
+      socketRef.current?.send('game:start', {kind: 'quiz', source, ...(title ? {title} : {})}) ?? false,
+    [],
+  );
+
+  const answerQuiz = useCallback((gameId: string, round: number, choice: number) => {
+    const sent = socketRef.current?.send('game:answer', {gameId, round, choice}) ?? false;
+    if (sent) setState(s => ({...s, myAnswer: {gameId, round, choice}}));
+    return sent;
+  }, []);
+
+  const nextGameStep = useCallback((gameId: string) => socketRef.current?.send('game:next', {gameId}) ?? false, []);
+  const endGame = useCallback((gameId: string) => socketRef.current?.send('game:end', {gameId}) ?? false, []);
+
   const resetChat = useCallback(() => setState(s => (s.chat.streaming ? s : {...s, chat: newChat()})), []);
 
   const setMe = useCallback(
@@ -240,7 +273,23 @@ export function useHuddle() {
     [update],
   );
 
-  return {...state, switchProfiles, sendMessage, addEvent, removeEvent, setDevice, ringDoor, setMe, requestTonight, ask, resetChat};
+  return {
+    ...state,
+    switchProfiles,
+    sendMessage,
+    addEvent,
+    removeEvent,
+    setDevice,
+    ringDoor,
+    setMe,
+    requestTonight,
+    ask,
+    resetChat,
+    startQuiz,
+    answerQuiz,
+    nextGameStep,
+    endGame,
+  };
 }
 
 function resolveSession(): Session | null {

@@ -1,3 +1,4 @@
+import type {QuizItem} from '../quiz/questions.js';
 import type {CalendarEvent, SmartDevice, TonightMood, TonightPick, Weather} from '@huddle/shared';
 
 export interface Person {
@@ -10,6 +11,19 @@ export interface TonightContext {
   people: Person[];
   mood?: TonightMood;
   now: Date;
+}
+
+/** Watched It: questions about one movie or series. */
+export interface QuizContext {
+  title: string;
+  people: Person[];
+  now: Date;
+}
+
+/** The questions and the title to show. The mock renames unknown titles to "Movie trivia". */
+export interface QuizResult {
+  title: string;
+  items: QuizItem[];
 }
 
 export interface ChatTurn {
@@ -41,6 +55,8 @@ export interface HouseholdAI {
   tonight(ctx: TonightContext, signal?: AbortSignal): Promise<TonightPick[]>;
   /** The answer as text chunks, in order. */
   chat(ctx: ChatContext, signal?: AbortSignal): AsyncIterable<string>;
+  /** Five multiple-choice questions about `ctx.title`. Throws if the model returns fewer than three usable ones. */
+  quiz(ctx: QuizContext, signal?: AbortSignal): Promise<QuizResult>;
 }
 
 /** "Rafi", "Rafi and Nanu", "Rafi, Nanu and Ammu". */

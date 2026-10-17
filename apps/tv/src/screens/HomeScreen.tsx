@@ -1,17 +1,24 @@
-import React, {useCallback, useMemo, useRef, useState} from 'react';
+import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {StyleSheet, Text, View} from 'react-native';
 import {TVFocusGuideView} from '@amazon-devices/react-native-kepler';
 import {
+  GameState,
+  League,
+  Profile,
   TONIGHT_MOODS,
   Weather,
   deviceIsActive,
   deviceStateLabel,
   eventWhen,
+  gameIsLive,
+  leaguePoints,
+  standings,
   upcomingEvents,
   weatherSummary,
 } from '@huddle/shared';
 import {FocusGrid, FocusGridHandle, FocusGridItem} from '@huddle/tv-focus-kit';
 import {ConnectOverlay} from '../components/ConnectOverlay';
+import {GameNightOverlay} from '../components/GameNightOverlay';
 import {SmartHomeOverlay} from '../components/SmartHomeOverlay';
 import {TonightOverlay, picksAreFor} from '../components/TonightOverlay';
 import {WidgetTile} from '../components/WidgetTile';
@@ -21,7 +28,7 @@ import {useHousehold} from '../net/HouseholdContext';
 import {formatDate, formatTime, greetingFor, useClock} from '../hooks/useClock';
 import {colors, focus, radius, space, type} from '../theme';
 
-export type WidgetId = 'clock' | 'calendar' | 'profiles' | 'tonight' | 'sketch' | 'smart-home';
+export type WidgetId = 'clock' | 'calendar' | 'profiles' | 'tonight' | 'game' | 'smart-home';
 
 type Props = {
   onSwitchProfiles: () => void;
@@ -34,18 +41,19 @@ type Props = {
  * not instructions: focus says "you can select this".
  *
  *   clock       | calendar (2 wide) | profiles
- *   tonight (2 wide)  | sketch      | smart home
+ *   tonight (2 wide)  | game night  | smart home
  */
 export function HomeScreen({onSwitchProfiles, onOpenWidget, onFocusChange}: Props) {
   const now = useClock();
   const household = useHousehold();
-  const {activeProfileIds: profileIds, profiles, status, events, devices, weather, tonight} = household;
+  const {activeProfileIds: profileIds, profiles, status, events, devices, weather, tonight, game, league} = household;
   const names = namesFor(profileIds, profiles);
   const here = useMemo(() => profiles.filter(p => profileIds.includes(p.id)), [profiles, profileIds]);
   const upcoming = useMemo(() => upcomingEvents(events, now, 3), [events, now]);
   const [connectOpen, setConnectOpen] = useState(false);
   const [smartHomeOpen, setSmartHomeOpen] = useState(false);
   const [tonightOpen, setTonightOpen] = useState(false);
+  const [gameOpen, setGameOpen] = useState(false);
   const tonightFresh = picksAreFor(tonight, profileIds);
   const connectRef = useRef<View>(null);
   const gridRef = useRef<FocusGridHandle>(null);
@@ -66,6 +74,19 @@ export function HomeScreen({onSwitchProfiles, onOpenWidget, onFocusChange}: Prop
     setTonightOpen(false);
     setTimeout(() => restoreFocus(gridRef.current?.getCell('tonight') ?? null), 0);
   }, []);
+
+  const closeGame = useCallback(() => {
+    setGameOpen(false);
+    setTimeout(() => restoreFocus(gridRef.current?.getCell('game') ?? null), 0);
+  }, []);
+
+  // A phone started a game: bring it up on the TV, unless another sheet is open.
+  const live = gameIsLive(game);
+  useEffect(() => {
+    if (live && !connectOpen && !smartHomeOpen && !tonightOpen) setGameOpen(true);
+  }, [live, game.gameId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const gameLine = useMemo(() => gameTileLine(game, league, profiles), [game, league, profiles]);
 
   const items = useMemo<FocusGridItem[]>(
     () => [
@@ -166,14 +187,19 @@ export function HomeScreen({onSwitchProfiles, onOpenWidget, onFocusChange}: Prop
         ),
       },
       {
-        id: 'sketch',
+        id: 'game',
         row: 1,
         col: 2,
-        accessibilityLabel: 'Sketch it. Draw on your phone. Everyone guesses on the TV',
-        onPress: () => onOpenWidget?.('sketch'),
+        accessibilityLabel: `Game night. ${gameLine}. Select to play`,
+        onPress: () => {
+          setGameOpen(true);
+          onOpenWidget?.('game');
+        },
         render: () => (
-          <WidgetTile label="Sketch it">
-            <Text style={styles.big}>Draw on your phone.</Text>
+          <WidgetTile label="Game night">
+            <Text style={styles.big} testID="game-tile-line">
+              {gameLine}
+            </Text>
           </WidgetTile>
         ),
       },
@@ -202,7 +228,7 @@ export function HomeScreen({onSwitchProfiles, onOpenWidget, onFocusChange}: Prop
         ),
       },
     ],
-    [now, names, here, upcoming, profiles, devices, weather, status, tonight, tonightFresh, onOpenWidget, onSwitchProfiles],
+    [now, names, here, upcoming, profiles, devices, weather, status, tonight, tonightFresh, gameLine, onOpenWidget, onSwitchProfiles],
   );
 
   const online = status === 'open';
@@ -241,8 +267,23 @@ export function HomeScreen({onSwitchProfiles, onOpenWidget, onFocusChange}: Prop
       {connectOpen ? <ConnectOverlay onClose={closeConnect} /> : null}
       {smartHomeOpen ? <SmartHomeOverlay onClose={closeSmartHome} /> : null}
       {tonightOpen ? <TonightOverlay onClose={closeTonight} /> : null}
+      {gameOpen ? <GameNightOverlay onClose={closeGame} /> : null}
     </View>
   );
+}
+
+/** One line for the Game night tile: the running game, the last winner, or who leads the league. */
+export function gameTileLine(game: GameState, league: League, profiles: Profile[]): string {
+  const name = (id: string) => profiles.find(p => p.id === id)?.name ?? 'Someone';
+  if (game.phase === 'loading') return 'Starting a quiz…';
+  if (game.phase === 'question' || game.phase === 'reveal') return `Quiz: question ${game.round} of ${game.rounds}`;
+  if (game.phase === 'final') {
+    const top = standings(game.scores).filter(s => s.place === 1 && s.points > 0);
+    if (top.length) return `${top.map(s => name(s.profileId)).join(' & ')} won the quiz.`;
+  }
+  const leader = standings(leaguePoints(league))[0];
+  if (leader && leader.points > 0) return `${name(leader.profileId)} leads the league.`;
+  return 'Play a quiz on your phones.';
 }
 
 /** "12° Cloudy", or '' before the first reading. */

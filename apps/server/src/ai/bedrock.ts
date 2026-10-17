@@ -1,12 +1,14 @@
 import {BedrockRuntimeClient, ConverseCommand, ConverseStreamCommand, Message} from '@aws-sdk/client-bedrock-runtime';
 import {TONIGHT_MOODS, TonightPick, deviceStateLabel, upcomingEvents, weatherSummary} from '@huddle/shared';
-import {ChatContext, HouseholdAI, TonightContext, joinNames, parsePicksJson} from './types.js';
+import {parseQuizJson} from '../quiz/questions.js';
+import {ChatContext, HouseholdAI, QuizContext, QuizResult, TonightContext, joinNames, parsePicksJson} from './types.js';
 
 export interface BedrockAIOptions {
   region: string;
   /** Inference profile ids. Nova needs the `us.` (or `eu.`/`apac.`) cross-region profile, not the bare model id. */
   tonightModel?: string;
   chatModel?: string;
+  quizModel?: string;
   /** Tests inject a fake with the same `send`. */
   client?: Pick<BedrockRuntimeClient, 'send'>;
 }
@@ -20,11 +22,13 @@ export class BedrockAI implements HouseholdAI {
   private readonly client: Pick<BedrockRuntimeClient, 'send'>;
   private readonly tonightModel: string;
   private readonly chatModel: string;
+  private readonly quizModel: string;
 
   constructor(opts: BedrockAIOptions) {
     this.client = opts.client ?? new BedrockRuntimeClient({region: opts.region});
     this.tonightModel = opts.tonightModel ?? DEFAULT_TONIGHT_MODEL;
     this.chatModel = opts.chatModel ?? DEFAULT_CHAT_MODEL;
+    this.quizModel = opts.quizModel ?? DEFAULT_TONIGHT_MODEL;
   }
 
   async tonight(ctx: TonightContext, signal?: AbortSignal): Promise<TonightPick[]> {
@@ -41,6 +45,22 @@ export class BedrockAI implements HouseholdAI {
     const picks = parsePicksJson(text);
     if (picks.length < 3) throw new Error(`Bedrock returned ${picks.length} usable picks`);
     return picks.slice(0, 3);
+  }
+
+  async quiz(ctx: QuizContext, signal?: AbortSignal): Promise<QuizResult> {
+    const res = await this.client.send(
+      new ConverseCommand({
+        modelId: this.quizModel,
+        system: [{text: QUIZ_SYSTEM}],
+        messages: [{role: 'user', content: [{text: quizPrompt(ctx)}]}],
+        inferenceConfig: {maxTokens: 900, temperature: 0.7},
+      }),
+      {abortSignal: signal},
+    );
+    const text = (res.output?.message?.content ?? []).map(c => c.text ?? '').join('');
+    const items = parseQuizJson(text);
+    if (items.length < 3) throw new Error(`Bedrock returned ${items.length} usable questions`);
+    return {title: ctx.title, items: items.slice(0, 5)};
   }
 
   async *chat(ctx: ChatContext, signal?: AbortSignal): AsyncIterable<string> {
@@ -68,6 +88,19 @@ const TONIGHT_SYSTEM = [
   '"why" is one short sentence (under 120 characters) that names the people it suits.',
   '"service" is where it usually streams in the US; prefer Prime Video when it fits.',
 ].join('\n');
+
+const QUIZ_SYSTEM = [
+  'You write a family quiz about a movie or series the family just watched together on TV.',
+  'Reply with JSON only, no prose and no code fence, in exactly this shape:',
+  '{"questions":[{"question":"...","choices":["...","...","...","..."],"answer":0}]}',
+  'Write exactly 5 questions. Each has exactly 4 short choices (under 40 characters) and "answer" is the index of the right one.',
+  'Ask about characters, places, objects and funny moments that anyone who watched would remember. No questions about the ending.',
+  'Facts must be correct. Questions under 120 characters, simple words, suitable for kids.',
+].join('\n');
+
+export function quizPrompt(ctx: QuizContext): string {
+  return [`Title: ${ctx.title}.`, `Players: ${joinNames(ctx.people)}.`].join('\n');
+}
 
 export function tonightPrompt(ctx: TonightContext): string {
   const mood = TONIGHT_MOODS.find(m => m.id === ctx.mood)?.label;
