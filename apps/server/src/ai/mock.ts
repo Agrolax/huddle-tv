@@ -1,5 +1,6 @@
 import {TONIGHT_MOODS, TonightMood, TonightPick, deviceStateLabel, eventWhen, upcomingEvents, weatherSummary} from '@huddle/shared';
-import {ChatContext, HouseholdAI, Person, TonightContext, joinNames} from './types.js';
+import {MOVIE_TRIVIA, mockWatchedIt} from '../quiz/watchedIt.js';
+import {ChatContext, HouseholdAI, Person, QuizContext, QuizResult, TonightContext, joinNames} from './types.js';
 
 interface CatalogEntry {
   title: string;
@@ -127,6 +128,12 @@ export class MockAI implements HouseholdAI {
   async tonight(ctx: TonightContext): Promise<TonightPick[]> {
     await sleep(this.delayMs * 10);
     return mockTonight(ctx.people, ctx.mood);
+  }
+
+  async quiz(ctx: QuizContext): Promise<QuizResult> {
+    await sleep(this.delayMs * 10);
+    const known = mockWatchedIt(ctx.title);
+    return known ? {title: ctx.title, items: known} : {title: 'Movie trivia', items: MOVIE_TRIVIA};
   }
 
   async *chat(ctx: ChatContext, signal?: AbortSignal): AsyncIterable<string> {

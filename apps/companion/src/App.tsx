@@ -1,12 +1,29 @@
 import {useEffect, useState} from 'react';
-import {MESSAGE_MAX_LENGTH, Profile, weatherSummary} from '@huddle/shared';
+import {MESSAGE_MAX_LENGTH, Profile, gameIsLive, weatherSummary} from '@huddle/shared';
 import {useHuddle} from './useHuddle';
 import {ChatCard, TonightCard} from './AI';
 import {CalendarCard, SmartHomeCard} from './Widgets';
+import {GameCard} from './Game';
 
 export function App() {
   const huddle = useHuddle();
   const {status, snapshot, error} = huddle;
+  // During a game the card moves to the top, right under "Who are you?".
+  const game = snapshot ? (
+    <GameCard
+      game={huddle.game}
+      league={huddle.league}
+      profiles={snapshot.profiles}
+      meId={huddle.meId}
+      myAnswer={huddle.myAnswer}
+      lastPick={huddle.tonight?.picks[0]?.title}
+      onStart={huddle.startQuiz}
+      onAnswer={huddle.answerQuiz}
+      onNext={huddle.nextGameStep}
+      onEnd={huddle.endGame}
+      disabled={status !== 'open'}
+    />
+  ) : null;
 
   if (status === 'unpaired') {
     return (
@@ -50,6 +67,7 @@ export function App() {
         </p>
       </header>
       <WhoAmI profiles={snapshot.profiles} meId={huddle.meId} onPick={huddle.setMe} />
+      {gameIsLive(huddle.game) ? game : null}
       <WhoIsWatching profiles={snapshot.profiles} active={huddle.activeProfileIds} onChange={huddle.switchProfiles} disabled={status !== 'open'} />
       <SendMessage onSend={huddle.sendMessage} disabled={status !== 'open'} lastSentAt={huddle.lastSent?.at} />
       <ChatCard chat={huddle.chat} onAsk={huddle.ask} onReset={huddle.resetChat} disabled={status !== 'open'} />
@@ -70,9 +88,7 @@ export function App() {
         disabled={status !== 'open'}
       />
       <SmartHomeCard devices={huddle.devices} onSet={huddle.setDevice} onRingDoor={huddle.ringDoor} disabled={status !== 'open'} />
-      <section className="card soon">
-        <button disabled>Sketch it <small>Not ready yet</small></button>
-      </section>
+      {gameIsLive(huddle.game) ? null : game}
     </Shell>
   );
 }

@@ -17,16 +17,22 @@ import {
   isClientMessageType,
   parseEnvelope,
   shouldDeliver,
+  QuizSource,
   TonightMood,
   TonightPicks,
   Weather,
+  addToLeague,
   applyDeviceSet,
+  gameIsLive,
   isId,
   pruneEvents,
   validateCalendarAdd,
   validateChatAsk,
   validateCalendarRemove,
   validateDoorSimulate,
+  validateGameAnswer,
+  validateGameRef,
+  validateGameStart,
   validateEmpty,
   validateHello,
   validateMessageSend,
@@ -37,6 +43,9 @@ import {
 } from '@huddle/shared';
 import {ChatContext, ChatTurn, HouseholdAI, MockAI, Person} from './ai/index.js';
 import {demoHousehold} from './household.js';
+import {QuizEngine} from './quiz/engine.js';
+import {ourWeekQuestions} from './quiz/ourWeek.js';
+import {QuizItem, shuffleChoices} from './quiz/questions.js';
 
 /** The parts of a `ws` WebSocket the hub uses. Tests can pass the real thing. */
 export interface HubSocket {
@@ -59,6 +68,10 @@ export interface HubOptions {
   fallbackAI?: HouseholdAI;
   tonightTimeoutMs?: number;
   chatTimeoutMs?: number;
+  /** Game night timing; tests make these short. */
+  quizQuestionMs?: number;
+  quizRevealMs?: number;
+  quizTimeoutMs?: number;
 }
 
 interface Connection {
@@ -85,6 +98,7 @@ interface Household {
   tonightPending: boolean;
   /** `<clientId>:<conversationId>` → recent turns, so follow-up questions have context. */
   chats: Map<string, ChatTurn[]>;
+  game: QuizEngine;
 }
 
 type ServerPayloads = {[M in ServerMessage as M['type']]: M['payload']};
@@ -277,6 +291,32 @@ export class Hub {
         });
         return;
       }
+      case 'game:start': {
+        const v = validateGameStart(payload);
+        if (!v.ok) return this.error(conn, 'bad-request', v.error, frameId);
+        if (gameIsLive(hh.game.current)) return this.error(conn, 'busy', 'a game is already running', frameId);
+        this.startQuiz(hh, v.value.source, v.value.title).catch(e => this.log('quiz crashed', e));
+        return;
+      }
+      case 'game:answer': {
+        const v = validateGameAnswer(payload);
+        if (!v.ok) return this.error(conn, 'bad-request', v.error, frameId);
+        const profileId = v.value.profileId ?? session.client.profileId;
+        if (!profileId) return this.error(conn, 'bad-request', 'select who you are before you answer', frameId);
+        if (this.unknownProfiles(hh, [profileId]).length) return this.error(conn, 'bad-request', `unknown profile ${profileId}`, frameId);
+        const result = hh.game.answer(v.value.gameId, v.value.round, profileId, v.value.choice);
+        if (result === 'stale' || result === 'closed') return this.error(conn, 'bad-request', 'that question is closed', frameId);
+        if (result === 'already') return this.error(conn, 'bad-request', 'already answered', frameId);
+        return;
+      }
+      case 'game:next':
+      case 'game:end': {
+        const v = validateGameRef(type, payload);
+        if (!v.ok) return this.error(conn, 'bad-request', v.error, frameId);
+        const done = type === 'game:next' ? hh.game.next(v.value.gameId) : hh.game.end(v.value.gameId);
+        if (!done) return this.error(conn, 'bad-request', 'no such game step', frameId);
+        return;
+      }
       case 'tonight:request': {
         const v = validateTonightRequest(payload);
         if (!v.ok) return this.error(conn, 'bad-request', v.error, frameId);
@@ -322,6 +362,42 @@ export class Hub {
     const result: TonightPicks = {picks, ...(mood ? {mood} : {}), forProfileIds, at: new Date(this.now()).toISOString(), source};
     hh.snapshot.tonight = result;
     this.broadcast(hh, 'tonight:picks', result);
+  }
+
+  /** Show "writing questions", gather them (household data or the AI), then run the rounds. */
+  private async startQuiz(hh: Household, source: QuizSource, requestedTitle?: string): Promise<void> {
+    const gameId = `g${this.now().toString(36)}${Math.floor(this.random() * 1e6).toString(36)}`;
+    const now = new Date(this.now());
+    if (source === 'our-week') {
+      hh.game.begin(gameId, source, 'Our Week');
+      const items = ourWeekQuestions(hh.snapshot, now, this.random).map(i => shuffleChoices(i, this.random));
+      hh.game.load(gameId, items, 'Our Week', 'mock');
+      return;
+    }
+    const title = requestedTitle ?? hh.snapshot.tonight?.picks[0]?.title ?? 'Paddington 2';
+    hh.game.begin(gameId, source, `Watched It: ${title}`);
+    const ctx = {title, people: this.people(hh, hh.snapshot.activeProfileIds), now};
+    let aiSource = this.ai.source;
+    let result;
+    try {
+      result = await this.ai.quiz(ctx, AbortSignal.timeout(this.opts.quizTimeoutMs ?? 12_000));
+    } catch (e) {
+      this.log(`quiz via ${this.ai.source} failed, using the mock`, errorText(e));
+      aiSource = 'mock';
+      result = await this.fallbackAI.quiz(ctx);
+    }
+    const items: QuizItem[] = result.items.map(i => shuffleChoices(i, this.random));
+    hh.game.load(gameId, items, `Watched It: ${result.title}`, aiSource);
+  }
+
+  /** Profiles with a phone in the room: who the quiz waits for. */
+  private answerers(householdId: string): string[] {
+    const ids = new Set<string>();
+    for (const c of this.connections) {
+      const s = c.session;
+      if (s?.householdId === householdId && s.client.role === 'phone' && s.client.profileId) ids.add(s.client.profileId);
+    }
+    return [...ids];
   }
 
   /** Stream an answer to the asking client only, then `done`. */
@@ -465,6 +541,20 @@ export class Hub {
       tokens: new Map(),
       tonightPending: false,
       chats: new Map(),
+      game: new QuizEngine({
+        now: this.now,
+        questionMs: this.opts.quizQuestionMs ?? 20_000,
+        revealMs: this.opts.quizRevealMs ?? 7_000,
+        answerers: () => this.answerers(id),
+        onState: state => {
+          hh.snapshot.game = state;
+          this.broadcast(hh, 'game:state', state);
+        },
+        onFinish: state => {
+          hh.snapshot.league = addToLeague(hh.snapshot.league, state);
+          this.broadcast(hh, 'league:updated', hh.snapshot.league);
+        },
+      }),
     };
     this.households.set(id, hh);
     return hh;

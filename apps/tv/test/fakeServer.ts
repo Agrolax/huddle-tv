@@ -1,5 +1,6 @@
 import type {SocketLike} from '@huddle/shared';
-import {PROTOCOL_VERSION} from '@huddle/shared';
+import {IDLE_GAME, PROTOCOL_VERSION} from '@huddle/shared';
+import type {GameState, League} from '@huddle/shared';
 
 const PROFILES = [
   {id: 'rafi', name: 'Rafi', color: '#3D8BFF'},
@@ -30,6 +31,8 @@ export class FakeServer {
   /** When false, `tonight:request` is recorded but not answered, so tests can see the loading state. */
   answerTonight = true;
   activeProfileIds = ['rafi', 'nanu'];
+  game: GameState = IDLE_GAME;
+  league: League = {};
 
   createSocket = (url: string): SocketLike => {
     const s = new FakeSocket(url, this);
@@ -78,6 +81,8 @@ export class FakeServer {
           weather: this.weather,
           tonight: this.tonight,
           sketch: {roundId: null, phase: 'idle', scores: {}},
+          game: this.game,
+          league: this.league,
           clients: [payload.client],
         },
         you: payload.client,

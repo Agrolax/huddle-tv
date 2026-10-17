@@ -5,6 +5,10 @@ import {
   ConnectionStatus,
   DoorEvent,
   FamilyMessage,
+  GameState,
+  IDLE_GAME,
+  League,
+  QuizSource,
   HouseholdSnapshot,
   HuddleSocket,
   PairCode,
@@ -44,6 +48,10 @@ export interface HouseholdState {
   tonight: TonightPicks | null;
   /** A `tonight:request` is out and no picks have come back yet. */
   tonightLoading: boolean;
+  /** Game night: the current game, as the server runs it. */
+  game: GameState;
+  /** Family league totals across games. */
+  league: League;
 }
 
 export interface HouseholdActions {
@@ -55,6 +63,11 @@ export interface HouseholdActions {
   setDevice: (deviceId: string, change: {on?: boolean; level?: number}) => void;
   /** Ask for picks for whoever is here. Returns false while offline. */
   requestTonight: (mood?: TonightMood) => boolean;
+  /** Start a quiz. Returns false while offline. */
+  startQuiz: (source: QuizSource, title?: string) => boolean;
+  /** Skip to the reveal or the next question. */
+  nextGameStep: () => void;
+  endGame: () => void;
   senderName: (msg: FamilyMessage) => string;
 }
 
@@ -97,6 +110,8 @@ export function HouseholdProvider({children, initialProfileIds, createSocket, se
     weather: null,
     tonight: null,
     tonightLoading: false,
+    game: IDLE_GAME,
+    league: {},
   });
   const socketRef = useRef<HuddleSocket | null>(null);
   const wantPairCode = useRef(false);
@@ -122,6 +137,8 @@ export function HouseholdProvider({children, initialProfileIds, createSocket, se
           devices: snapshot.devices,
           weather: snapshot.weather ?? s.weather,
           tonight: snapshot.tonight ?? s.tonight,
+          game: snapshot.game ?? IDLE_GAME,
+          league: snapshot.league ?? {},
         }));
         if (wantPairCode.current) socketRef.current?.send('pair:request', {});
         break;
@@ -150,6 +167,12 @@ export function HouseholdProvider({children, initialProfileIds, createSocket, se
         break;
       case 'message:new':
         setState(s => ({...s, latestMessage: msg.payload as FamilyMessage}));
+        break;
+      case 'game:state':
+        setState(s => ({...s, game: msg.payload as GameState}));
+        break;
+      case 'league:updated':
+        setState(s => ({...s, league: msg.payload as League}));
         break;
       case 'door:event':
         setState(s => ({...s, latestDoor: msg.payload as DoorEvent}));
@@ -244,14 +267,29 @@ export function HouseholdProvider({children, initialProfileIds, createSocket, se
     return true;
   }, []);
 
+  const startQuiz = useCallback(
+    (source: QuizSource, title?: string) =>
+      socketRef.current?.send<Extract<ClientMessage, {type: 'game:start'}>>('game:start', {kind: 'quiz', source, ...(title ? {title} : {})}) ??
+      false,
+    [],
+  );
+
+  const gameId = state.game.gameId;
+  const nextGameStep = useCallback(() => {
+    if (gameId) socketRef.current?.send<Extract<ClientMessage, {type: 'game:next'}>>('game:next', {gameId});
+  }, [gameId]);
+  const endGame = useCallback(() => {
+    if (gameId) socketRef.current?.send<Extract<ClientMessage, {type: 'game:end'}>>('game:end', {gameId});
+  }, [gameId]);
+
   const senderName = useCallback(
     (msg: FamilyMessage) => state.profiles.find(p => p.id === msg.fromProfileId)?.name ?? 'A phone',
     [state.profiles],
   );
 
   const value = useMemo(
-    () => ({...state, requestPairCode, switchProfiles, setDevice, requestTonight, senderName}),
-    [state, requestPairCode, switchProfiles, setDevice, requestTonight, senderName],
+    () => ({...state, requestPairCode, switchProfiles, setDevice, requestTonight, startQuiz, nextGameStep, endGame, senderName}),
+    [state, requestPairCode, switchProfiles, setDevice, requestTonight, startQuiz, nextGameStep, endGame, senderName],
   );
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

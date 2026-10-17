@@ -3,7 +3,7 @@
  * handler, so a malformed frame becomes an `error` reply instead of an exception.
  * Hand-written to keep the TV bundle free of a schema library.
  */
-import {ALL_TOPICS, ClientCapabilities, ClientMessage, ClientRole, TONIGHT_MOODS, TonightMood, Topic} from './protocol';
+import {ALL_TOPICS, ClientCapabilities, ClientMessage, ClientRole, QUIZ_CHOICES, QUIZ_SOURCES, QuizSource, TONIGHT_MOODS, TonightMood, Topic} from './protocol';
 import {isPairCode, normalizePairCode} from './pairing';
 
 export const MESSAGE_MAX_LENGTH = 280;
@@ -179,4 +179,32 @@ export function validateDoorSimulate(payload: unknown): Validation<PayloadOf<'do
   const kind = isRecord(payload) ? payload.kind : undefined;
   if (kind !== undefined && kind !== 'ring' && kind !== 'motion') return fail('door:simulate.kind must be ring or motion');
   return {ok: true, value: kind ? {kind: kind as 'ring' | 'motion'} : {}};
+}
+
+export function validateGameStart(payload: unknown): Validation<PayloadOf<'game:start'>> {
+  if (!isRecord(payload)) return fail('game:start payload must be an object');
+  if (payload.kind !== 'quiz') return fail('game:start.kind must be quiz');
+  if (!QUIZ_SOURCES.some(s => s.id === payload.source)) return fail(`game:start.source must be one of ${QUIZ_SOURCES.map(s => s.id).join(', ')}`);
+  const title = optionalString(payload, 'title', 80);
+  if (title === null) return fail('game:start.title must be a string up to 80 chars');
+  const trimmed = title?.trim();
+  return {ok: true, value: {kind: 'quiz', source: payload.source as QuizSource, ...(trimmed ? {title: trimmed} : {})}};
+}
+
+export function validateGameAnswer(payload: unknown): Validation<PayloadOf<'game:answer'>> {
+  if (!isRecord(payload)) return fail('game:answer payload must be an object');
+  const {gameId, round, choice, profileId} = payload;
+  if (!isId(gameId)) return fail('game:answer.gameId is not a valid id');
+  if (typeof round !== 'number' || !Number.isInteger(round) || round < 1) return fail('game:answer.round must be a positive integer');
+  if (typeof choice !== 'number' || !Number.isInteger(choice) || choice < 0 || choice >= QUIZ_CHOICES) {
+    return fail(`game:answer.choice must be 0-${QUIZ_CHOICES - 1}`);
+  }
+  if (profileId !== undefined && !isId(profileId)) return fail('game:answer.profileId is not a valid id');
+  return {ok: true, value: {gameId, round, choice, ...(profileId !== undefined ? {profileId: profileId as string} : {})}};
+}
+
+/** `game:next` and `game:end` carry only the game id. */
+export function validateGameRef(type: 'game:next' | 'game:end', payload: unknown): Validation<{gameId: string}> {
+  if (!isRecord(payload) || !isId(payload.gameId)) return fail(`${type}.gameId is not a valid id`);
+  return {ok: true, value: {gameId: payload.gameId}};
 }

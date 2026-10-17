@@ -5,3 +5,4 @@ export * from './pairing';
 export * from './validate';
 export * from './socket';
 export * from './widgets';
+export * from './game';

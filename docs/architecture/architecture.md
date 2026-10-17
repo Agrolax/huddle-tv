@@ -130,6 +130,8 @@ Source of truth: [`packages/shared/src/protocol.ts`](../../packages/shared/src/p
 | `chat:ask {text, conversationId?}` | phone, voice, tv | `chat:reply` chunks then `done`, to the asker only | chat |
 | `tonight:request {mood?}` | tv, phone, voice | `tonight:picks {picks, mood?, forProfileIds, at, source}` to everyone; also in the snapshot | tonight |
 | `sketch:start` / `sketch:stroke` / `sketch:clear` / `sketch:guess` | tv+phone / phone / phone / phone+voice | `sketch:state` (prompt only to the drawer), `sketch:stroke`, `sketch:clear`, `sketch:guess` | sketch |
+| `game:start {kind: 'quiz', source: 'our-week' \| 'watched-it', title?}` / `game:answer {gameId, round, choice, profileId?}` / `game:next` / `game:end` | tv+phone / phone / tv+phone / tv+phone | `game:state` (phases `loading → question ⇄ reveal → final`; the right answer only in `reveal`), `league:updated` after a finished game; both in the snapshot | game |
+| `door:simulate {kind?}` | phone | `door:event` | door |
 | `smart-home:set` | tv, phone, voice | `smart-home:state` | smart-home |
 | `calendar:add` / `calendar:remove` | phone, voice | `calendar:updated` (whole sorted list) | calendar |
 | — (server polls Open-Meteo every 15 min) | | `weather:updated` | weather |
@@ -140,6 +142,7 @@ Source of truth: [`packages/shared/src/protocol.ts`](../../packages/shared/src/p
 
 | Feature | Input | Output (JSON) | When |
 |---|---|---|---|
+| **Watched It quiz** | movie title, people present | `{questions: [{question, choices[4], answer}]}`, sanitized; < 3 usable → mock bank | Game night (step 5). *Our Week* needs no model: questions come straight from the calendar, messages, weather and devices, so answers are always right |
 | **Tonight picker** | profiles present (ages, likes), mood, services owned, recent picks | `[{ title, year, why, service, deepLink? }]` | On demand |
 | **Daily brief** | agenda, board, weather, sports | `{ greeting, lines[] }` per profile | Precomputed hourly / on change |
 | **NL → event** | "dentist Thursday 4pm for Ammu" | `{ title, start, profileIds }` | Phone input |

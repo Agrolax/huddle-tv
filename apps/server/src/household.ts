@@ -1,3 +1,4 @@
+import {IDLE_GAME} from '@huddle/shared';
 import type {CalendarEvent, HouseholdSnapshot, Weather} from '@huddle/shared';
 
 /** In-memory demo household. DynamoDB replaces this in a later step. */
@@ -23,6 +24,8 @@ export function demoHousehold(householdId: string, now = Date.now(), weather: We
     weather,
     tonight: null,
     sketch: {roundId: null, phase: 'idle', scores: {}},
+    game: IDLE_GAME,
+    league: {},
     clients: [],
   };
 }
