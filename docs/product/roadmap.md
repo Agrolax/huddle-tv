@@ -17,11 +17,11 @@ Edit freely: this is the living plan. Tick boxes as you go. When a date slips, m
 - [x] Devpost submission draft started ('Untitled'): [edit it](https://devpost.com/submit-to/30992-build-ship-shape-amazon-developer-hackathon/manage/submissions/1217824/edit). Fill in as you build; finalize by Oct 22
 - [x] Registered for **Office Hours #1: Tue Oct 6, 1:30–2:30pm EDT** ([Zoom](https://amazon.zoom.us/webinar/register/WN_ny5v5N4GQNGeMMaJRLKerQ)). Ask: launching other apps from ours on Fire OS / Vega, judging of Vega vs Fire OS. **Attended**; our questions weren't answered (ask on Devpost forum / Discord). Notes: [office-hours.md](../research/office-hours.md)
 - [ ] Post our two questions (app launching, Vega vs Fire OS judging) on the Devpost forum / Discord
-- [ ] **Verify Bedrock access now** (call a model from the new AWS account; other participants got all quotas = 0 with no escalation path, see [community-research.md](../research/community-research.md#7c-devpost-forum-answers-from-the-organizers-emerson-sklar-janet-fang)). If blocked, ask u/AWSSupport and plan a mock mode. **Oct 15: still unverified.** The Mac has no AWS credentials (`aws sts get-caller-identity` → `NoCredentials`), so no Nova call could be made. Mock mode is built (step 4); see the step 4 checklist for the one command to run once credentials are set
+- [x] **Verify Bedrock access now** (Oct 18: works. `aws login` from the console session in Chrome, Nova Micro/Lite/Pro answer in us-east-1; the first call said "account is currently being verified" and the next ones worked (FL-15). Claude models on Bedrock: "not available for this account". Original note: call a model from the new AWS account; other participants got all quotas = 0 with no escalation path, see [community-research.md](../research/community-research.md#7c-devpost-forum-answers-from-the-organizers-emerson-sklar-janet-fang)). If blocked, ask u/AWSSupport and plan a mock mode. **Oct 15: still unverified.** The Mac has no AWS credentials (`aws sts get-caller-identity` → `NoCredentials`), so no Nova call could be made. Mock mode is built (step 4); see the step 4 checklist for the one command to run once credentials are set
 - [x] Mac tooling (Oct 7: awscli, Vega prerequisites, Vega Studio extension, AWS Knowledge MCP; **Oct 9: Vega SDK 0.24.12112 + CLI 1.4.4 installed, Vega Virtual Device boots** via `vega virtual-device start`). Installer was blocked on disk space until Oct 9
 - [ ] Run the Vega target of `react-native-multi-tv-app-sample` on the Vega Virtual Device (`scripts/fetch-references.sh` clones it)
 - [ ] **Spike: app launching.** From a test screen, `Linking.openURL` into Netflix, Prime Video, YouTube (app + a specific title). Record what works in [architecture § App launching](../architecture/architecture.md#4-app-launching)
-- [ ] AWS: pick region, enable Bedrock model access, **set a Budget alert** ($25 / $50 / $75), test one Bedrock call and confirm it bills against credits
+- [ ] AWS: pick region, enable Bedrock model access, **set a Budget alert** ($25 / $50 / $75), test one Bedrock call and confirm it bills against credits. Oct 18: us-east-1, Nova works, credits page shows $250 active ($150 hackathon + $100 Free Tier), $0 used so far. Budget alert not set yet (needs your OK); billing against credits shows within ~24 h
 - [x] Start the [friction log](../submission/friction-log.md)
 
 ## Step 1: Shell (Oct 14) ✅
@@ -41,7 +41,7 @@ Edit freely: this is the living plan. Tick boxes as you go. When a date slips, m
 - [x] LAN networking documented (README › Networking); VVD reaches the Mac on its LAN IP and 10.0.2.2
 - [x] Verified end to end: QR decoded from a VVD screenshot → phone-sized browser on the LAN → profile switch + message on the TV ([screenshots](../screenshots/step-2/))
 - [ ] Scan with a real phone on the same Wi-Fi (needs a person with a phone)
-- [ ] **Verify Bedrock access** (quota-0 risk) before step 4. Not done: no credentials on the Mac (Oct 15); step 4 shipped on the mock
+- [x] **Verify Bedrock access** (quota-0 risk) before step 4. Done Oct 18 (see Week 0)
 
 ## Step 3: Widgets live (Oct 15) ✅
 - [x] Weather: server polls Open-Meteo every 15 min (no key), pushes `weather:updated`; clock tile shows temp, summary, high/low; greeting subline uses it
@@ -61,7 +61,7 @@ Edit freely: this is the living plan. Tick boxes as you go. When a date slips, m
 - [x] Phone: "Ask the AI" chat card that streams (suggested questions, New chat) and a Tonight card with mood chips and **Get Tonight picks**
 - [x] 197 tests across workspaces (server AI + hub tests, validators, 8 TV Jest tests for the sheet)
 - [x] Verified end to end on the mock: VVD + server + phone-sized browser; the phone's request updates the TV tile live ([screenshots](../screenshots/step-4/))
-- [ ] Run once against Bedrock when credentials exist, and check the call bills against the credits
+- [x] Run once against Bedrock (Oct 18): the server with `HUDDLE_AI=bedrock` answered Tonight in ~1.1 s, chat in ~0.5 s, the quiz in ~2.7 s, all `source: bedrock`. Real output led to fixes: kids get G/PG picks, the bedtime limit is stated in minutes, calendar events are labelled "tomorrow at 4:00 (Ammu)" so chat answers "what's on tomorrow" right
 
 ## Design pass (Oct 15–16)
 - [x] Neutral chrome like the Fire TV home on Vega OS: near-black page, flat grey tiles, white outset focus ring with a gap, one blue primary button. Color comes from people and posters, not widgets (per-widget accents removed)
@@ -78,13 +78,16 @@ Edit freely: this is the living plan. Tick boxes as you go. When a date slips, m
 - [x] TV: Home tile is now **Game night** (live round / last winner / league leader). Sheet: Our Week, Watched It, family league; question with A–D (letter + color), who answered and seconds left; reveal says "Right answer" in words and shows points; final scores + league. A game started from a phone opens on the TV. Remote only starts, skips and ends
 - [x] Phone: Game night card (moves to the top during a game), A–D answer pad in the same colors, "Correct. +850 points." / "Not this time. The answer is D.", final scores, league
 - [x] Tests: 97 shared, 72 server (engine over the wire, sources, parsing, fallback), 37 TV Jest; VVD screenshots in [`docs/screenshots/step-5/`](../screenshots/step-5/) played by two scripted phones; phone card checked in a phone-sized browser
-- [ ] Run *Watched It* once against Bedrock (still no AWS credentials on the Mac)
+- [x] Run *Watched It* against Bedrock (Oct 18). Nova Lite, Pro and Nova 2 Lite all made up movie facts, so the quiz now uses Nova Pro, asks for 8 questions and keeps only those a second, cold pass answers the same way. Paddington 2: 4 of 5 right after the check (one still wrong); a hand-checked set is the safe choice for the demo title
 
-## Step 6: Sketch the pick + secret veto (Oct 19–20)
-- [ ] Sketch on the step 5 engine: phone canvas → `sketch:stroke` → TV canvas (normalised points), guesses from phones, scores into the league
-- [ ] Prompts are tonight's candidates; the last round's movie becomes the Tonight pick
-- [ ] Secret veto: `tonight:vote` from phones (private yes/no), TV shows who has voted (not how), reveal the overlap; sudden-death between the top two if none
-- [ ] Bedtime-aware: Tonight reads tomorrow's earliest event and a child present → "ends by" time; picks that run long are dropped
+## Step 6: Sketch the pick + secret veto (Oct 17) ✅
+- [x] Uniqueness check first ([differentiation.md](../research/differentiation.md#uniqueness-check-for-step-6-oct-17)): no group vote or bedtime-aware picks on Fire TV, Alexa+, Netflix or Prime Video. Drawing games already exist (Luna GameNight, Jackbox), so Sketch the pick is pitched as a way to *decide*, after the veto, and the quiz stays the lead game
+- [x] Secret veto (`apps/server/src/tonight/vote.ts`): "Vote on phones" on the TV or phone → each phone says yes/no per pick in private → the TV shows who has voted (never how) → only the picks everyone accepted. No overlap → sudden death between the top two (ties go to round-one likes). The winner becomes `tonight.chosen`: tile, sheet and phone mark "Tonight's pick", and Watched It uses it
+- [x] Bedtime-aware (`apps/server/src/tonight/bedtime.ts`): a kid here (Rafi, `kid: true`) → ends by 8:30 (9:30 before a weekend); an event tomorrow before 9:00 for someone here → 10.5 h before it; the earlier wins, within 6 h. Picks carry runtimes; ones that run past it are dropped and topped up from the mock. TV: "For Rafi & Nanu · Ends by 9:30 (Rafi's bedtime)", tile "Tonight · ends by 9:30"
+- [x] Sketch the pick on the step 5 phases (`apps/server/src/sketch/engine.ts`): one round per Tonight candidate, drawers take turns (needs two phones), the title only goes to the drawer's phone, strokes stream in ≤ 200-point chunks (same id appends) and live in the snapshot, forgiving guesses ("totoro", "padington 2"), 500–1000 for a right guess + 250 to the drawer, league counts it, the last movie drawn becomes tonight's pick
+- [x] TV: SVG board (one path per pen color, FL-14), hint, guesses, reveal; phone: draw pad with five pens and Clear, guess box; the game sheet opens once a sheet in the way closes
+- [x] Tests: 104 shared, 85 server (veto engine, bedtime, both over the wire), 44 TV Jest. VVD screenshots in [`docs/screenshots/step-6/`](../screenshots/step-6/) with two scripted phones plus the companion in a phone-sized browser (vote and drawing checked there)
+- [x] Bedrock run of Tonight with `endsBy` in the prompt (Oct 18): Nova still suggests some titles over the limit, and the server's filter replaces them
 - [x] Registered for **Office Hours #2: Mon Oct 19, 12–1pm EDT** ([Zoom](https://amazon.zoom.us/webinar/register/WN_kh9CSYi0QtuN31d8nsTuOQ)): bring game night
 - If time runs out, ship the quiz alone and cut the drawing; secret veto is the next most important
 
@@ -127,3 +130,5 @@ Edit freely: this is the living plan. Tick boxes as you go. When a date slips, m
 | Oct 16 | Proposed personalization onboarding ([onboarding-plan.md](onboarding-plan.md)): phone-led household setup, per-person tastes, services; tastes feed Tonight and chat. Not in scope yet; minimal slice listed under Stretch |
 | Oct 17 | Scope sharpened after [differentiation research](../research/differentiation.md): Sketch it → game night (household quiz + Sketch the pick on one engine, family league); Tonight gains secret veto + bedtime-aware picks; app-launch spike demoted. Steps renumbered: 5 quiz, 6 Sketch the pick + veto, 7 ship |
 | Oct 17 | Step 5 done: game night household quiz (Our Week from household data, Watched It via Bedrock with a mock fallback), family league, TV sheet + phone answer pad; Home's Sketch it tile became Game night |
+| Oct 17 | Step 6 done early: secret veto, bedtime-aware Tonight, Sketch the pick; uniqueness check added to the differentiation research. Sketch the pick is framed as a way to decide, not as the lead game. FL-14 (Vega SVG) logged |
+| Oct 18 | Bedrock verified with `aws login` (console session, us-east-1). $250 credits active. Prompts tuned on real Nova output (kid ratings, minutes, calendar day words); Watched It moves to Nova Pro with a check pass. Claude on Bedrock not available to the account |

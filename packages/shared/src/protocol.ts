@@ -25,7 +25,7 @@ export type Topic =
   | 'messages' // phone → TV messages / board
   | 'chat' // AI chat replies
   | 'tonight' // Bedrock picks
-  | 'sketch' // Sketch-it game state, strokes, guesses
+  | 'sketch' // Sketch the pick: strokes, guesses, the drawer's prompt
   | 'game' // game night: quiz rounds, answers, the family league
   | 'smart-home' // simulated devices
   | 'weather' // current conditions for the household's place
@@ -76,6 +76,8 @@ export interface Profile {
   name: string;
   color: string;
   avatar?: string;
+  /** A child: Tonight ends by their bedtime when they are here. */
+  kid?: boolean;
 }
 
 export interface CalendarEvent {
@@ -102,6 +104,18 @@ export interface TonightPick {
   why: string;
   service?: string;
   deepLink?: string;
+  /** Running time (one episode for a series). */
+  minutes?: number;
+}
+
+/** Why tonight has a finish time: a child's bedtime or an early start tomorrow. */
+export interface EndsBy {
+  /** ISO 8601 */
+  at: string;
+  /** "8:30", in the server's local time (the TV's clock may be UTC). */
+  label: string;
+  /** "Rafi's bedtime", "Dentist at 8:00 tomorrow". */
+  reason: string;
 }
 
 export type TonightMood = 'cozy' | 'funny' | 'edge-of-seat';
@@ -123,7 +137,36 @@ export interface TonightPicks {
   at: string;
   /** `mock` when HUDDLE_AI=mock or Bedrock failed and the server fell back. */
   source: 'bedrock' | 'mock';
+  /** Set when tonight has to finish by a time; picks that run past it were dropped. */
+  endsBy?: EndsBy;
+  /** Index into `picks` of what the family decided on (secret veto or Sketch the pick). */
+  chosen?: number;
 }
+
+/**
+ * Secret veto: every phone says yes or no to each pick in private. The TV
+ * only learns who has voted, then which picks everyone accepted.
+ * idle → voting → (sudden-death when nothing is accepted by all) → result.
+ */
+export type VotePhase = 'idle' | 'voting' | 'sudden-death' | 'result';
+
+export interface TonightVote {
+  voteId: string | null;
+  phase: VotePhase;
+  /** Indexes into `tonight.picks` being voted on: all of them, then the top two in sudden death. */
+  options: number[];
+  /** Profiles that voted in this phase (never how). */
+  voted: string[];
+  /** ISO 8601 end of the current phase. */
+  endsAt?: string;
+  /** Result: picks every voter said yes to. */
+  accepted?: number[];
+  /** Result: the pick for tonight; missing when nobody voted. */
+  winner?: number;
+  decidedBy?: 'everyone' | 'sudden-death' | 'nobody';
+}
+
+export const IDLE_VOTE: TonightVote = {voteId: null, phase: 'idle', options: [], voted: []};
 
 export interface Point {
   /** 0..1, relative to the drawer's canvas so every screen can scale it. */
@@ -139,19 +182,17 @@ export interface Stroke {
   points: Point[];
 }
 
-export type SketchPhase = 'idle' | 'drawing' | 'reveal';
-
-export interface SketchState {
-  roundId: string | null;
-  phase: SketchPhase;
-  drawerProfileId?: string;
-  /** Only sent to the drawer's phone. Everyone else gets `promptLength`. */
-  prompt?: string;
-  promptLength?: number;
-  /** ISO 8601 deadline for the round. */
-  endsAt?: string;
-  scores: Record<string, number>;
+/** The drawing for the current Sketch the pick round, so a screen that joins late can redraw it. */
+export interface SketchCanvas {
+  gameId: string | null;
+  round: number;
+  strokes: Stroke[];
 }
+
+export const EMPTY_CANVAS: SketchCanvas = {gameId: null, round: 0, strokes: []};
+
+/** Pens on the drawer's phone. */
+export const SKETCH_COLORS: readonly string[] = ['#F4F1EA', '#3D8BFF', '#F5A524', '#E85D5D', '#3DCF8E'];
 
 /** Where quiz questions come from. */
 export type QuizSource = 'watched-it' | 'our-week';
@@ -175,11 +216,16 @@ export interface QuizQuestion {
 /** idle → loading (writing questions) → question ⇄ reveal → final. */
 export type GamePhase = 'idle' | 'loading' | 'question' | 'reveal' | 'final';
 
-/** One game night game, as every screen sees it. */
+export type GameKind = 'quiz' | 'sketch';
+
+/**
+ * One game night game, as every screen sees it. Both games use the same
+ * phases: in Sketch the pick a "question" is one drawing round.
+ */
 export interface GameState {
   gameId: string | null;
   phase: GamePhase;
-  kind?: 'quiz';
+  kind?: GameKind;
   source?: QuizSource;
   /** "Our Week" or "Watched It: Paddington 2". */
   title?: string;
@@ -201,6 +247,12 @@ export interface GameState {
   scores: Record<string, number>;
   /** `mock` when the questions came from the fallback. */
   aiSource?: 'bedrock' | 'mock';
+  /** Sketch: who draws this round. In `answered`: who guessed it so far. */
+  drawerId?: string;
+  /** Sketch: the title with letters hidden, "__________ 2". The drawer's phone gets the title in `sketch:prompt`. */
+  hint?: string;
+  /** Sketch, in `reveal`: the title that was drawn. */
+  answer?: string;
 }
 
 /** Family league: totals that carry over from night to night. */
@@ -265,7 +317,8 @@ export interface HouseholdSnapshot {
   weather: Weather | null;
   /** `null` until someone asks for picks. */
   tonight: TonightPicks | null;
-  sketch: SketchState;
+  vote: TonightVote;
+  sketch: SketchCanvas;
   game: GameState;
   league: League;
   clients: ClientInfo[];
@@ -322,13 +375,20 @@ export type ClientMessage =
   | {type: 'calendar:remove'; payload: {eventId: string}}
   | {type: 'chat:ask'; payload: {text: string; conversationId?: string}}
   | {type: 'tonight:request'; payload: {mood?: TonightMood}}
-  | {type: 'sketch:start'; payload: {drawerProfileId: string}}
-  | {type: 'sketch:stroke'; payload: {roundId: string; stroke: Stroke}}
-  | {type: 'sketch:clear'; payload: {roundId: string}}
-  | {type: 'sketch:guess'; payload: {roundId: string; text: string}}
+  /** Secret veto on the current picks. */
+  | {type: 'tonight:vote-start'; payload: Record<string, never>}
+  /** `yes`: indexes of the options this person accepts. In sudden death, exactly one. `profileId` defaults to the phone's own person. */
+  | {type: 'tonight:vote'; payload: {voteId: string; yes: number[]; profileId?: string}}
+  /** Stop waiting and show the result now. */
+  | {type: 'tonight:vote-next'; payload: {voteId: string}}
+  | {type: 'tonight:vote-end'; payload: {voteId: string}}
+  /** Drawer's phone. A stroke id that already exists gets these points appended, so a long line streams in pieces. */
+  | {type: 'sketch:stroke'; payload: {gameId: string; round: number; stroke: Stroke}}
+  | {type: 'sketch:clear'; payload: {gameId: string; round: number}}
+  | {type: 'sketch:guess'; payload: {gameId: string; round: number; text: string}}
   | {type: 'smart-home:set'; payload: {deviceId: string; on?: boolean; level?: number}}
   /** `title` is the movie for Watched It; the server uses the latest Tonight pick when it is missing. */
-  | {type: 'game:start'; payload: {kind: 'quiz'; source: QuizSource; title?: string}}
+  | {type: 'game:start'; payload: {kind: 'quiz'; source: QuizSource; title?: string} | {kind: 'sketch'}}
   /** `profileId` defaults to the phone's own person. */
   | {type: 'game:answer'; payload: {gameId: string; round: number; choice: number; profileId?: string}}
   /** Skip ahead: question → reveal, reveal → next question. */
@@ -351,13 +411,13 @@ export type ServerMessage =
   | {type: 'chat:reply'; payload: {conversationId: string; text: string; done: boolean}}
   /** Broadcast to the household, so a phone's request shows up on the TV too. */
   | {type: 'tonight:picks'; payload: TonightPicks}
-  | {type: 'sketch:state'; payload: SketchState}
-  | {type: 'sketch:stroke'; payload: {roundId: string; stroke: Stroke}}
-  | {type: 'sketch:clear'; payload: {roundId: string}}
-  | {
-      type: 'sketch:guess';
-      payload: {roundId: string; profileId?: string; text: string; correct: boolean};
-    }
+  | {type: 'tonight:vote-state'; payload: TonightVote}
+  /** To the drawer's phones only. */
+  | {type: 'sketch:prompt'; payload: {gameId: string; round: number; prompt: string}}
+  | {type: 'sketch:stroke'; payload: {gameId: string; round: number; stroke: Stroke}}
+  | {type: 'sketch:clear'; payload: {gameId: string; round: number}}
+  /** A right guess comes without `text`, so it doesn't give the answer away. */
+  | {type: 'sketch:guess'; payload: {gameId: string; round: number; profileId: string; text?: string; correct: boolean}}
   | {type: 'smart-home:state'; payload: {devices: SmartDevice[]}}
   | {type: 'game:state'; payload: GameState}
   | {type: 'league:updated'; payload: League}
@@ -393,7 +453,8 @@ export const SERVER_MESSAGE_TOPIC: Record<ServerMessage['type'], Topic | null> =
   'message:new': 'messages',
   'chat:reply': 'chat',
   'tonight:picks': 'tonight',
-  'sketch:state': 'sketch',
+  'tonight:vote-state': 'tonight',
+  'sketch:prompt': 'sketch',
   'sketch:stroke': 'sketch',
   'sketch:clear': 'sketch',
   'sketch:guess': 'sketch',
@@ -417,10 +478,13 @@ export const CLIENT_MESSAGE_ROLES: Record<ClientMessage['type'], readonly Client
   'calendar:remove': ['phone', 'voice'],
   'chat:ask': ['phone', 'voice', 'tv'],
   'tonight:request': ['tv', 'phone', 'voice'],
-  'sketch:start': ['tv', 'phone'],
+  'tonight:vote-start': ['tv', 'phone'],
+  'tonight:vote': ['phone'],
+  'tonight:vote-next': ['tv', 'phone'],
+  'tonight:vote-end': ['tv', 'phone'],
   'sketch:stroke': ['phone'],
   'sketch:clear': ['phone'],
-  'sketch:guess': ['phone', 'voice'],
+  'sketch:guess': ['phone'],
   'smart-home:set': ['tv', 'phone', 'voice'],
   'game:start': ['tv', 'phone'],
   'game:answer': ['phone'],

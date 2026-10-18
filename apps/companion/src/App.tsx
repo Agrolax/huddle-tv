@@ -4,6 +4,7 @@ import {useHuddle} from './useHuddle';
 import {ChatCard, TonightCard} from './AI';
 import {CalendarCard, SmartHomeCard} from './Widgets';
 import {GameCard} from './Game';
+import {VoteCard} from './Vote';
 
 export function App() {
   const huddle = useHuddle();
@@ -16,14 +17,24 @@ export function App() {
       profiles={snapshot.profiles}
       meId={huddle.meId}
       myAnswer={huddle.myAnswer}
-      lastPick={huddle.tonight?.picks[0]?.title}
+      lastPick={huddle.tonight?.picks[huddle.tonight.chosen ?? 0]?.title}
       onStart={huddle.startQuiz}
       onAnswer={huddle.answerQuiz}
       onNext={huddle.nextGameStep}
       onEnd={huddle.endGame}
+      onStartSketch={huddle.startSketch}
+      sketch={{
+        prompt: huddle.prompt,
+        myGuesses: huddle.myGuesses,
+        othersGot: huddle.othersGot,
+        onStroke: huddle.sendStroke,
+        onClear: huddle.clearSketch,
+        onGuess: huddle.guess,
+      }}
       disabled={status !== 'open'}
     />
   ) : null;
+  const voting = huddle.vote.phase !== 'idle' && huddle.tonight;
 
   if (status === 'unpaired') {
     return (
@@ -67,6 +78,18 @@ export function App() {
         </p>
       </header>
       <WhoAmI profiles={snapshot.profiles} meId={huddle.meId} onPick={huddle.setMe} />
+      {voting ? (
+        <VoteCard
+          vote={huddle.vote}
+          tonight={huddle.tonight!}
+          meId={huddle.meId}
+          myVote={huddle.myVote}
+          onVote={huddle.castVote}
+          onNext={huddle.voteNext}
+          onEnd={huddle.endVote}
+          disabled={status !== 'open'}
+        />
+      ) : null}
       {gameIsLive(huddle.game) ? game : null}
       <WhoIsWatching profiles={snapshot.profiles} active={huddle.activeProfileIds} onChange={huddle.switchProfiles} disabled={status !== 'open'} />
       <SendMessage onSend={huddle.sendMessage} disabled={status !== 'open'} lastSentAt={huddle.lastSent?.at} />
@@ -77,6 +100,8 @@ export function App() {
         profiles={snapshot.profiles}
         activeProfileIds={huddle.activeProfileIds}
         onRequest={huddle.requestTonight}
+        onVote={huddle.startVote}
+        voting={Boolean(voting)}
         disabled={status !== 'open'}
       />
       <CalendarCard

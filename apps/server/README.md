@@ -22,5 +22,5 @@ npm test -w @huddle/server        # node:test against a real ws server on a rand
 | `HUDDLE_WEATHER` | on; `off` skips the poller (offline demos) |
 | `HUDDLE_AI` | `mock`; `bedrock` calls Amazon Nova with the default AWS credential chain (`AWS_PROFILE`, `aws login`, env keys) |
 | `AWS_REGION` | `us-east-1` (a region with Nova cross-region inference profiles) |
-| `HUDDLE_TONIGHT_MODEL` / `HUDDLE_CHAT_MODEL` | `us.amazon.nova-lite-v1:0` / `us.amazon.nova-micro-v1:0` |
+| `HUDDLE_TONIGHT_MODEL` / `HUDDLE_CHAT_MODEL` / `HUDDLE_QUIZ_MODEL` | `us.amazon.nova-lite-v1:0` / `us.amazon.nova-micro-v1:0` / `us.amazon.nova-pro-v1:0` (the quiz also runs a second, cold pass and keeps only questions both passes agree on) |
 | `TZ` | system. Demo calendar events are placed in server-local time, so set it on a hosted box |

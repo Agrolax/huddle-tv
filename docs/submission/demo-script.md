@@ -14,9 +14,9 @@ Household in the demo: Rafi and Nanu on the couch, Ammu on the phone. These are 
 | 0:10–0:25 | Who's here | Who's here? Pick Rafi and Nanu with the remote. Home greets them by name. | 1 |
 | 0:25–0:45 | Home, live | Slow pass over the grid: clock and Open-Meteo weather, family calendar, smart home tile. Focus ring moves with the D-pad. | 3 |
 | 0:45–1:15 | Phone joins | Connect phone → QR. Phone scans, picks Ammu. Ammu joins Who's here on the TV. Phone sends "Pizza night at 7" → toast on the TV. Phone adds "Dentist, Thu 4pm" → calendar updates. Phone turns the lamp off → smart home tile updates. | 2, 3 |
-| 1:15–1:45 | Tonight, secret veto | Tonight tile: picks for Rafi, Nanu and Ammu with "ends by 9:15" (Dentist tomorrow). "Vote on phones": three phones swipe yes/no in private, the TV shows who has voted, then reveals the one pick everyone accepted. | 4, 6 |
+| 1:15–1:45 | Tonight, secret veto | Tonight tile: picks for Rafi, Nanu and Ammu with "Ends by 8:30 (Rafi's bedtime)". "Vote on phones": three phones say yes/no in private, the TV shows who has voted, then reveals only the pick everyone accepted (no overlap → sudden death between the top two). | 4, 6 |
 | 1:45–2:00 | Household quiz | *Our Week*: "Who has the dentist on Thursday?" on the TV, phones tap A–D, reveal, family league. | 5 |
-| 2:00–2:30 | Sketch the pick | TV picks Ammu to draw. Her phone shows a movie from tonight's candidates. Strokes appear live on the TV. Rafi guesses it, and that movie becomes tonight's pick. | 6 |
+| 2:00–2:30 | Sketch the pick | TV picks Ammu to draw. Her phone shows a movie from tonight's candidates. Strokes appear live on the TV. Rafi guesses it. After the last round, the last movie drawn becomes tonight's pick on the Tonight tile. | 6 |
 | 2:30–2:45 | Architecture | One slide (see below). | none |
 | 2:45–2:55 | Close | Back on Home with everyone on Who's here. Name and one-liner. | 3 |
 
@@ -30,9 +30,9 @@ Read slowly. About 2.5 words a second. Each line fits its beat.
 | Who's here | "Open Huddle and tell it who's on the couch. The home screen is now for Rafi and Nanu." |
 | Home, live | "Real weather, the family calendar, and the house, all on one screen. Every tile works with the remote." |
 | Phone joins | "Any phone joins with a QR code. No app to install. Ammu is in. She sends a message, adds the dentist to the calendar, and turns the lamp off. The TV updates live." |
-| Tonight, secret veto | "Bedrock picks for the people in the room, and it knows Nanu has the dentist tomorrow. Then everyone votes on their phone, in secret. Only the pick everyone accepts shows up." |
+| Tonight, secret veto | "Bedrock picks for the people in the room, and it knows it's Rafi's bedtime at 8:30, so nothing runs long. Then everyone votes on their phone, in secret. Only the pick everyone accepts shows up." |
 | Household quiz | "Game night is about your family. The quiz asks about your own week." |
-| Sketch the pick | "Or draw the movie. One phone is the pen, the others guess, and the winner's guess is what we watch." |
+| Sketch the pick | "Or draw the movie. One phone is the pen, the others guess, and the game ends on what we watch." |
 | Architecture | "React Native for Vega on the TV. A web companion on the phone. One realtime server. Bedrock, DynamoDB and S3 on AWS. Our D-pad focus kit is open source." |
 | Close | "Huddle Home. The Fire TV home screen, rebuilt for the whole family." |
 

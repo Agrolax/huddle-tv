@@ -1,9 +1,11 @@
 import {TONIGHT_MOODS, TonightMood, TonightPick, deviceStateLabel, eventWhen, upcomingEvents, weatherSummary} from '@huddle/shared';
 import {MOVIE_TRIVIA, mockWatchedIt} from '../quiz/watchedIt.js';
-import {ChatContext, HouseholdAI, Person, QuizContext, QuizResult, TonightContext, joinNames} from './types.js';
+import {ChatContext, HouseholdAI, Person, QuizContext, QuizResult, TonightContext, joinNames, minutesUntil} from './types.js';
 
 interface CatalogEntry {
   title: string;
+  /** Running time; one episode for a series. */
+  minutes: number;
   year: number;
   service: string;
   moods: TonightMood[];
@@ -13,20 +15,20 @@ interface CatalogEntry {
 
 /** A small hand-picked catalog. Services are illustrative; availability varies by region. */
 const CATALOG: readonly CatalogEntry[] = [
-  {title: 'Paddington 2', year: 2017, service: 'Prime Video', moods: ['cozy', 'funny'], blurb: 'warm, silly and kind'},
-  {title: 'My Neighbor Totoro', year: 1988, service: 'Max', moods: ['cozy'], blurb: 'gentle and dreamy'},
-  {title: 'The Great British Baking Show', year: 2010, service: 'Netflix', moods: ['cozy'], blurb: 'low stakes and lots of cake'},
-  {title: 'Up', year: 2009, service: 'Disney+', moods: ['cozy'], blurb: 'a big adventure with a soft heart'},
-  {title: 'Ted Lasso', year: 2020, service: 'Apple TV+', moods: ['cozy', 'funny'], blurb: 'feel-good and quick to love'},
-  {title: 'The Mitchells vs. the Machines', year: 2021, service: 'Netflix', moods: ['funny'], blurb: 'a chaotic family road trip'},
-  {title: 'School of Rock', year: 2003, service: 'Paramount+', moods: ['funny'], blurb: 'loud, funny and easy to share'},
-  {title: 'Wallace & Gromit: Vengeance Most Fowl', year: 2024, service: 'Netflix', moods: ['funny', 'cozy'], blurb: 'clever jokes for every age'},
-  {title: 'Game Night', year: 2018, service: 'Max', moods: ['funny', 'edge-of-seat'], blurb: 'laughs with a real mystery'},
-  {title: 'Knives Out', year: 2019, service: 'Prime Video', moods: ['edge-of-seat', 'funny'], blurb: 'a whodunit you can solve together'},
-  {title: 'Reacher', year: 2022, service: 'Prime Video', moods: ['edge-of-seat'], blurb: 'fast, punchy episodes'},
-  {title: 'Top Gun: Maverick', year: 2022, service: 'Paramount+', moods: ['edge-of-seat'], blurb: 'big-screen thrills'},
-  {title: 'Apollo 13', year: 1995, service: 'Peacock', moods: ['edge-of-seat'], blurb: 'true-story tension'},
-  {title: 'Jack Ryan', year: 2018, service: 'Prime Video', moods: ['edge-of-seat'], blurb: 'a binge-worthy spy chase'},
+  {title: 'Paddington 2', minutes: 104, year: 2017, service: 'Prime Video', moods: ['cozy', 'funny'], blurb: 'warm, silly and kind'},
+  {title: 'My Neighbor Totoro', minutes: 86, year: 1988, service: 'Max', moods: ['cozy'], blurb: 'gentle and dreamy'},
+  {title: 'The Great British Baking Show', minutes: 60, year: 2010, service: 'Netflix', moods: ['cozy'], blurb: 'low stakes and lots of cake'},
+  {title: 'Up', minutes: 96, year: 2009, service: 'Disney+', moods: ['cozy'], blurb: 'a big adventure with a soft heart'},
+  {title: 'Ted Lasso', minutes: 30, year: 2020, service: 'Apple TV+', moods: ['cozy', 'funny'], blurb: 'feel-good and quick to love'},
+  {title: 'The Mitchells vs. the Machines', minutes: 114, year: 2021, service: 'Netflix', moods: ['funny'], blurb: 'a chaotic family road trip'},
+  {title: 'School of Rock', minutes: 109, year: 2003, service: 'Paramount+', moods: ['funny'], blurb: 'loud, funny and easy to share'},
+  {title: 'Wallace & Gromit: Vengeance Most Fowl', minutes: 79, year: 2024, service: 'Netflix', moods: ['funny', 'cozy'], blurb: 'clever jokes for every age'},
+  {title: 'Game Night', minutes: 100, year: 2018, service: 'Max', moods: ['funny', 'edge-of-seat'], blurb: 'laughs with a real mystery'},
+  {title: 'Knives Out', minutes: 130, year: 2019, service: 'Prime Video', moods: ['edge-of-seat', 'funny'], blurb: 'a whodunit you can solve together'},
+  {title: 'Reacher', minutes: 50, year: 2022, service: 'Prime Video', moods: ['edge-of-seat'], blurb: 'fast, punchy episodes'},
+  {title: 'Top Gun: Maverick', minutes: 131, year: 2022, service: 'Paramount+', moods: ['edge-of-seat'], blurb: 'big-screen thrills'},
+  {title: 'Apollo 13', minutes: 140, year: 1995, service: 'Peacock', moods: ['edge-of-seat'], blurb: 'true-story tension'},
+  {title: 'Jack Ryan', minutes: 60, year: 2018, service: 'Prime Video', moods: ['edge-of-seat'], blurb: 'a binge-worthy spy chase'},
 ];
 
 /** FNV-1a, so the same people + mood always get the same picks. */
@@ -44,15 +46,23 @@ function rotate<T>(list: readonly T[], by: number): T[] {
   return [...list.slice(n), ...list.slice(0, n)];
 }
 
-export function mockTonight(people: readonly Person[], mood?: TonightMood): TonightPick[] {
+/** `maxMinutes`: prefer titles that finish in time (bedtime); the shortest fill in when too few do. */
+export function mockTonight(people: readonly Person[], mood?: TonightMood, maxMinutes = Infinity): TonightPick[] {
   const seed = hash(`${people.map(p => p.id).sort().join(',')}|${mood ?? ''}`);
+  const inTime = (list: CatalogEntry[]) => {
+    const fit = list.filter(e => e.minutes <= maxMinutes);
+    return fit.length ? fit : [...list].sort((a, b) => a.minutes - b.minutes).slice(0, 1);
+  };
   const chosen: CatalogEntry[] = [];
   if (mood) {
-    chosen.push(...rotate(CATALOG.filter(e => e.moods.includes(mood)), seed).slice(0, 3));
+    const pool = CATALOG.filter(e => e.moods.includes(mood));
+    const fit = pool.filter(e => e.minutes <= maxMinutes);
+    const short = pool.filter(e => !fit.includes(e)).sort((a, b) => a.minutes - b.minutes);
+    chosen.push(...[...rotate(fit, seed), ...short].slice(0, 3));
   } else {
     // No mood: one of each, so the sheet shows the range.
     for (const m of TONIGHT_MOODS) {
-      const options = CATALOG.filter(e => e.moods[0] === m.id && !chosen.includes(e));
+      const options = inTime(CATALOG.filter(e => e.moods[0] === m.id && !chosen.includes(e)));
       chosen.push(rotate(options, seed)[0]!);
     }
   }
@@ -61,6 +71,7 @@ export function mockTonight(people: readonly Person[], mood?: TonightMood): Toni
     title: e.title,
     year: e.year,
     service: e.service,
+    minutes: e.minutes,
     why: `${capitalize(e.blurb)}, a good fit for ${names}.`,
   }));
 }
@@ -127,7 +138,7 @@ export class MockAI implements HouseholdAI {
 
   async tonight(ctx: TonightContext): Promise<TonightPick[]> {
     await sleep(this.delayMs * 10);
-    return mockTonight(ctx.people, ctx.mood);
+    return mockTonight(ctx.people, ctx.mood, ctx.endsBy ? minutesUntil(ctx.endsBy.at, ctx.now) : Infinity);
   }
 
   async quiz(ctx: QuizContext): Promise<QuizResult> {

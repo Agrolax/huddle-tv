@@ -4,9 +4,11 @@ import {
   ClientMessage,
   ConnectionStatus,
   DoorEvent,
+  EMPTY_CANVAS,
   FamilyMessage,
   GameState,
   IDLE_GAME,
+  IDLE_VOTE,
   League,
   QuizSource,
   HouseholdSnapshot,
@@ -14,9 +16,12 @@ import {
   PairCode,
   Profile,
   ServerEnvelope,
+  SketchCanvas,
   SmartDevice,
+  Stroke,
   TonightMood,
   TonightPicks,
+  TonightVote,
   Weather,
 } from '@huddle/shared';
 import {HOUSEHOLD_ID, SERVER_URL} from '../config.generated';
@@ -52,6 +57,19 @@ export interface HouseholdState {
   game: GameState;
   /** Family league totals across games. */
   league: League;
+  /** Secret veto on the Tonight picks. */
+  vote: TonightVote;
+  /** Sketch the pick: the drawing for the current round. */
+  canvas: SketchCanvas;
+  /** Sketch the pick: guesses this round, newest last. */
+  guesses: SketchGuess[];
+}
+
+export interface SketchGuess {
+  profileId: string;
+  /** Missing for a right guess, so the TV doesn't show the answer. */
+  text?: string;
+  correct: boolean;
 }
 
 export interface HouseholdActions {
@@ -65,6 +83,13 @@ export interface HouseholdActions {
   requestTonight: (mood?: TonightMood) => boolean;
   /** Start a quiz. Returns false while offline. */
   startQuiz: (source: QuizSource, title?: string) => boolean;
+  /** Start Sketch the pick (needs two phones). Returns false while offline. */
+  startSketch: () => boolean;
+  /** Secret veto on the current picks. */
+  startVote: () => boolean;
+  /** Stop waiting for phones and show the result. */
+  voteNext: () => void;
+  endVote: () => void;
   /** Skip to the reveal or the next question. */
   nextGameStep: () => void;
   endGame: () => void;
@@ -112,6 +137,9 @@ export function HouseholdProvider({children, initialProfileIds, createSocket, se
     tonightLoading: false,
     game: IDLE_GAME,
     league: {},
+    vote: IDLE_VOTE,
+    canvas: EMPTY_CANVAS,
+    guesses: [],
   });
   const socketRef = useRef<HuddleSocket | null>(null);
   const wantPairCode = useRef(false);
@@ -139,6 +167,8 @@ export function HouseholdProvider({children, initialProfileIds, createSocket, se
           tonight: snapshot.tonight ?? s.tonight,
           game: snapshot.game ?? IDLE_GAME,
           league: snapshot.league ?? {},
+          vote: snapshot.vote ?? IDLE_VOTE,
+          canvas: snapshot.sketch ?? EMPTY_CANVAS,
         }));
         if (wantPairCode.current) socketRef.current?.send('pair:request', {});
         break;
@@ -168,9 +198,41 @@ export function HouseholdProvider({children, initialProfileIds, createSocket, se
       case 'message:new':
         setState(s => ({...s, latestMessage: msg.payload as FamilyMessage}));
         break;
-      case 'game:state':
-        setState(s => ({...s, game: msg.payload as GameState}));
+      case 'game:state': {
+        const game = msg.payload as GameState;
+        setState(s => {
+          // A new round (or game) starts with a blank canvas and no guesses.
+          const newRound = game.gameId !== s.canvas.gameId || game.round !== s.canvas.round;
+          return newRound && game.phase === 'question'
+            ? {...s, game, canvas: {gameId: game.gameId, round: game.round, strokes: []}, guesses: []}
+            : {...s, game};
+        });
         break;
+      }
+      case 'tonight:vote-state':
+        setState(s => ({...s, vote: msg.payload as TonightVote}));
+        break;
+      case 'sketch:stroke': {
+        const {gameId, round, stroke} = msg.payload as {gameId: string; round: number; stroke: Stroke};
+        setState(s => {
+          if (s.canvas.gameId !== gameId || s.canvas.round !== round) return s;
+          const i = s.canvas.strokes.findIndex(x => x.id === stroke.id);
+          const strokes =
+            i < 0
+              ? [...s.canvas.strokes, stroke]
+              : s.canvas.strokes.map((x, k) => (k === i ? {...x, points: [...x.points, ...stroke.points]} : x));
+          return {...s, canvas: {...s.canvas, strokes}};
+        });
+        break;
+      }
+      case 'sketch:clear':
+        setState(s => ({...s, canvas: {...s.canvas, strokes: []}}));
+        break;
+      case 'sketch:guess': {
+        const {round, gameId, ...guess} = msg.payload as SketchGuess & {gameId: string; round: number};
+        setState(s => (s.game.gameId === gameId && s.game.round === round ? {...s, guesses: [...s.guesses, guess].slice(-8)} : s));
+        break;
+      }
       case 'league:updated':
         setState(s => ({...s, league: msg.payload as League}));
         break;
@@ -274,6 +336,23 @@ export function HouseholdProvider({children, initialProfileIds, createSocket, se
     [],
   );
 
+  const startSketch = useCallback(
+    () => socketRef.current?.send<Extract<ClientMessage, {type: 'game:start'}>>('game:start', {kind: 'sketch'}) ?? false,
+    [],
+  );
+
+  const startVote = useCallback(
+    () => socketRef.current?.send<Extract<ClientMessage, {type: 'tonight:vote-start'}>>('tonight:vote-start', {}) ?? false,
+    [],
+  );
+  const voteId = state.vote.voteId;
+  const voteNext = useCallback(() => {
+    if (voteId) socketRef.current?.send<Extract<ClientMessage, {type: 'tonight:vote-next'}>>('tonight:vote-next', {voteId});
+  }, [voteId]);
+  const endVote = useCallback(() => {
+    if (voteId) socketRef.current?.send<Extract<ClientMessage, {type: 'tonight:vote-end'}>>('tonight:vote-end', {voteId});
+  }, [voteId]);
+
   const gameId = state.game.gameId;
   const nextGameStep = useCallback(() => {
     if (gameId) socketRef.current?.send<Extract<ClientMessage, {type: 'game:next'}>>('game:next', {gameId});
@@ -288,8 +367,22 @@ export function HouseholdProvider({children, initialProfileIds, createSocket, se
   );
 
   const value = useMemo(
-    () => ({...state, requestPairCode, switchProfiles, setDevice, requestTonight, startQuiz, nextGameStep, endGame, senderName}),
-    [state, requestPairCode, switchProfiles, setDevice, requestTonight, startQuiz, nextGameStep, endGame, senderName],
+    () => ({
+      ...state,
+      requestPairCode,
+      switchProfiles,
+      setDevice,
+      requestTonight,
+      startQuiz,
+      startSketch,
+      startVote,
+      voteNext,
+      endVote,
+      nextGameStep,
+      endGame,
+      senderName,
+    }),
+    [state, requestPairCode, switchProfiles, setDevice, requestTonight, startQuiz, startSketch, startVote, voteNext, endVote, nextGameStep, endGame, senderName],
   );
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

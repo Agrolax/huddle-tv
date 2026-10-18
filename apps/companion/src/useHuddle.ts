@@ -6,6 +6,7 @@ import {
   GameState,
   HouseholdSnapshot,
   IDLE_GAME,
+  IDLE_VOTE,
   League,
   QuizSource,
   HuddleSocket,
@@ -14,6 +15,8 @@ import {
   SmartDevice,
   TonightMood,
   TonightPicks,
+  TonightVote,
+  Stroke,
   Weather,
   CHAT_MAX_LENGTH,
   parseJoinParams,
@@ -38,6 +41,15 @@ export interface HuddleState {
   league: League;
   /** This phone's answer to the current question, until the next one. */
   myAnswer?: {gameId: string; round: number; choice: number};
+  vote: TonightVote;
+  /** This phone voted in the current vote phase (`<voteId>:<phase>`). */
+  myVote?: string;
+  /** Sketch the pick: what to draw, when this phone draws. */
+  prompt?: {gameId: string; round: number; prompt: string};
+  /** Sketch the pick: this phone's guesses this round; the server says which was right. */
+  myGuesses: Array<{text: string; correct?: boolean}>;
+  /** Sketch the pick: someone else's right guesses this round. */
+  othersGot: string[];
 }
 
 export interface ChatLine {
@@ -72,6 +84,9 @@ export function useHuddle() {
     chat: newChat(),
     game: IDLE_GAME,
     league: {},
+    vote: IDLE_VOTE,
+    myGuesses: [],
+    othersGot: [],
   });
   const socketRef = useRef<HuddleSocket | null>(null);
   const sessionRef = useRef(session);
@@ -101,7 +116,7 @@ export function useHuddle() {
           ...(sessionRef.current?.meId ? {profileId: sessionRef.current.meId} : {}),
         },
         capabilities: {touch: true, text: true, screen: 'phone'},
-        topics: ['household', 'messages', 'calendar', 'smart-home', 'weather', 'tonight', 'chat', 'game'],
+        topics: ['household', 'messages', 'calendar', 'smart-home', 'weather', 'tonight', 'chat', 'game', 'sketch'],
         ...(sessionRef.current?.pairCode ? {pairCode: sessionRef.current.pairCode} : {}),
       }),
       onToken: token => update({token}),
@@ -127,6 +142,7 @@ export function useHuddle() {
               tonight: snapshot.tonight ?? s.tonight,
               game: snapshot.game ?? IDLE_GAME,
               league: snapshot.league ?? {},
+              vote: snapshot.vote ?? IDLE_VOTE,
             }));
             break;
           }
@@ -147,9 +163,35 @@ export function useHuddle() {
             if (m.fromClient === 'phone') setState(s => ({...s, lastSent: m}));
             break;
           }
-          case 'game:state':
-            setState(s => ({...s, game: msg.payload as GameState}));
+          case 'game:state': {
+            const game = msg.payload as GameState;
+            setState(s => {
+              const newRound = game.gameId !== s.game.gameId || game.round !== s.game.round;
+              return newRound ? {...s, game, myGuesses: [], othersGot: []} : {...s, game};
+            });
             break;
+          }
+          case 'tonight:vote-state':
+            setState(s => ({...s, vote: msg.payload as TonightVote}));
+            break;
+          case 'sketch:prompt':
+            setState(s => ({...s, prompt: msg.payload as HuddleState['prompt']}));
+            break;
+          case 'sketch:guess': {
+            const g = msg.payload as {gameId: string; round: number; profileId: string; text?: string; correct: boolean};
+            setState(s => {
+              if (g.gameId !== s.game.gameId || g.round !== s.game.round) return s;
+              if (g.profileId === sessionRef.current?.meId) {
+                // Mark the oldest unconfirmed guess of ours with the server's verdict.
+                const i = s.myGuesses.findIndex(x => x.correct === undefined);
+                if (i < 0) return s;
+                const myGuesses = s.myGuesses.map((x, k) => (k === i ? {...x, correct: g.correct} : x));
+                return {...s, myGuesses};
+              }
+              return g.correct ? {...s, othersGot: [...s.othersGot, g.profileId]} : s;
+            });
+            break;
+          }
           case 'league:updated':
             setState(s => ({...s, league: msg.payload as League}));
             break;
@@ -256,6 +298,31 @@ export function useHuddle() {
   const nextGameStep = useCallback((gameId: string) => socketRef.current?.send('game:next', {gameId}) ?? false, []);
   const endGame = useCallback((gameId: string) => socketRef.current?.send('game:end', {gameId}) ?? false, []);
 
+  const startSketch = useCallback(() => socketRef.current?.send('game:start', {kind: 'sketch'}) ?? false, []);
+
+  const sendStroke = useCallback(
+    (gameId: string, round: number, stroke: Stroke) => socketRef.current?.send('sketch:stroke', {gameId, round, stroke}) ?? false,
+    [],
+  );
+  const clearSketch = useCallback((gameId: string, round: number) => socketRef.current?.send('sketch:clear', {gameId, round}) ?? false, []);
+
+  const guess = useCallback((gameId: string, round: number, text: string) => {
+    const trimmed = text.trim();
+    if (!trimmed) return false;
+    const sent = socketRef.current?.send('sketch:guess', {gameId, round, text: trimmed}) ?? false;
+    if (sent) setState(s => ({...s, myGuesses: [...s.myGuesses, {text: trimmed}]}));
+    return sent;
+  }, []);
+
+  const startVote = useCallback(() => socketRef.current?.send('tonight:vote-start', {}) ?? false, []);
+  const castVote = useCallback((voteId: string, phase: string, yes: number[]) => {
+    const sent = socketRef.current?.send('tonight:vote', {voteId, yes}) ?? false;
+    if (sent) setState(s => ({...s, myVote: `${voteId}:${phase}`}));
+    return sent;
+  }, []);
+  const voteNext = useCallback((voteId: string) => socketRef.current?.send('tonight:vote-next', {voteId}) ?? false, []);
+  const endVote = useCallback((voteId: string) => socketRef.current?.send('tonight:vote-end', {voteId}) ?? false, []);
+
   const resetChat = useCallback(() => setState(s => (s.chat.streaming ? s : {...s, chat: newChat()})), []);
 
   const setMe = useCallback(
@@ -289,6 +356,14 @@ export function useHuddle() {
     answerQuiz,
     nextGameStep,
     endGame,
+    startSketch,
+    sendStroke,
+    clearSketch,
+    guess,
+    startVote,
+    castVote,
+    voteNext,
+    endVote,
   };
 }
 

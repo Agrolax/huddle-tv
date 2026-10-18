@@ -51,7 +51,7 @@ describe('game validators', () => {
       ok: true,
       value: {kind: 'quiz', source: 'watched-it', title: 'Up'},
     });
-    expect(validateGameStart({kind: 'sketch', source: 'our-week'}).ok).toBe(false);
+    expect(validateGameStart({kind: 'trivia', source: 'our-week'}).ok).toBe(false);
     expect(validateGameStart({kind: 'quiz', source: 'trivia'}).ok).toBe(false);
     expect(validateGameStart({kind: 'quiz', source: 'our-week', title: 'x'.repeat(81)}).ok).toBe(false);
   });

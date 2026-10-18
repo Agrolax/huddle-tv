@@ -3,6 +3,7 @@ import {StyleSheet, Text, View} from 'react-native';
 import {TVFocusGuideView} from '@amazon-devices/react-native-kepler';
 import {
   GameState,
+  TonightPicks,
   League,
   Profile,
   TONIGHT_MOODS,
@@ -80,11 +81,12 @@ export function HomeScreen({onSwitchProfiles, onOpenWidget, onFocusChange}: Prop
     setTimeout(() => restoreFocus(gridRef.current?.getCell('game') ?? null), 0);
   }, []);
 
-  // A phone started a game: bring it up on the TV, unless another sheet is open.
+  // A phone started a game: bring it up on the TV, or as soon as the sheet in the way closes.
   const live = gameIsLive(game);
+  const blocked = connectOpen || smartHomeOpen || tonightOpen;
   useEffect(() => {
-    if (live && !connectOpen && !smartHomeOpen && !tonightOpen) setGameOpen(true);
-  }, [live, game.gameId]); // eslint-disable-line react-hooks/exhaustive-deps
+    if (live && !blocked) setGameOpen(true);
+  }, [live, game.gameId, blocked]);
 
   const gameLine = useMemo(() => gameTileLine(game, league, profiles), [game, league, profiles]);
 
@@ -167,11 +169,14 @@ export function HomeScreen({onSwitchProfiles, onOpenWidget, onFocusChange}: Prop
           onOpenWidget?.('tonight');
         },
         render: () => (
-          <WidgetTile label={tonight && !tonightFresh ? 'Tonight · select for new picks' : 'Tonight'}>
+          <WidgetTile label={tonightLabel(tonight, tonightFresh)}>
             <View style={styles.posters}>
               {tonight
                 ? tonight.picks.map((p, i) => (
-                    <View key={`${p.title}-${i}`} style={[styles.poster, i > 0 && styles.posterGap]} testID={`tonight-tile-pick-${i}`}>
+                    <View
+                      key={`${p.title}-${i}`}
+                      style={[styles.poster, i > 0 && styles.posterGap, tonight.chosen === i && styles.posterChosen]}
+                      testID={`tonight-tile-pick-${i}`}>
                       <Text style={styles.posterTitle} numberOfLines={2}>
                         {p.title}
                       </Text>
@@ -275,15 +280,27 @@ export function HomeScreen({onSwitchProfiles, onOpenWidget, onFocusChange}: Prop
 /** One line for the Game night tile: the running game, the last winner, or who leads the league. */
 export function gameTileLine(game: GameState, league: League, profiles: Profile[]): string {
   const name = (id: string) => profiles.find(p => p.id === id)?.name ?? 'Someone';
+  const sketch = game.kind === 'sketch';
   if (game.phase === 'loading') return 'Starting a quiz…';
-  if (game.phase === 'question' || game.phase === 'reveal') return `Quiz: question ${game.round} of ${game.rounds}`;
+  if (game.phase === 'question' || game.phase === 'reveal') {
+    return sketch ? `Sketch: round ${game.round} of ${game.rounds}` : `Quiz: question ${game.round} of ${game.rounds}`;
+  }
   if (game.phase === 'final') {
     const top = standings(game.scores).filter(s => s.place === 1 && s.points > 0);
-    if (top.length) return `${top.map(s => name(s.profileId)).join(' & ')} won the quiz.`;
+    if (top.length) return `${top.map(s => name(s.profileId)).join(' & ')} won ${sketch ? 'Sketch the pick' : 'the quiz'}.`;
   }
   const leader = standings(leaguePoints(league))[0];
   if (leader && leader.points > 0) return `${name(leader.profileId)} leads the league.`;
   return 'Play a quiz on your phones.';
+}
+
+/** "Tonight", "Tonight · Paddington 2", "Tonight · ends by 8:30", or a nudge when the people changed. */
+export function tonightLabel(tonight: TonightPicks | null, fresh: boolean): string {
+  if (!tonight) return 'Tonight';
+  if (!fresh) return 'Tonight · select for new picks';
+  const chosen = tonight.chosen !== undefined ? tonight.picks[tonight.chosen]?.title : undefined;
+  if (chosen) return `Tonight · ${chosen}`;
+  return tonight.endsBy ? `Tonight · ends by ${tonight.endsBy.label}` : 'Tonight';
 }
 
 /** "12° Cloudy", or '' before the first reading. */
@@ -397,6 +414,10 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surfaceRaised,
     padding: space.sm,
     justifyContent: 'flex-end',
+  },
+  posterChosen: {
+    borderWidth: 4,
+    borderColor: colors.success,
   },
   posterGap: {
     marginLeft: space.sm,
