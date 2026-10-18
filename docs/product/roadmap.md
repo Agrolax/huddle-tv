@@ -92,6 +92,9 @@ Edit freely: this is the living plan. Tick boxes as you go. When a date slips, m
 - If time runs out, ship the quiz alone and cut the drawing; secret veto is the next most important
 
 ## Step 7: Ship (Oct 20–22)
+- [x] Submission drafts (Oct 18): [demo script](../submission/demo-script.md) (problem → solution → "Built on Vega"), [product feedback](../submission/product-feedback.md), [Devpost description](../submission/devpost-description.md), [checklist](../submission/checklist.md) with the four blockers. They need your `[confirm]` and `TODO` edits
+- [ ] **Decide the AWS story.** The code calls Bedrock only; docs and README still list DynamoDB, S3, Lightsail and Polly. Build DynamoDB persistence (households + league) or cut those claims
+- [ ] Make the repo public with a root LICENSE (or invite the reviewers), update the README status line, add an accurate architecture diagram
 - [ ] Focus + Back audit, `amazon-devices-scalable-ui-audit`, judge setup (hosted server + companion live through Nov 20, `.vpkg` + VVD steps)
 - [ ] Open Source: publish `tv-focus-kit` (see [checklist](../submission/checklist.md))
 - [ ] Oct 20–21: record and edit the [demo video](../submission/demo-script.md)
@@ -131,4 +134,5 @@ Edit freely: this is the living plan. Tick boxes as you go. When a date slips, m
 | Oct 17 | Scope sharpened after [differentiation research](../research/differentiation.md): Sketch it → game night (household quiz + Sketch the pick on one engine, family league); Tonight gains secret veto + bedtime-aware picks; app-launch spike demoted. Steps renumbered: 5 quiz, 6 Sketch the pick + veto, 7 ship |
 | Oct 17 | Step 5 done: game night household quiz (Our Week from household data, Watched It via Bedrock with a mock fallback), family league, TV sheet + phone answer pad; Home's Sketch it tile became Game night |
 | Oct 17 | Step 6 done early: secret veto, bedtime-aware Tonight, Sketch the pick; uniqueness check added to the differentiation research. Sketch the pick is framed as a way to decide, not as the lead game. FL-14 (Vega SVG) logged |
+| Oct 18 | Submission drafts: demo script now ends on a "Built on Vega" beat (VVD, Vega CLI, Builder Tools MCP, focus kit) and drops DynamoDB/S3 from the voiceover; product feedback filled from the friction log; Devpost description; checklist with blockers (private repo, no LICENSE, no judge setup, docs overclaim AWS) |
 | Oct 18 | Bedrock verified with `aws login` (console session, us-east-1). $250 credits active. Prompts tuned on real Nova output (kid ratings, minutes, calendar day words); Watched It moves to Nova Pro with a check pass. Claude on Bedrock not available to the account |
