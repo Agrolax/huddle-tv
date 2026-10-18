@@ -92,6 +92,7 @@ Edit freely: this is the living plan. Tick boxes as you go. When a date slips, m
 - If time runs out, ship the quiz alone and cut the drawing; secret veto is the next most important
 
 ## Step 7: Ship (Oct 20–22)
+Day-by-day plan, open decisions and how to resume: [next-steps.md](next-steps.md). Feature-by-feature uniqueness: [uniqueness.md](../research/uniqueness.md).
 - [x] Submission drafts (Oct 18): [demo script](../submission/demo-script.md) (problem → solution → "Built on Vega"), [product feedback](../submission/product-feedback.md), [Devpost description](../submission/devpost-description.md), [checklist](../submission/checklist.md) with the four blockers. They need your `[confirm]` and `TODO` edits
 - [ ] **Decide the AWS story.** The code calls Bedrock only; docs and README still list DynamoDB, S3, Lightsail and Polly. Build DynamoDB persistence (households + league) or cut those claims
 - [ ] Make the repo public with a root LICENSE (or invite the reviewers), update the README status line, add an accurate architecture diagram
@@ -136,3 +137,4 @@ Edit freely: this is the living plan. Tick boxes as you go. When a date slips, m
 | Oct 17 | Step 6 done early: secret veto, bedtime-aware Tonight, Sketch the pick; uniqueness check added to the differentiation research. Sketch the pick is framed as a way to decide, not as the lead game. FL-14 (Vega SVG) logged |
 | Oct 18 | Submission drafts: demo script now ends on a "Built on Vega" beat (VVD, Vega CLI, Builder Tools MCP, focus kit) and drops DynamoDB/S3 from the voiceover; product feedback filled from the friction log; Devpost description; checklist with blockers (private repo, no LICENSE, no judge setup, docs overclaim AWS) |
 | Oct 18 | Bedrock verified with `aws login` (console session, us-east-1). $250 credits active. Prompts tuned on real Nova output (kid ratings, minutes, calendar day words); Watched It moves to Nova Pro with a check pass. Claude on Bedrock not available to the account |
+| Oct 18 | Added [uniqueness.md](../research/uniqueness.md) (all features scored), [family-league.md](family-league.md) and [next-steps.md](next-steps.md) (decisions D1–D6, schedule to Oct 23, how to resume). League needs no S3; DynamoDB is optional |

@@ -4,6 +4,8 @@
 |---|---|
 | Understand what we're building and why | [product/PRD.md](product/PRD.md) |
 | See / update the plan and dates | [product/roadmap.md](product/roadmap.md) |
+| Resume work: decisions, schedule, what to do next | [product/next-steps.md](product/next-steps.md) |
+| Check what is unique vs already out there | [research/uniqueness.md](research/uniqueness.md) · [product/family-league.md](product/family-league.md) |
 | Park an idea for later | [product/ideas-backlog.md](product/ideas-backlog.md) |
 | See how it works technically | [architecture/architecture.md](architecture/architecture.md) |
 | Design screens | [design/design-guide.md](design/design-guide.md) · [design/wireframes.html](design/wireframes.html) |
