@@ -141,3 +141,12 @@ Severity: **Blocker** · **Major** · **Minor** · **Papercut**
 - **Severity:** Major (silent: looks like dropped network frames)
 - **Workaround:** Keep a fixed set of always-mounted `<Path>` elements (one per pen color) and grow each one's `d` string instead of adding children. That also means fewer native views for long drawings.
 - **Suggestion:** Fix child insertion in the Vega SVG view manager, or document the limit, and add a "draw live" sample to the react-native-svg port docs.
+
+### FL-15 — Bedrock "account is currently being verified" on an account that was already active
+- **Tool / SDK:** Amazon Bedrock Runtime (Converse), AWS CLI 2.37 `aws login`, account created Oct 5
+- **Task attempted:** First Bedrock call from the Mac on Oct 18: `aws bedrock-runtime converse --model-id us.amazon.nova-micro-v1:0`.
+- **Expected:** An answer, or a clear model-access or quota error.
+- **Actual:** `AccessDeniedException: Your account is currently being verified. Verification normally takes less than 2 hours.` The account was 13 days old, on the paid plan, `ACTIVE`, with $250 in credits. The console showed no banner or pending step. A Nova Lite call a minute later worked, and Micro then worked too. Separately, Claude models are listed as inference profiles but return "not available for this account", with no hint of what unlocks them.
+- **Severity:** Minor (cost 20 minutes; on demo day it would look like a broken integration)
+- **Workaround:** Retry after a minute. The server already falls back to the mock on any Bedrock error, so the TV never shows it.
+- **Suggestion:** Say *why* an account is being verified and where to see its status, and say what a new account needs to use a listed model.

@@ -8,7 +8,7 @@ import {joinNames, parsePicksJson, sanitizePicks} from '../src/ai/types.js';
 import {demoHousehold} from '../src/household.js';
 import {TestClient, TestServer, claimTv, pairPhone, startServer} from './helpers.js';
 
-const RAFI = {id: 'rafi', name: 'Rafi'};
+const RAFI = {id: 'rafi', name: 'Rafi', kid: true};
 const NANU = {id: 'nanu', name: 'Nanu'};
 
 /** An AI whose answers each test controls. */
@@ -136,6 +136,32 @@ describe('Bedrock client', () => {
     assert.ok(first instanceof ConverseCommand);
     assert.equal(sent[0].input.modelId, 'us.amazon.nova-lite-v1:0');
     assert.match(sent[0].input.messages[0].content[0].text, /Rafi and Nanu[\s\S]*Mood: Funny/);
+  });
+
+  it('tells the model a child is here and how many minutes are left', async () => {
+    const sent: any[] = [];
+    const picks = Array.from({length: 3}, (_, i) => ({title: `T${i}`, minutes: 80, why: 'x'}));
+    const client = {send: async (cmd: any) => (sent.push(cmd), {output: {message: {content: [{text: JSON.stringify({picks})}]}}})};
+    const ai = new BedrockAI({region: 'us-east-1', client: client as any});
+    await ai.tonight({people: [RAFI, NANU], now: new Date(2026, 9, 15, 19), endsBy: {at: new Date(2026, 9, 15, 20, 30), reason: "Rafi's bedtime"}});
+    const prompt = sent[0].input.messages[0].content[0].text;
+    assert.match(prompt, /Rafi is a child: only picks rated G, PG/);
+    assert.match(prompt, /at most 90 minutes/);
+  });
+
+  it('keeps only quiz questions a second, cold pass answers the same way', async () => {
+    const questions = Array.from({length: 8}, (_, i) => ({question: `Q${i}?`, choices: ['a', 'b', 'c', 'd'], answer: i % 4}));
+    const replies = [JSON.stringify({questions}), '{"answers":[0,1,-1,3,0,0,2,3]}'];
+    const sent: any[] = [];
+    const client = {send: async (cmd: any) => (sent.push(cmd), {output: {message: {content: [{text: replies[sent.length - 1]}]}}})};
+    const ai = new BedrockAI({region: 'us-east-1', client: client as any});
+    const out = await ai.quiz({title: 'Up', people: [RAFI], now: new Date()});
+    assert.deepEqual(out.items.map(q => q.text), ['Q0?', 'Q1?', 'Q3?', 'Q4?', 'Q6?'].slice(0, 5));
+    assert.equal(sent[0].input.modelId, 'us.amazon.nova-pro-v1:0');
+    assert.doesNotMatch(sent[1].input.messages[0].content[0].text, /"answer"/, 'the check pass never sees the answers');
+    // Too few survive: the hub falls back to the mock.
+    const strict = {send: async () => ({output: {message: {content: [{text: sent.length++ % 2 ? '{"answers":[-1,-1,-1,-1,-1,-1,-1,-1]}' : JSON.stringify({questions})}]}}})};
+    await assert.rejects(new BedrockAI({region: 'us-east-1', client: strict as any}).quiz({title: 'Up', people: [RAFI], now: new Date()}), /0 checked questions/);
   });
 
   it('throws when the model returns too few picks', async () => {

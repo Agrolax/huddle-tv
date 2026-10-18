@@ -431,7 +431,7 @@ export class Hub {
   }
 
   private people(hh: Household, ids: readonly string[]): Person[] {
-    return hh.snapshot.profiles.filter(p => ids.includes(p.id)).map(p => ({id: p.id, name: p.name}));
+    return hh.snapshot.profiles.filter(p => ids.includes(p.id)).map(p => ({id: p.id, name: p.name, ...(p.kid ? {kid: true} : {})}));
   }
 
   /**
@@ -546,6 +546,7 @@ export class Hub {
     const ctx: ChatContext = {
       householdName: hh.snapshot.name,
       people: this.people(hh, hh.snapshot.activeProfileIds),
+      everyone: this.people(hh, hh.snapshot.profiles.map(p => p.id)),
       ...(askedBy ? {askedBy} : {}),
       events: hh.snapshot.events,
       devices: hh.snapshot.devices,

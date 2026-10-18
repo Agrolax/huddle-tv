@@ -4,6 +4,8 @@ import type {CalendarEvent, SmartDevice, TonightMood, TonightPick, Weather} from
 export interface Person {
   id: string;
   name: string;
+  /** A child: picks and answers stay kid-friendly. */
+  kid?: boolean;
 }
 
 export interface TonightContext {
@@ -44,6 +46,8 @@ export interface ChatContext {
   people: Person[];
   /** The profile on the phone that asked, if it picked one. */
   askedBy?: Person;
+  /** Everyone in the household, to name who an event is for. Defaults to `people`. */
+  everyone?: Person[];
   events: CalendarEvent[];
   devices: SmartDevice[];
   weather: Weather | null;
