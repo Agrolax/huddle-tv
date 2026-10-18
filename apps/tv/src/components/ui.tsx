@@ -3,7 +3,7 @@
  * stay the same everywhere. Styled after the Fire TV home on Vega OS:
  * flat grey surfaces, white focus ring with a gap, one blue primary button.
  */
-import React, {useEffect, useRef} from 'react';
+import React, {useEffect, useRef, useState} from 'react';
 import {BackHandler, findNodeHandle, StyleProp, StyleSheet, Text, View, ViewStyle} from 'react-native';
 import {FocusManager, TVFocusGuideView} from '@amazon-devices/react-native-kepler';
 import {FocusableCard} from '@huddle/tv-focus-kit';
@@ -206,3 +206,16 @@ const styles = StyleSheet.create({
     marginTop: space.xs,
   },
 });
+
+/** Whole seconds until `endsAt`, ticking once a second; null without a deadline. */
+export function useSecondsLeft(endsAt: string | undefined): number | null {
+  const [now, setNow] = useState(Date.now());
+  useEffect(() => {
+    if (!endsAt) return;
+    setNow(Date.now());
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, [endsAt]);
+  if (!endsAt) return null;
+  return Math.max(0, Math.ceil((Date.parse(endsAt) - now) / 1000));
+}

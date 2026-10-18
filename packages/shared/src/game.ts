@@ -73,3 +73,68 @@ export function leaguePoints(league: League): Record<string, number> {
 export function gameIsLive(game: GameState): boolean {
   return game.phase === 'loading' || game.phase === 'question' || game.phase === 'reveal';
 }
+
+// --- Sketch the pick -------------------------------------------------------
+
+/** The drawer wins this much for every person who guesses their drawing. */
+export const SKETCH_DRAWER_POINTS = 250;
+
+/** "Paddington 2" → "__________ 2": letters hidden, digits, spaces and punctuation kept. */
+export function titleHint(title: string): string {
+  return [...title].map(c => (/\p{L}/u.test(c) ? '_' : c)).join('');
+}
+
+const NUMBER_WORDS: Record<string, string> = {one: '1', two: '2', three: '3', four: '4', five: '5'};
+
+/** Lowercase words without accents, punctuation, a leading "the" or "and"/"&" noise. */
+export function normalizeTitle(s: string): string {
+  const words = s
+    .normalize('NFD')
+    .replace(/\p{M}/gu, '')
+    .toLowerCase()
+    .replace(/&/g, ' and ')
+    .replace(/[^\p{L}\p{N}]+/gu, ' ')
+    .trim()
+    .split(' ')
+    .filter(Boolean)
+    .map(w => NUMBER_WORDS[w] ?? w);
+  if (words[0] === 'the' && words.length > 1) words.shift();
+  return words.filter(w => w !== 'and').join(' ');
+}
+
+/** Edit distance, capped: stops counting past `max`. */
+function closeEnough(a: string, b: string, max: number): boolean {
+  if (Math.abs(a.length - b.length) > max) return false;
+  let prev = Array.from({length: b.length + 1}, (_, i) => i);
+  for (let i = 1; i <= a.length; i++) {
+    const row = [i];
+    for (let j = 1; j <= b.length; j++) {
+      row[j] = Math.min(prev[j]! + 1, row[j - 1]! + 1, prev[j - 1]! + (a[i - 1] === b[j - 1] ? 0 : 1));
+    }
+    prev = row;
+  }
+  return prev[b.length]! <= max;
+}
+
+/** Whole words of `title` in a row that make up `guess`: "totoro" in "my neighbor totoro". */
+function isWordRun(guess: string, title: string): boolean {
+  return ` ${title} `.includes(` ${guess} `);
+}
+
+/**
+ * Is this guess the title? Forgiving on case, punctuation, "The", "&" and
+ * number words, one typo per 8 letters, the part before a colon ("Wallace
+ * and Gromit"), and the name people actually say: whole words from the title
+ * with at least 6 letters or half the title ("Totoro", "Paddington").
+ */
+export function guessMatches(guess: string, title: string): boolean {
+  const g = normalizeTitle(guess);
+  if (!g) return false;
+  const full = normalizeTitle(title);
+  const targets = [full];
+  const main = title.split(':')[0]!;
+  if (main !== title && normalizeTitle(main).length >= 4) targets.push(normalizeTitle(main));
+  if (targets.some(t => g === t || closeEnough(g, t, Math.floor(t.replace(/ /g, '').length / 8)))) return true;
+  const letters = (s: string) => s.replace(/ /g, '').length;
+  return isWordRun(g, full) && (letters(g) >= 6 || letters(g) * 2 >= letters(full));
+}

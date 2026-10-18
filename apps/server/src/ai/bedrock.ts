@@ -1,7 +1,7 @@
 import {BedrockRuntimeClient, ConverseCommand, ConverseStreamCommand, Message} from '@aws-sdk/client-bedrock-runtime';
-import {TONIGHT_MOODS, TonightPick, deviceStateLabel, upcomingEvents, weatherSummary} from '@huddle/shared';
+import {TONIGHT_MOODS, TonightPick, clockTime, deviceStateLabel, upcomingEvents, weatherSummary} from '@huddle/shared';
 import {parseQuizJson} from '../quiz/questions.js';
-import {ChatContext, HouseholdAI, QuizContext, QuizResult, TonightContext, joinNames, parsePicksJson} from './types.js';
+import {ChatContext, HouseholdAI, QuizContext, QuizResult, TonightContext, joinNames, minutesUntil, parsePicksJson} from './types.js';
 
 export interface BedrockAIOptions {
   region: string;
@@ -83,7 +83,8 @@ export class BedrockAI implements HouseholdAI {
 const TONIGHT_SYSTEM = [
   'You pick what a family watches tonight on Fire TV.',
   'Reply with JSON only, no prose and no code fence, in exactly this shape:',
-  '{"picks":[{"title":"...","year":2017,"service":"Prime Video","why":"..."}]}',
+  '{"picks":[{"title":"...","year":2017,"minutes":104,"service":"Prime Video","why":"..."}]}',
+  '"minutes" is the running time (one episode for a series).',
   'Give exactly 3 picks: real, well-known movies or series that suit everyone in the room.',
   '"why" is one short sentence (under 120 characters) that names the people it suits.',
   '"service" is where it usually streams in the US; prefer Prime Video when it fits.',
@@ -108,7 +109,12 @@ export function tonightPrompt(ctx: TonightContext): string {
     `In the room: ${joinNames(ctx.people)}.`,
     mood ? `Mood: ${mood}.` : 'Mood: any; give a mix (one cozy, one funny, one edge-of-seat).',
     `It is ${ctx.now.toDateString()}.`,
-  ].join('\n');
+    ctx.endsBy
+      ? `It has to end by ${clockTime(ctx.endsBy.at)} (${ctx.endsBy.reason}): about ${minutesUntil(ctx.endsBy.at, ctx.now)} minutes from now. Only pick things that finish in time; a series episode is fine.`
+      : '',
+  ]
+    .filter(Boolean)
+    .join('\n');
 }
 
 export function chatSystem(ctx: ChatContext): string {

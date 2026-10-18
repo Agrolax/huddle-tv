@@ -73,3 +73,15 @@ Keep the locked scope's shape, but change what the game and Tonight *are*:
 4. Demote the app-launch spike: one "Open in Prime Video" button only if `Linking` works on the first try.
 
 Everything else stays in the backlog. A scope change goes into the PRD and roadmap when it's decided.
+
+## Uniqueness check for step 6 (Oct 17)
+
+Before building step 6 we checked each feature against what Fire TV and the big streaming apps ship today.
+
+| Feature | Already out there? | What keeps ours different |
+|---|---|---|
+| Secret veto | Not on Fire TV, Alexa+, Netflix or Prime Video: Alexa+ recommends for one person ([TechRepublic](https://techrepublic.com/article/news-alexa-plus-fire-tv-free/)). Third-party phone apps do swipe-to-match ([Stream Vote](https://apps.apple.com/eg/app/app/id1560203643), [Chooza](https://apps.apple.com/au/app/chooza/id6469320507), [WatchPick](https://peerpush.com/p/watchpick)) | No install (QR). Voters are the people on the TV's Who's here. The TV, the shared screen, shows who has voted and only the overlap. The picks already fit bedtime. No overlap → sudden death on the TV, not a dead end |
+| Bedtime-aware picks | Nothing found. Alexa+ uses viewing history and subscriptions, not the family calendar or who is in the room | Reads the family calendar and the kids present, shows "Ends by 8:30 · Rafi's bedtime", drops titles that run long |
+| Sketch the pick | Drawing party games exist on Fire TV (Luna GameNight, Jackbox Drawful) | Only the hook is new: the prompts are tonight's candidates and the game sets tonight's pick. **Risk:** in a demo it can read as "Pictionary on phones". Show it right after the veto, as another way to decide, and keep the quiz about *your* week as the lead game |
+
+Rule for the demo and the submission text: never show a feature on its own if a single-viewer product already does it. Lead each beat with the group (private phones, a shared reveal, the family's own data).

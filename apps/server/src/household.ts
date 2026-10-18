@@ -1,4 +1,4 @@
-import {IDLE_GAME} from '@huddle/shared';
+import {EMPTY_CANVAS, IDLE_GAME, IDLE_VOTE} from '@huddle/shared';
 import type {CalendarEvent, HouseholdSnapshot, Weather} from '@huddle/shared';
 
 /** In-memory demo household. DynamoDB replaces this in a later step. */
@@ -7,7 +7,7 @@ export function demoHousehold(householdId: string, now = Date.now(), weather: We
     householdId,
     name: 'The Khans',
     profiles: [
-      {id: 'rafi', name: 'Rafi', color: '#3D8BFF'},
+      {id: 'rafi', name: 'Rafi', color: '#3D8BFF', kid: true},
       {id: 'nanu', name: 'Nanu', color: '#F5A524'},
       {id: 'ammu', name: 'Ammu', color: '#3DCF8E'},
       {id: 'abbu', name: 'Abbu', color: '#B57BFF'},
@@ -23,7 +23,8 @@ export function demoHousehold(householdId: string, now = Date.now(), weather: We
     ],
     weather,
     tonight: null,
-    sketch: {roundId: null, phase: 'idle', scores: {}},
+    vote: IDLE_VOTE,
+    sketch: EMPTY_CANVAS,
     game: IDLE_GAME,
     league: {},
     clients: [],

@@ -1,9 +1,10 @@
-import React, {useEffect, useState} from 'react';
+import React from 'react';
 import {StyleSheet, Text, View} from 'react-native';
 import {GameState, Profile, choiceLetter, leaguePoints, standings} from '@huddle/shared';
 import {useHousehold} from '../net/HouseholdContext';
 import {colors, radius, space, type} from '../theme';
-import {Avatar, Button, Sheet} from './ui';
+import {SketchBoard} from './SketchBoard';
+import {Avatar, Button, Sheet, useSecondsLeft} from './ui';
 
 type Props = {onClose: () => void};
 
@@ -13,9 +14,29 @@ type Props = {onClose: () => void};
  * only starts, skips and ends; it never answers.
  */
 export function GameNightOverlay({onClose}: Props) {
-  const {game, league, profiles, tonight, status, startQuiz, nextGameStep, endGame} = useHousehold();
+  const {game, league, profiles, tonight, status, companions, startQuiz, startSketch, nextGameStep, endGame} = useHousehold();
   const online = status === 'open';
-  const lastPick = tonight?.picks[0]?.title;
+  const lastPick = tonight?.picks[tonight.chosen ?? 0]?.title;
+  const phones = new Set(companions.filter(c => c.role === 'phone' && c.profileId).map(c => c.profileId)).size;
+
+  if (game.kind === 'sketch' && (game.phase === 'question' || game.phase === 'reveal')) {
+    return (
+      <Sheet testID="game-overlay" title="Sketch the pick" subtitle={`Round ${game.round} of ${game.rounds} · The drawings are tonight's picks`} onClose={onClose} width={1640}>
+        <SketchView />
+        <View style={styles.footer} key={`${game.phase}-${game.round}`}>
+          <Button
+            testID="game-next"
+            label={game.phase === 'question' ? 'Show answer' : game.round < game.rounds ? 'Next round' : 'See scores'}
+            preferred
+            primary={game.phase === 'reveal'}
+            onPress={nextGameStep}
+            containerStyle={styles.gap}
+          />
+          <Button testID="game-end" label="End game" onPress={endGame} />
+        </View>
+      </Sheet>
+    );
+  }
 
   if (game.phase === 'question' || game.phase === 'reveal') {
     return (
@@ -74,8 +95,22 @@ export function GameNightOverlay({onClose}: Props) {
               accessibilityLabel={lastPick ? `Watched It: ${lastPick}` : 'Watched It'}
               disabled={!online}
               onPress={() => startQuiz('watched-it', lastPick)}
+              containerStyle={styles.gap}
+            />
+            <Button
+              testID="game-start-sketch"
+              label="Sketch the pick"
+              accessibilityLabel={phones < 2 ? 'Sketch the pick. Connect two phones to play' : "Sketch the pick. Draw tonight's picks; the last one drawn is what you watch"}
+              disabled={!online || phones < 2}
+              onPress={startSketch}
             />
           </View>
+          {final && game.kind === 'sketch' && game.answer ? (
+            <Text style={[styles.mute, styles.pickLine]} testID="game-sketch-pick">
+              Tonight: {game.answer}
+            </Text>
+          ) : null}
+          {phones < 2 ? <Text style={styles.hint}>Sketch the pick needs two phones.</Text> : null}
           <View style={styles.footer}>
             <Button testID="game-done" label="Done" onPress={onClose} />
           </View>
@@ -92,6 +127,68 @@ export function GameNightOverlay({onClose}: Props) {
       </View>
     </Sheet>
   );
+}
+
+/** The live drawing, who draws, the hint, and the guesses; the answer at the reveal. */
+function SketchView() {
+  const {game, profiles, canvas, guesses} = useHousehold();
+  const reveal = game.phase === 'reveal';
+  const secondsLeft = useSecondsLeft(game.phase === 'question' ? game.endsAt : undefined);
+  const name = (id?: string) => profiles.find(p => p.id === id)?.name ?? 'Someone';
+  const drawer = profiles.find(p => p.id === game.drawerId);
+  const players = profiles.filter(p => p.id in (game.gained ?? {}));
+
+  return (
+    <View style={styles.sketch} testID="game-sketch">
+      <SketchBoard strokes={canvas.strokes} width={880} />
+      <View style={styles.sketchSide}>
+        <View style={styles.drawerRow}>
+          {drawer ? <Avatar name={drawer.name} color={drawer.color} size={56} /> : null}
+          <Text style={styles.drawerText}>{reveal ? `${name(game.drawerId)} drew` : `${name(game.drawerId)} is drawing`}</Text>
+        </View>
+        {reveal ? (
+          <Text style={styles.answer} testID="game-sketch-answer">
+            {game.answer}
+          </Text>
+        ) : (
+          <Text style={styles.hintText} testID="game-sketch-hint" accessibilityLabel={`${game.hint?.length ?? 0} characters`}>
+            {spaced(game.hint ?? '')}
+          </Text>
+        )}
+        {reveal ? (
+          <View style={styles.people} testID="game-gained">
+            {players.length ? (
+              players.map(p => (
+                <View key={p.id} style={styles.person}>
+                  <Avatar name={p.name} color={p.color} size={56} />
+                  <Text style={styles.points}>+{game.gained?.[p.id] ?? 0}</Text>
+                </View>
+              ))
+            ) : (
+              <Text style={styles.mute}>Nobody got it.</Text>
+            )}
+          </View>
+        ) : (
+          <View testID="game-guesses">
+            {guesses.map((g, i) => (
+              <Text key={i} style={[styles.guess, g.correct && styles.guessRight]} numberOfLines={1}>
+                {g.correct ? `${name(g.profileId)} got it` : `${name(g.profileId)}: ${g.text}`}
+              </Text>
+            ))}
+            <Text style={styles.mute}>
+              {guesses.length ? '' : 'Guess on your phone. '}
+              {secondsLeft !== null ? `${secondsLeft} s` : ''}
+            </Text>
+          </View>
+        )}
+      </View>
+    </View>
+  );
+}
+
+/** "__ 2" → "_ _  2", so each hidden letter reads as a slot. */
+function spaced(hint: string): string {
+  return [...hint].map(c => (c === ' ' ? '  ' : c)).join(' ');
 }
 
 function QuestionView({game, profiles}: {game: GameState; profiles: Profile[]}) {
@@ -199,20 +296,55 @@ function shorten(s: string, max: number): string {
   return s.length <= max ? s : `${s.slice(0, max - 1).trimEnd()}…`;
 }
 
-/** Whole seconds until `endsAt`, ticking once a second; null without a deadline. */
-function useSecondsLeft(endsAt: string | undefined): number | null {
-  const [now, setNow] = useState(Date.now());
-  useEffect(() => {
-    if (!endsAt) return;
-    setNow(Date.now());
-    const id = setInterval(() => setNow(Date.now()), 1000);
-    return () => clearInterval(id);
-  }, [endsAt]);
-  if (!endsAt) return null;
-  return Math.max(0, Math.ceil((Date.parse(endsAt) - now) / 1000));
-}
-
 const styles = StyleSheet.create({
+  sketch: {
+    flexDirection: 'row',
+    marginTop: space.md,
+  },
+  sketchSide: {
+    flex: 1,
+    marginLeft: space.lg,
+  },
+  drawerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: space.md,
+  },
+  drawerText: {
+    color: colors.ink,
+    fontSize: type.title,
+    fontWeight: '700',
+    marginLeft: space.sm,
+  },
+  hintText: {
+    color: colors.ink,
+    fontSize: type.title,
+    fontWeight: '700',
+    marginBottom: space.md,
+  },
+  answer: {
+    color: colors.success,
+    fontSize: type.hero,
+    fontWeight: '700',
+    marginBottom: space.md,
+  },
+  guess: {
+    color: colors.ink,
+    fontSize: type.body,
+    marginBottom: space.xs,
+  },
+  guessRight: {
+    color: colors.success,
+    fontWeight: '700',
+  },
+  pickLine: {
+    marginTop: space.md,
+  },
+  hint: {
+    color: colors.mute,
+    fontSize: type.chip,
+    marginTop: space.sm,
+  },
   footer: {
     flexDirection: 'row',
     alignItems: 'center',

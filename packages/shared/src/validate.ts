@@ -3,7 +3,7 @@
  * handler, so a malformed frame becomes an `error` reply instead of an exception.
  * Hand-written to keep the TV bundle free of a schema library.
  */
-import {ALL_TOPICS, ClientCapabilities, ClientMessage, ClientRole, QUIZ_CHOICES, QUIZ_SOURCES, QuizSource, TONIGHT_MOODS, TonightMood, Topic} from './protocol';
+import {ALL_TOPICS, ClientCapabilities, ClientMessage, ClientRole, Point, QUIZ_CHOICES, QUIZ_SOURCES, QuizSource, TONIGHT_MOODS, TonightMood, Topic} from './protocol';
 import {isPairCode, normalizePairCode} from './pairing';
 
 export const MESSAGE_MAX_LENGTH = 280;
@@ -183,7 +183,8 @@ export function validateDoorSimulate(payload: unknown): Validation<PayloadOf<'do
 
 export function validateGameStart(payload: unknown): Validation<PayloadOf<'game:start'>> {
   if (!isRecord(payload)) return fail('game:start payload must be an object');
-  if (payload.kind !== 'quiz') return fail('game:start.kind must be quiz');
+  if (payload.kind === 'sketch') return {ok: true, value: {kind: 'sketch'}};
+  if (payload.kind !== 'quiz') return fail('game:start.kind must be quiz or sketch');
   if (!QUIZ_SOURCES.some(s => s.id === payload.source)) return fail(`game:start.source must be one of ${QUIZ_SOURCES.map(s => s.id).join(', ')}`);
   const title = optionalString(payload, 'title', 80);
   if (title === null) return fail('game:start.title must be a string up to 80 chars');
@@ -207,4 +208,81 @@ export function validateGameAnswer(payload: unknown): Validation<PayloadOf<'game
 export function validateGameRef(type: 'game:next' | 'game:end', payload: unknown): Validation<{gameId: string}> {
   if (!isRecord(payload) || !isId(payload.gameId)) return fail(`${type}.gameId is not a valid id`);
   return {ok: true, value: {gameId: payload.gameId}};
+}
+
+/** Picks are never more than this many, so vote indexes stay small. */
+const VOTE_OPTIONS_MAX = 10;
+
+export function validateTonightVote(payload: unknown): Validation<PayloadOf<'tonight:vote'>> {
+  if (!isRecord(payload)) return fail('tonight:vote payload must be an object');
+  const {voteId, yes, profileId} = payload;
+  if (!isId(voteId)) return fail('tonight:vote.voteId is not a valid id');
+  if (!Array.isArray(yes) || yes.length > VOTE_OPTIONS_MAX || !yes.every(i => Number.isInteger(i) && i >= 0 && i < VOTE_OPTIONS_MAX)) {
+    return fail('tonight:vote.yes must be a list of pick indexes');
+  }
+  if (profileId !== undefined && !isId(profileId)) return fail('tonight:vote.profileId is not a valid id');
+  return {ok: true, value: {voteId, yes: [...new Set(yes as number[])], ...(profileId !== undefined ? {profileId: profileId as string} : {})}};
+}
+
+/** `tonight:vote-next` and `tonight:vote-end` carry only the vote id. */
+export function validateVoteRef(type: 'tonight:vote-next' | 'tonight:vote-end', payload: unknown): Validation<{voteId: string}> {
+  if (!isRecord(payload) || !isId(payload.voteId)) return fail(`${type}.voteId is not a valid id`);
+  return {ok: true, value: {voteId: payload.voteId}};
+}
+
+export const STROKE_POINTS_MAX = 200;
+const COLOR_PATTERN = /^#[0-9A-Fa-f]{6}$/;
+
+function roundRef(type: string, payload: Record<string, unknown>): string | null {
+  if (!isId(payload.gameId)) return `${type}.gameId is not a valid id`;
+  const round = payload.round;
+  if (typeof round !== 'number' || !Number.isInteger(round) || round < 1) return `${type}.round must be a positive integer`;
+  return null;
+}
+
+function isUnit(v: unknown): v is number {
+  return typeof v === 'number' && Number.isFinite(v) && v >= 0 && v <= 1;
+}
+
+export function validateSketchStroke(payload: unknown): Validation<PayloadOf<'sketch:stroke'>> {
+  if (!isRecord(payload)) return fail('sketch:stroke payload must be an object');
+  const bad = roundRef('sketch:stroke', payload);
+  if (bad) return fail(bad);
+  const stroke = payload.stroke;
+  if (!isRecord(stroke) || !isId(stroke.id)) return fail('sketch:stroke.stroke needs an id');
+  if (typeof stroke.color !== 'string' || !COLOR_PATTERN.test(stroke.color)) return fail('sketch:stroke.stroke.color must be #RRGGBB');
+  if (typeof stroke.width !== 'number' || !(stroke.width > 0 && stroke.width <= 0.1)) return fail('sketch:stroke.stroke.width must be 0-0.1');
+  const points = stroke.points;
+  if (!Array.isArray(points) || !points.length || points.length > STROKE_POINTS_MAX) {
+    return fail(`sketch:stroke.stroke.points must have 1-${STROKE_POINTS_MAX} points`);
+  }
+  if (!points.every(p => isRecord(p) && isUnit(p.x) && isUnit(p.y))) return fail('sketch:stroke points must be {x, y} in 0-1');
+  return {
+    ok: true,
+    value: {
+      gameId: payload.gameId as string,
+      round: payload.round as number,
+      stroke: {id: stroke.id, color: stroke.color, width: stroke.width, points: (points as Point[]).map(p => ({x: p.x, y: p.y}))},
+    },
+  };
+}
+
+export function validateSketchClear(payload: unknown): Validation<PayloadOf<'sketch:clear'>> {
+  if (!isRecord(payload)) return fail('sketch:clear payload must be an object');
+  const bad = roundRef('sketch:clear', payload);
+  if (bad) return fail(bad);
+  return {ok: true, value: {gameId: payload.gameId as string, round: payload.round as number}};
+}
+
+export const GUESS_MAX_LENGTH = 60;
+
+export function validateSketchGuess(payload: unknown): Validation<PayloadOf<'sketch:guess'>> {
+  if (!isRecord(payload)) return fail('sketch:guess payload must be an object');
+  const bad = roundRef('sketch:guess', payload);
+  if (bad) return fail(bad);
+  if (typeof payload.text !== 'string') return fail('sketch:guess needs text: string');
+  const text = payload.text.trim();
+  if (!text) return fail('sketch:guess.text is empty');
+  if ([...text].length > GUESS_MAX_LENGTH) return fail(`sketch:guess.text is longer than ${GUESS_MAX_LENGTH} characters`);
+  return {ok: true, value: {gameId: payload.gameId as string, round: payload.round as number, text}};
 }

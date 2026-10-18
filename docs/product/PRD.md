@@ -82,7 +82,7 @@ Built in steps. Each step ends with a PR, running on the Vega Virtual Device wit
 | 3 | **Widgets live**: clock/weather (Open-Meteo), family calendar (server data), profiles, smart-home (simulated, toggled from the phone) | ✅ Oct 15 |
 | 4 | **Bedrock**: Tonight picks for who's here, phone AI chat | ✅ Oct 15 (on the mock) |
 | 5 | **Game night: household quiz**: game engine (rounds, phone answers, reveal, family league), *Watched It* + *Our Week* question sources, Bedrock + mock | ✅ Oct 17 |
-| 6 | **Sketch the pick + secret veto**: drawing on the same engine with Tonight picks as prompts; private yes/no voting on Tonight; bedtime-aware picks | |
+| 6 | **Sketch the pick + secret veto**: drawing on the same engine with Tonight picks as prompts; private yes/no voting on Tonight; bedtime-aware picks | ✅ Oct 17 |
 | 7 | Polish, focus/Back audit, judge setup, demo video | |
 | Stretch | Polly line on the TV, Transcribe hold-to-talk, Echo Show display ([research](../research/echo-show.md)), one-press launch into streaming apps from a Tonight pick | |
 

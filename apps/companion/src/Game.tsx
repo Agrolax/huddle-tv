@@ -1,4 +1,5 @@
 import {GameState, League, Profile, choiceLetter, colors, gameIsLive, leaguePoints, standings} from '@huddle/shared';
+import {SketchPlay} from './Sketch';
 
 /**
  * Game night on the phone: start a quiz, answer A–D, see how you did.
@@ -15,6 +16,8 @@ export function GameCard({
   onAnswer,
   onNext,
   onEnd,
+  onStartSketch,
+  sketch,
   disabled,
 }: {
   game: GameState;
@@ -27,6 +30,9 @@ export function GameCard({
   onAnswer: (gameId: string, round: number, choice: number) => boolean;
   onNext: (gameId: string) => boolean;
   onEnd: (gameId: string) => boolean;
+  onStartSketch: () => boolean;
+  /** Everything Sketch the pick needs beyond the quiz props. */
+  sketch: Omit<React.ComponentProps<typeof SketchPlay>, 'game' | 'profiles' | 'meId' | 'onNext' | 'onEnd' | 'disabled'>;
   disabled: boolean;
 }) {
   const name = (id: string) => profiles.find(p => p.id === id)?.name ?? 'Someone';
@@ -39,6 +45,10 @@ export function GameCard({
         <p className="muted">Writing questions…</p>
       </section>
     );
+  }
+
+  if (game.kind === 'sketch' && (game.phase === 'question' || game.phase === 'reveal') && game.gameId) {
+    return <SketchPlay game={game} profiles={profiles} meId={meId} onNext={onNext} onEnd={onEnd} disabled={disabled} {...sketch} />;
   }
 
   if ((game.phase === 'question' || game.phase === 'reveal') && game.question && game.gameId) {
@@ -122,9 +132,10 @@ export function GameCard({
               </li>
             ))}
           </ol>
+          {game.kind === 'sketch' && game.answer ? <p className="small">Tonight: {game.answer}</p> : null}
         </>
       ) : (
-        <p className="muted small">A quiz for everyone in the room. The questions show on the TV. Answer on your phone.</p>
+        <p className="muted small">A quiz for everyone in the room, or draw tonight's picks. The TV shows the game. Play on your phone.</p>
       )}
       <div className="row wrap">
         <button className="primary" onClick={() => onStart('our-week')} disabled={disabled || gameIsLive(game)}>
@@ -132,6 +143,9 @@ export function GameCard({
         </button>
         <button className="chip small-chip" onClick={() => onStart('watched-it', lastPick)} disabled={disabled || gameIsLive(game)}>
           {lastPick ? `Watched It: ${lastPick}` : 'Watched It'}
+        </button>
+        <button className="chip small-chip" onClick={onStartSketch} disabled={disabled || gameIsLive(game)}>
+          Sketch the pick
         </button>
       </div>
       {leagueRows.length ? (
@@ -142,7 +156,7 @@ export function GameCard({
               <li key={r.profileId} className={`row ${r.profileId === meId ? 'me' : ''}`}>
                 <span className="place">{r.place}</span>
                 <span className="grow">{name(r.profileId)}</span>
-                <span className="muted small">{league[r.profileId]?.wins ? `${league[r.profileId]!.wins} wins` : ''}</span>
+                <span className="muted small">{league[r.profileId]?.wins ? `${league[r.profileId]!.wins} ${league[r.profileId]!.wins === 1 ? 'win' : 'wins'}` : ''}</span>
                 <strong>{r.points}</strong>
               </li>
             ))}

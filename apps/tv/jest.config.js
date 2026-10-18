@@ -17,6 +17,7 @@ module.exports = {
     '^react-native/(.*)$': `${kepler}/$1`,
     '^@huddle/(shared|tv-focus-kit)$': path.resolve(__dirname, '../../packages/$1/src'),
     '^@amazon-devices/react-native-qrcode-svg$': '<rootDir>/test/mocks/QRCode.tsx',
+    '^@amazon-devices/react-native-svg$': '<rootDir>/test/mocks/svg.tsx',
     '^@amazon-devices/react-native-async-storage__async-storage$': '<rootDir>/test/mocks/asyncStorage.ts',
   },
   coverageDirectory: '.tmp/coverage',

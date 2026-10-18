@@ -433,3 +433,133 @@ describe('Game night', () => {
     expect(sent(server, 'game:end').pop()?.payload).toEqual({gameId: 'g2'});
   });
 });
+
+describe('Secret veto', () => {
+  const picks = () => ({...{picks: fakePicks('cozy')}, mood: 'cozy', forProfileIds: ['rafi', 'nanu'], at: new Date().toISOString(), source: 'mock'});
+
+  async function openTonight(server = new FakeServer()) {
+    server.tonight = picks();
+    const utils = await goHome(server);
+    await waitFor(() => expect(utils.server.tv.readyState).toBe(1));
+    fireEvent.press(utils.getByTestId('grid-cell-tonight'));
+    return utils;
+  }
+
+  it('shows when tonight has to end and how long each pick runs', async () => {
+    const server = new FakeServer();
+    server.tonight = {
+      ...picks(),
+      picks: fakePicks('cozy').map((p, i) => ({...p, minutes: [104, 86, 50][i]})),
+      endsBy: {at: new Date().toISOString(), label: '8:30', reason: "Rafi's bedtime"},
+    };
+    const {getByTestId} = await goHome(server);
+    await waitFor(() => expect(server.tv.readyState).toBe(1));
+    expect(textOf(getByTestId('grid-cell-tonight'))).toMatch(/Tonight · ends by 8:30/);
+    fireEvent.press(getByTestId('grid-cell-tonight'));
+    expect(textOf(getByTestId('tonight-overlay'))).toMatch(/For Rafi & Nanu · Ends by 8:30 \(Rafi's bedtime\)/);
+    expect(textOf(getByTestId('tonight-pick-0'))).toMatch(/2020 · Prime Video · 1 h 44 min/);
+    expect(textOf(getByTestId('tonight-pick-2'))).toMatch(/50 min/);
+  });
+
+  it('Vote on phones starts the vote; the TV shows who voted, never how', async () => {
+    const {getByTestId, server} = await openTonight();
+    fireEvent.press(getByTestId('tonight-vote'));
+    expect(server.received.some(m => m.type === 'tonight:vote-start')).toBe(true);
+    act(() =>
+      server.push('tonight:vote-state', {voteId: 'v1', phase: 'voting', options: [0, 1, 2], voted: ['nanu'], endsAt: new Date(Date.now() + 60_000).toISOString()}),
+    );
+    const progress = textOf(getByTestId('vote-progress'));
+    expect(progress).toMatch(/Vote on your phones\. Nobody sees your vote\./);
+    expect(textOf(getByTestId('vote-voted'))).toMatch(/RWaitingNVoted1 of 2 voted · \d+ s/);
+    fireEvent.press(getByTestId('vote-next'));
+    expect(server.received.filter(m => m.type === 'tonight:vote-next').pop()?.payload).toEqual({voteId: 'v1'});
+  });
+
+  it('sudden death, then the result marks tonight’s pick on the sheet and the tile', async () => {
+    const {getByTestId, server} = await openTonight();
+    act(() => server.push('tonight:vote-state', {voteId: 'v1', phase: 'sudden-death', options: [0, 2], voted: []}));
+    expect(textOf(getByTestId('vote-progress'))).toMatch(/Sudden death/);
+    expect(() => getByTestId('tonight-pick-1')).toThrow();
+    act(() => server.push('tonight:vote-state', {voteId: 'v1', phase: 'result', options: [0, 2], voted: ['rafi', 'nanu'], accepted: [], winner: 2, decidedBy: 'sudden-death'}));
+    act(() => server.push('tonight:picks', {...picks(), chosen: 2}));
+    expect(textOf(getByTestId('vote-result'))).toMatch(/Sudden death: cozy pick 3 wins\./);
+    expect(textOf(getByTestId('tonight-pick-2'))).toMatch(/^Tonight's pick/);
+    fireEvent.press(getByTestId('vote-done'));
+    expect(server.received.filter(m => m.type === 'tonight:vote-end').pop()?.payload).toEqual({voteId: 'v1'});
+    act(() => server.push('tonight:vote-state', {voteId: null, phase: 'idle', options: [], voted: []}));
+    fireEvent.press(getByTestId('tonight-done'));
+    expect(textOf(getByTestId('grid-cell-tonight'))).toMatch(/Tonight · cozy pick 3/);
+  });
+});
+
+describe('Sketch the pick', () => {
+  const round = {
+    gameId: 's1',
+    phase: 'question',
+    kind: 'sketch',
+    title: 'Sketch the pick',
+    round: 1,
+    rounds: 3,
+    endsAt: new Date(Date.now() + 60_000).toISOString(),
+    answered: [],
+    scores: {rafi: 0, nanu: 0},
+    drawerId: 'rafi',
+    hint: '__________ 2',
+  };
+
+  it('the menu starts it when two phones are here', async () => {
+    const server = new FakeServer();
+    const {getByTestId} = await goHome(server);
+    await waitFor(() => expect(server.tv.readyState).toBe(1));
+    fireEvent.press(getByTestId('grid-cell-game'));
+    fireEvent.press(getByTestId('game-start-sketch'));
+    expect(server.received.filter(m => m.type === 'game:start').pop()?.payload).toEqual({kind: 'sketch'});
+  });
+
+  it('needs two phones', async () => {
+    const server = new FakeServer();
+    server.phones = server.phones.slice(0, 1);
+    const {getByTestId} = await goHome(server);
+    await waitFor(() => expect(server.tv.readyState).toBe(1));
+    fireEvent.press(getByTestId('grid-cell-game'));
+    expect(textOf(getByTestId('game-overlay'))).toMatch(/Sketch the pick needs two phones\./);
+    fireEvent.press(getByTestId('game-start-sketch'));
+    expect(server.received.some(m => m.type === 'game:start')).toBe(false);
+  });
+
+  it('draws strokes as they stream, shows the hint and guesses, then the answer', async () => {
+    const server = new FakeServer();
+    const {getByTestId, getAllByTestId, queryAllByTestId} = await goHome(server);
+    act(() => server.push('game:state', round));
+    expect(textOf(getByTestId('game-sketch'))).toMatch(/Rafi is drawing/);
+    expect(textOf(getByTestId('game-sketch-hint'))).toBe('_ _ _ _ _ _ _ _ _ _    2');
+    const stroke = {id: 'a', color: '#3D8BFF', width: 0.01, points: [{x: 0.1, y: 0.1}, {x: 0.5, y: 0.5}]};
+    act(() => server.push('sketch:stroke', {gameId: 's1', round: 1, stroke}));
+    act(() => server.push('sketch:stroke', {gameId: 's1', round: 1, stroke: {...stroke, points: [{x: 1, y: 0.75}]}}));
+    // One path per pen color; the blue one holds the stroke.
+    expect(getAllByTestId('svg-path').map(p => p.props.accessibilityLabel)).toContain('M88.0 66.0 L440.0 330.0 880.0 495.0');
+    act(() => server.push('sketch:guess', {gameId: 's1', round: 1, profileId: 'nanu', text: 'cars', correct: false}));
+    act(() => server.push('sketch:guess', {gameId: 's1', round: 1, profileId: 'nanu', correct: true}));
+    expect(textOf(getByTestId('game-guesses'))).toMatch(/Nanu: carsNanu got it/);
+    act(() => server.push('game:state', {...round, phase: 'reveal', answered: ['nanu'], answer: 'Paddington 2', gained: {nanu: 900, rafi: 250}}));
+    expect(textOf(getByTestId('game-sketch-answer'))).toBe('Paddington 2');
+    expect(textOf(getByTestId('game-gained'))).toBe("R+250N+900");
+    // The next round starts blank.
+    act(() => server.push('game:state', {...round, round: 2, drawerId: 'nanu'}));
+    expect(queryAllByTestId('svg-path').every(p => p.props.accessibilityLabel === 'M0 0')).toBe(true);
+    expect(textOf(getByTestId('game-sketch'))).toMatch(/Nanu is drawing/);
+  });
+});
+
+describe('Game night opens itself', () => {
+  it('after the sheet that was in the way closes', async () => {
+    const server = new FakeServer();
+    const {getByTestId, queryByTestId} = await goHome(server);
+    await waitFor(() => expect(server.tv.readyState).toBe(1));
+    fireEvent.press(getByTestId('connect-phone'));
+    act(() => server.push('game:state', {gameId: 'g9', phase: 'question', kind: 'quiz', title: 'Our Week', round: 1, rounds: 5, question: {id: 'q', text: 'Q?', choices: ['a', 'b', 'c', 'd']}, endsAt: new Date(Date.now() + 20_000).toISOString(), answered: [], scores: {}}));
+    expect(queryByTestId('game-overlay')).toBeNull();
+    expect(pressBack()).toBe(true);
+    expect(getByTestId('game-overlay')).toBeTruthy();
+  });
+});

@@ -8,7 +8,7 @@
     "dev": "tsx watch --env-file-if-exists=.env src/index.ts",
     "start": "tsx --env-file-if-exists=.env src/index.ts",
     "typecheck": "tsc --noEmit -p .",
-    "test": "node --import tsx --test test/*.test.ts"
+    "test": "TZ=UTC node --import tsx --test test/*.test.ts"
   },
   "dependencies": {
     "@aws-sdk/client-bedrock-runtime": "^3.1152.0",

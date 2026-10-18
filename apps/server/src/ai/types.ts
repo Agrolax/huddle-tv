@@ -11,6 +11,13 @@ export interface TonightContext {
   people: Person[];
   mood?: TonightMood;
   now: Date;
+  /** Tonight must finish by then (a child's bedtime, an early start). */
+  endsBy?: {at: Date; reason: string};
+}
+
+/** Whole minutes from `now` to `at`, never below 0. */
+export function minutesUntil(at: Date, now: Date): number {
+  return Math.max(0, Math.floor((at.getTime() - now.getTime()) / 60_000));
 }
 
 /** Watched It: questions about one movie or series. */
@@ -82,14 +89,16 @@ export function sanitizePicks(raw: unknown): TonightPick[] {
   const picks: TonightPick[] = [];
   for (const item of raw) {
     if (typeof item !== 'object' || item === null) continue;
-    const {title, year, why, service} = item as Record<string, unknown>;
+    const {title, year, why, service, minutes} = item as Record<string, unknown>;
     if (typeof title !== 'string' || !title.trim() || typeof why !== 'string' || !why.trim()) continue;
     const y = typeof year === 'string' ? Number(year) : year;
+    const m = typeof minutes === 'string' ? Number(minutes) : minutes;
     picks.push({
       title: clip(title, TITLE_MAX),
       ...(typeof y === 'number' && Number.isInteger(y) && y >= 1900 && y <= 2100 ? {year: y} : {}),
       why: clip(why, WHY_MAX),
       ...(typeof service === 'string' && service.trim() ? {service: clip(service, SERVICE_MAX)} : {}),
+      ...(typeof m === 'number' && Number.isInteger(m) && m > 0 && m <= 600 ? {minutes: m} : {}),
     });
   }
   return picks;

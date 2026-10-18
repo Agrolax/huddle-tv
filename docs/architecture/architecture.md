@@ -26,7 +26,7 @@
 
 **The hub.** One household on the server. Clients join with a role:
 - **`tv`**: the Fire TV app (Vega, `apps/tv`). It is the main screen.
-- **`phone`**: the companion web app, opened from the QR code. It is the keyboard, the chat box and the Sketch it pen.
+- **`phone`**: the companion web app, opened from the QR code. It is the keyboard, the chat box, the private ballot (secret veto) and the Sketch the pick pen.
 - **`display`** (later): a second screen that mostly reads, such as an Echo Show via an Alexa skill that opens our web page. See [echo-show.md](../research/echo-show.md).
 - **`voice`** (stretch): an Alexa skill backend.
 
@@ -128,9 +128,10 @@ Source of truth: [`packages/shared/src/protocol.ts`](../../packages/shared/src/p
 | `profile:switch` | tv, phone, voice | `profile:changed` | household |
 | `message:send` | phone, voice | `message:new` | messages |
 | `chat:ask {text, conversationId?}` | phone, voice, tv | `chat:reply` chunks then `done`, to the asker only | chat |
-| `tonight:request {mood?}` | tv, phone, voice | `tonight:picks {picks, mood?, forProfileIds, at, source}` to everyone; also in the snapshot | tonight |
-| `sketch:start` / `sketch:stroke` / `sketch:clear` / `sketch:guess` | tv+phone / phone / phone / phone+voice | `sketch:state` (prompt only to the drawer), `sketch:stroke`, `sketch:clear`, `sketch:guess` | sketch |
-| `game:start {kind: 'quiz', source: 'our-week' \| 'watched-it', title?}` / `game:answer {gameId, round, choice, profileId?}` / `game:next` / `game:end` | tv+phone / phone / tv+phone / tv+phone | `game:state` (phases `loading → question ⇄ reveal → final`; the right answer only in `reveal`), `league:updated` after a finished game; both in the snapshot | game |
+| `tonight:request {mood?}` | tv, phone, voice | `tonight:picks {picks, mood?, forProfileIds, at, source, endsBy?, chosen?}` to everyone; also in the snapshot. `endsBy` = a kid's bedtime or an early start tomorrow (server local time); picks that run past it are dropped | tonight |
+| `tonight:vote-start` / `tonight:vote {voteId, yes[]}` / `tonight:vote-next` / `tonight:vote-end` | tv+phone / phone / tv+phone / tv+phone | `tonight:vote-state` (`voting → [sudden-death] → result`; only *who* voted, never ballots; the result has the picks everyone accepted and the winner, which also sets `tonight.chosen`) | tonight |
+| `sketch:stroke {gameId, round, stroke}` (same stroke id appends) / `sketch:clear` / `sketch:guess {text}` | drawer's phone / drawer's phone / other phones | `sketch:prompt` (title, to the drawer's phones only), `sketch:stroke`, `sketch:clear`, `sketch:guess` (no text when right); the current drawing is in the snapshot | sketch |
+| `game:start {kind: 'quiz', source: 'our-week' \| 'watched-it', title?} \| {kind: 'sketch'}` / `game:answer {gameId, round, choice, profileId?}` / `game:next` / `game:end` | tv+phone / phone / tv+phone / tv+phone | `game:state` (phases `loading → question ⇄ reveal → final`; the right answer only in `reveal`; in Sketch the pick a question is one drawing round with `drawerId` and `hint`, and the last title drawn becomes `tonight.chosen`), `league:updated` after a finished game; both in the snapshot | game |
 | `door:simulate {kind?}` | phone | `door:event` | door |
 | `smart-home:set` | tv, phone, voice | `smart-home:state` | smart-home |
 | `calendar:add` / `calendar:remove` | phone, voice | `calendar:updated` (whole sorted list) | calendar |

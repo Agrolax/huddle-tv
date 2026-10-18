@@ -29,6 +29,7 @@
     "@amazon-devices/react-native-async-storage__async-storage": "~2.1.0",
     "@amazon-devices/react-native-kepler": "~2.1.0+rn0.72.0",
     "@amazon-devices/react-native-qrcode-svg": "~3.0.0",
+    "@amazon-devices/react-native-svg": "^3.0.0",
     "@huddle/shared": "0.1.0",
     "@huddle/tv-focus-kit": "0.1.0",
     "fast-text-encoding": "~1.0.6",

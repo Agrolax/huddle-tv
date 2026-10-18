@@ -1,5 +1,5 @@
 import type {SocketLike} from '@huddle/shared';
-import {IDLE_GAME, PROTOCOL_VERSION} from '@huddle/shared';
+import {EMPTY_CANVAS, IDLE_GAME, IDLE_VOTE, PROTOCOL_VERSION} from '@huddle/shared';
 import type {GameState, League} from '@huddle/shared';
 
 const PROFILES = [
@@ -33,6 +33,11 @@ export class FakeServer {
   activeProfileIds = ['rafi', 'nanu'];
   game: GameState = IDLE_GAME;
   league: League = {};
+  /** Phones in the room, by profile. */
+  phones = [
+    {clientId: 'phone-rafi', role: 'phone', profileId: 'rafi'},
+    {clientId: 'phone-nanu', role: 'phone', profileId: 'nanu'},
+  ];
 
   createSocket = (url: string): SocketLike => {
     const s = new FakeSocket(url, this);
@@ -80,10 +85,11 @@ export class FakeServer {
           devices: this.devices,
           weather: this.weather,
           tonight: this.tonight,
-          sketch: {roundId: null, phase: 'idle', scores: {}},
+          vote: IDLE_VOTE,
+          sketch: EMPTY_CANVAS,
           game: this.game,
           league: this.league,
-          clients: [payload.client],
+          clients: [payload.client, ...this.phones],
         },
         you: payload.client,
         token: 'tv-token',

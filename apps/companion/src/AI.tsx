@@ -96,6 +96,8 @@ export function TonightCard({
   profiles,
   activeProfileIds,
   onRequest,
+  onVote,
+  voting,
   disabled,
 }: {
   tonight: TonightPicks | null;
@@ -103,6 +105,8 @@ export function TonightCard({
   profiles: Profile[];
   activeProfileIds: string[];
   onRequest: (mood?: TonightMood) => boolean;
+  onVote: () => boolean;
+  voting: boolean;
   disabled: boolean;
 }) {
   const [mood, setMood] = useState<TonightMood | undefined>(undefined);
@@ -113,6 +117,11 @@ export function TonightCard({
     <section className="card" data-testid="tonight">
       <h2>Tonight</h2>
       <p className="muted small">Three picks for {here.join(', ') || 'everyone'}. They show on the TV too.</p>
+      {tonight?.endsBy ? (
+        <p className="small" data-testid="ends-by">
+          Ends by {tonight.endsBy.label} ({tonight.endsBy.reason})
+        </p>
+      ) : null}
       <div className="chips">
         {TONIGHT_MOODS.map(m => (
           <button
@@ -132,7 +141,8 @@ export function TonightCard({
           {tonight.picks.map((p, i) => (
             <li key={`${p.title}-${i}`}>
               <strong>{p.title}</strong>
-              <span className="muted small"> {[p.year, p.service].filter(Boolean).join(' · ')}</span>
+              <span className="muted small"> {[p.year, p.service, p.minutes ? `${p.minutes} min` : undefined].filter(Boolean).join(' · ')}</span>
+              {tonight.chosen === i ? <span className="small ok-text"> · Tonight's pick</span> : null}
               <p className="small grow">{p.why}</p>
             </li>
           ))}
@@ -142,6 +152,11 @@ export function TonightCard({
             {tonight.source === 'mock' ? ' · demo picks' : ''}
           </li>
         </ul>
+      ) : null}
+      {tonight && tonight.picks.length >= 2 && !voting ? (
+        <button className="chip small-chip" onClick={onVote} disabled={disabled || loading}>
+          Vote in secret on these picks
+        </button>
       ) : null}
     </section>
   );

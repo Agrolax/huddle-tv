@@ -80,11 +80,14 @@ Edit freely: this is the living plan. Tick boxes as you go. When a date slips, m
 - [x] Tests: 97 shared, 72 server (engine over the wire, sources, parsing, fallback), 37 TV Jest; VVD screenshots in [`docs/screenshots/step-5/`](../screenshots/step-5/) played by two scripted phones; phone card checked in a phone-sized browser
 - [ ] Run *Watched It* once against Bedrock (still no AWS credentials on the Mac)
 
-## Step 6: Sketch the pick + secret veto (Oct 19–20)
-- [ ] Sketch on the step 5 engine: phone canvas → `sketch:stroke` → TV canvas (normalised points), guesses from phones, scores into the league
-- [ ] Prompts are tonight's candidates; the last round's movie becomes the Tonight pick
-- [ ] Secret veto: `tonight:vote` from phones (private yes/no), TV shows who has voted (not how), reveal the overlap; sudden-death between the top two if none
-- [ ] Bedtime-aware: Tonight reads tomorrow's earliest event and a child present → "ends by" time; picks that run long are dropped
+## Step 6: Sketch the pick + secret veto (Oct 17) ✅
+- [x] Uniqueness check first ([differentiation.md](../research/differentiation.md#uniqueness-check-for-step-6-oct-17)): no group vote or bedtime-aware picks on Fire TV, Alexa+, Netflix or Prime Video. Drawing games already exist (Luna GameNight, Jackbox), so Sketch the pick is pitched as a way to *decide*, after the veto, and the quiz stays the lead game
+- [x] Secret veto (`apps/server/src/tonight/vote.ts`): "Vote on phones" on the TV or phone → each phone says yes/no per pick in private → the TV shows who has voted (never how) → only the picks everyone accepted. No overlap → sudden death between the top two (ties go to round-one likes). The winner becomes `tonight.chosen`: tile, sheet and phone mark "Tonight's pick", and Watched It uses it
+- [x] Bedtime-aware (`apps/server/src/tonight/bedtime.ts`): a kid here (Rafi, `kid: true`) → ends by 8:30 (9:30 before a weekend); an event tomorrow before 9:00 for someone here → 10.5 h before it; the earlier wins, within 6 h. Picks carry runtimes; ones that run past it are dropped and topped up from the mock. TV: "For Rafi & Nanu · Ends by 9:30 (Rafi's bedtime)", tile "Tonight · ends by 9:30"
+- [x] Sketch the pick on the step 5 phases (`apps/server/src/sketch/engine.ts`): one round per Tonight candidate, drawers take turns (needs two phones), the title only goes to the drawer's phone, strokes stream in ≤ 200-point chunks (same id appends) and live in the snapshot, forgiving guesses ("totoro", "padington 2"), 500–1000 for a right guess + 250 to the drawer, league counts it, the last movie drawn becomes tonight's pick
+- [x] TV: SVG board (one path per pen color, FL-14), hint, guesses, reveal; phone: draw pad with five pens and Clear, guess box; the game sheet opens once a sheet in the way closes
+- [x] Tests: 104 shared, 85 server (veto engine, bedtime, both over the wire), 44 TV Jest. VVD screenshots in [`docs/screenshots/step-6/`](../screenshots/step-6/) with two scripted phones plus the companion in a phone-sized browser (vote and drawing checked there)
+- [ ] Bedrock run of Tonight with `endsBy` in the prompt (still no AWS credentials)
 - [x] Registered for **Office Hours #2: Mon Oct 19, 12–1pm EDT** ([Zoom](https://amazon.zoom.us/webinar/register/WN_kh9CSYi0QtuN31d8nsTuOQ)): bring game night
 - If time runs out, ship the quiz alone and cut the drawing; secret veto is the next most important
 
@@ -127,3 +130,4 @@ Edit freely: this is the living plan. Tick boxes as you go. When a date slips, m
 | Oct 16 | Proposed personalization onboarding ([onboarding-plan.md](onboarding-plan.md)): phone-led household setup, per-person tastes, services; tastes feed Tonight and chat. Not in scope yet; minimal slice listed under Stretch |
 | Oct 17 | Scope sharpened after [differentiation research](../research/differentiation.md): Sketch it → game night (household quiz + Sketch the pick on one engine, family league); Tonight gains secret veto + bedtime-aware picks; app-launch spike demoted. Steps renumbered: 5 quiz, 6 Sketch the pick + veto, 7 ship |
 | Oct 17 | Step 5 done: game night household quiz (Our Week from household data, Watched It via Bedrock with a mock fallback), family league, TV sheet + phone answer pad; Home's Sketch it tile became Game night |
+| Oct 17 | Step 6 done early: secret veto, bedtime-aware Tonight, Sketch the pick; uniqueness check added to the differentiation research. Sketch the pick is framed as a way to decide, not as the lead game. FL-14 (Vega SVG) logged |

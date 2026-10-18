@@ -5,6 +5,7 @@ import {
   DEFAULT_TOPICS,
   ErrorCode,
   FamilyMessage,
+  GameState,
   HouseholdSnapshot,
   PAIR_CODE_TTL_MS,
   PairCode,
@@ -30,6 +31,11 @@ import {
   validateChatAsk,
   validateCalendarRemove,
   validateDoorSimulate,
+  validateSketchClear,
+  validateSketchGuess,
+  validateSketchStroke,
+  validateTonightVote,
+  validateVoteRef,
   validateGameAnswer,
   validateGameRef,
   validateGameStart,
@@ -41,9 +47,13 @@ import {
   validateSubscribe,
   validateTonightRequest,
 } from '@huddle/shared';
-import {ChatContext, ChatTurn, HouseholdAI, MockAI, Person} from './ai/index.js';
+import {ChatContext, ChatTurn, HouseholdAI, MockAI, Person, mockTonight} from './ai/index.js';
+import {minutesUntil} from './ai/types.js';
 import {demoHousehold} from './household.js';
 import {QuizEngine} from './quiz/engine.js';
+import {SketchEngine} from './sketch/engine.js';
+import {endsByOf, fitPicks, tonightLimit} from './tonight/bedtime.js';
+import {VoteEngine} from './tonight/vote.js';
 import {ourWeekQuestions} from './quiz/ourWeek.js';
 import {QuizItem, shuffleChoices} from './quiz/questions.js';
 
@@ -72,6 +82,10 @@ export interface HubOptions {
   quizQuestionMs?: number;
   quizRevealMs?: number;
   quizTimeoutMs?: number;
+  sketchDrawMs?: number;
+  sketchRevealMs?: number;
+  voteMs?: number;
+  suddenDeathMs?: number;
 }
 
 interface Connection {
@@ -96,9 +110,13 @@ interface Household {
   /** Session tokens handed out in `welcome`, so phones can reconnect after their code expires. */
   tokens: Map<string, {role: ClientInfo['role']; clientId: string}>;
   tonightPending: boolean;
+  /** Sketch the pick is waiting for Tonight picks to use as prompts. */
+  sketchPending: boolean;
   /** `<clientId>:<conversationId>` → recent turns, so follow-up questions have context. */
   chats: Map<string, ChatTurn[]>;
-  game: QuizEngine;
+  quiz: QuizEngine;
+  sketch: SketchEngine;
+  vote: VoteEngine;
 }
 
 type ServerPayloads = {[M in ServerMessage as M['type']]: M['payload']};
@@ -294,8 +312,14 @@ export class Hub {
       case 'game:start': {
         const v = validateGameStart(payload);
         if (!v.ok) return this.error(conn, 'bad-request', v.error, frameId);
-        if (gameIsLive(hh.game.current)) return this.error(conn, 'busy', 'a game is already running', frameId);
-        this.startQuiz(hh, v.value.source, v.value.title).catch(e => this.log('quiz crashed', e));
+        if (gameIsLive(hh.snapshot.game) || hh.sketchPending) return this.error(conn, 'busy', 'a game is already running', frameId);
+        if (v.value.kind === 'quiz') {
+          this.startQuiz(hh, v.value.source, v.value.title).catch(e => this.log('quiz crashed', e));
+          return;
+        }
+        const drawers = this.answerers(hh.snapshot.householdId);
+        if (drawers.length < 2) return this.error(conn, 'bad-request', 'Sketch the pick needs two phones', frameId);
+        this.startSketch(hh, drawers).catch(e => this.log('sketch crashed', e));
         return;
       }
       case 'game:answer': {
@@ -304,7 +328,7 @@ export class Hub {
         const profileId = v.value.profileId ?? session.client.profileId;
         if (!profileId) return this.error(conn, 'bad-request', 'select who you are before you answer', frameId);
         if (this.unknownProfiles(hh, [profileId]).length) return this.error(conn, 'bad-request', `unknown profile ${profileId}`, frameId);
-        const result = hh.game.answer(v.value.gameId, v.value.round, profileId, v.value.choice);
+        const result = hh.quiz.answer(v.value.gameId, v.value.round, profileId, v.value.choice);
         if (result === 'stale' || result === 'closed') return this.error(conn, 'bad-request', 'that question is closed', frameId);
         if (result === 'already') return this.error(conn, 'bad-request', 'already answered', frameId);
         return;
@@ -313,8 +337,70 @@ export class Hub {
       case 'game:end': {
         const v = validateGameRef(type, payload);
         if (!v.ok) return this.error(conn, 'bad-request', v.error, frameId);
-        const done = type === 'game:next' ? hh.game.next(v.value.gameId) : hh.game.end(v.value.gameId);
+        const engine = hh.snapshot.game.kind === 'sketch' ? hh.sketch : hh.quiz;
+        const done = type === 'game:next' ? engine.next(v.value.gameId) : engine.end(v.value.gameId);
         if (!done) return this.error(conn, 'bad-request', 'no such game step', frameId);
+        return;
+      }
+      case 'sketch:stroke': {
+        const v = validateSketchStroke(payload);
+        if (!v.ok) return this.error(conn, 'bad-request', v.error, frameId);
+        const result = hh.sketch.stroke(v.value.gameId, v.value.round, session.client.profileId ?? '', v.value.stroke);
+        if (result !== 'ok') return this.sketchError(conn, result, frameId);
+        hh.snapshot.sketch = hh.sketch.canvas;
+        this.broadcast(hh, 'sketch:stroke', v.value, conn);
+        return;
+      }
+      case 'sketch:clear': {
+        const v = validateSketchClear(payload);
+        if (!v.ok) return this.error(conn, 'bad-request', v.error, frameId);
+        const result = hh.sketch.clear(v.value.gameId, v.value.round, session.client.profileId ?? '');
+        if (result !== 'ok') return this.sketchError(conn, result, frameId);
+        hh.snapshot.sketch = hh.sketch.canvas;
+        this.broadcast(hh, 'sketch:clear', v.value, conn);
+        return;
+      }
+      case 'sketch:guess': {
+        const v = validateSketchGuess(payload);
+        if (!v.ok) return this.error(conn, 'bad-request', v.error, frameId);
+        const me = session.client.profileId;
+        if (!me) return this.error(conn, 'bad-request', 'select who you are before you guess', frameId);
+        const {gameId, round, text} = v.value;
+        const g = hh.sketch.guess(gameId, round, me, text);
+        if (g.result === 'stale' || g.result === 'closed') return this.error(conn, 'bad-request', 'that round is over', frameId);
+        if (g.result === 'drawer') return this.error(conn, 'forbidden', 'the drawer cannot guess', frameId);
+        if (g.result !== 'ok') return this.error(conn, 'bad-request', 'you already got it', frameId);
+        this.broadcast(hh, 'sketch:guess', {gameId, round, profileId: me, ...(g.correct ? {} : {text}), correct: g.correct});
+        hh.sketch.settle();
+        return;
+      }
+      case 'tonight:vote-start': {
+        const v = validateEmpty(type, payload);
+        if (!v.ok) return this.error(conn, 'bad-request', v.error, frameId);
+        const picks = hh.snapshot.tonight?.picks ?? [];
+        if (picks.length < 2) return this.error(conn, 'bad-request', 'get Tonight picks before you vote', frameId);
+        if (hh.tonightPending) return this.error(conn, 'busy', 'Tonight picks are on their way', frameId);
+        hh.vote.start(this.newGameId('v'), picks.length);
+        return;
+      }
+      case 'tonight:vote': {
+        const v = validateTonightVote(payload);
+        if (!v.ok) return this.error(conn, 'bad-request', v.error, frameId);
+        const profileId = v.value.profileId ?? session.client.profileId;
+        if (!profileId) return this.error(conn, 'bad-request', 'select who you are before you vote', frameId);
+        if (this.unknownProfiles(hh, [profileId]).length) return this.error(conn, 'bad-request', `unknown profile ${profileId}`, frameId);
+        const result = hh.vote.vote(v.value.voteId, profileId, v.value.yes);
+        if (result === 'stale' || result === 'closed') return this.error(conn, 'bad-request', 'that vote is closed', frameId);
+        if (result === 'already') return this.error(conn, 'bad-request', 'already voted', frameId);
+        if (result === 'invalid') return this.error(conn, 'bad-request', 'vote for the picks shown', frameId);
+        return;
+      }
+      case 'tonight:vote-next':
+      case 'tonight:vote-end': {
+        const v = validateVoteRef(type, payload);
+        if (!v.ok) return this.error(conn, 'bad-request', v.error, frameId);
+        const done = type === 'tonight:vote-next' ? hh.vote.next(v.value.voteId) : hh.vote.end(v.value.voteId);
+        if (!done) return this.error(conn, 'bad-request', 'no such vote step', frameId);
         return;
       }
       case 'tonight:request': {
@@ -334,20 +420,31 @@ export class Hub {
         return;
       }
       default:
-        // Sketch it lands in step 5.
         this.error(conn, 'not-implemented', `${type} is not implemented yet`, frameId);
     }
+  }
+
+  private sketchError(conn: Connection, result: 'stale' | 'not-drawer' | 'full', frameId: string): void {
+    if (result === 'stale') return this.error(conn, 'bad-request', 'that round is over', frameId);
+    if (result === 'not-drawer') return this.error(conn, 'forbidden', 'only the drawer can draw', frameId);
+    this.error(conn, 'bad-request', 'the drawing is full; clear it to go on', frameId);
   }
 
   private people(hh: Household, ids: readonly string[]): Person[] {
     return hh.snapshot.profiles.filter(p => ids.includes(p.id)).map(p => ({id: p.id, name: p.name}));
   }
 
-  /** Ask the AI for picks for whoever is here, fall back to the mock on failure, and broadcast them. */
+  /**
+   * Ask the AI for picks for whoever is here, fall back to the mock on failure,
+   * drop picks that run past bedtime, and broadcast them. A vote on the old picks ends.
+   */
   private async makeTonight(hh: Household, mood: TonightMood | undefined): Promise<void> {
     hh.tonightPending = true;
+    hh.vote.reset();
     const forProfileIds = [...hh.snapshot.activeProfileIds];
-    const ctx = {people: this.people(hh, forProfileIds), ...(mood ? {mood} : {}), now: new Date(this.now())};
+    const now = new Date(this.now());
+    const limit = tonightLimit(hh.snapshot.profiles, forProfileIds, hh.snapshot.events, now);
+    const ctx = {people: this.people(hh, forProfileIds), ...(mood ? {mood} : {}), now, ...(limit ? {endsBy: limit} : {})};
     let source = this.ai.source;
     let picks;
     try {
@@ -359,23 +456,39 @@ export class Hub {
     } finally {
       hh.tonightPending = false;
     }
-    const result: TonightPicks = {picks, ...(mood ? {mood} : {}), forProfileIds, at: new Date(this.now()).toISOString(), source};
+    if (limit) {
+      const max = minutesUntil(limit.at, now);
+      picks = fitPicks(picks, mockTonight(ctx.people, mood, max), max);
+    }
+    const result: TonightPicks = {
+      picks,
+      ...(mood ? {mood} : {}),
+      forProfileIds,
+      at: new Date(this.now()).toISOString(),
+      source,
+      ...(limit ? {endsBy: endsByOf(limit)} : {}),
+    };
     hh.snapshot.tonight = result;
     this.broadcast(hh, 'tonight:picks', result);
   }
 
+  private newGameId(prefix = 'g'): string {
+    return `${prefix}${this.now().toString(36)}${Math.floor(this.random() * 1e6).toString(36)}`;
+  }
+
   /** Show "writing questions", gather them (household data or the AI), then run the rounds. */
   private async startQuiz(hh: Household, source: QuizSource, requestedTitle?: string): Promise<void> {
-    const gameId = `g${this.now().toString(36)}${Math.floor(this.random() * 1e6).toString(36)}`;
+    const gameId = this.newGameId();
     const now = new Date(this.now());
     if (source === 'our-week') {
-      hh.game.begin(gameId, source, 'Our Week');
+      hh.quiz.begin(gameId, source, 'Our Week');
       const items = ourWeekQuestions(hh.snapshot, now, this.random).map(i => shuffleChoices(i, this.random));
-      hh.game.load(gameId, items, 'Our Week', 'mock');
+      hh.quiz.load(gameId, items, 'Our Week', 'mock');
       return;
     }
-    const title = requestedTitle ?? hh.snapshot.tonight?.picks[0]?.title ?? 'Paddington 2';
-    hh.game.begin(gameId, source, `Watched It: ${title}`);
+    const tonight = hh.snapshot.tonight;
+    const title = requestedTitle ?? tonight?.picks[tonight.chosen ?? 0]?.title ?? 'Paddington 2';
+    hh.quiz.begin(gameId, source, `Watched It: ${title}`);
     const ctx = {title, people: this.people(hh, hh.snapshot.activeProfileIds), now};
     let aiSource = this.ai.source;
     let result;
@@ -387,7 +500,31 @@ export class Hub {
       result = await this.fallbackAI.quiz(ctx);
     }
     const items: QuizItem[] = result.items.map(i => shuffleChoices(i, this.random));
-    hh.game.load(gameId, items, `Watched It: ${result.title}`, aiSource);
+    hh.quiz.load(gameId, items, `Watched It: ${result.title}`, aiSource);
+  }
+
+  /** Draw tonight's candidates, one round each; picks are made first if there are none. */
+  private async startSketch(hh: Household, drawers: string[]): Promise<void> {
+    hh.sketchPending = true;
+    try {
+      if (!hh.snapshot.tonight || hh.snapshot.tonight.picks.length < 2) await this.makeTonight(hh, undefined);
+    } finally {
+      hh.sketchPending = false;
+    }
+    if (gameIsLive(hh.snapshot.game)) return;
+    const prompts = hh.snapshot.tonight!.picks.map(p => p.title);
+    // The person on the couch longest draws first: profile order.
+    const order = hh.snapshot.profiles.map(p => p.id).filter(id => drawers.includes(id));
+    hh.sketch.begin(this.newGameId(), prompts, order);
+  }
+
+  /** The last movie drawn becomes the pick for tonight. */
+  private sketchDecided(hh: Household, title: string | undefined): void {
+    const tonight = hh.snapshot.tonight;
+    const index = tonight?.picks.findIndex(p => p.title === title) ?? -1;
+    if (!tonight || index < 0) return;
+    hh.snapshot.tonight = {...tonight, chosen: index};
+    this.broadcast(hh, 'tonight:picks', hh.snapshot.tonight);
   }
 
   /** Profiles with a phone in the room: who the quiz waits for. */
@@ -514,6 +651,12 @@ export class Hub {
     };
     hh.snapshot.clients = [...hh.snapshot.clients.filter(c => c.clientId !== client.clientId), client];
     this.send(conn, 'welcome', {snapshot: hh.snapshot, you: client, token});
+    // A drawer whose phone reconnects mid-round needs the title again.
+    const game = hh.snapshot.game;
+    const prompt = hh.sketch.prompt;
+    if (client.role === 'phone' && game.kind === 'sketch' && prompt && client.profileId === game.drawerId) {
+      this.send(conn, 'sketch:prompt', {gameId: game.gameId!, round: game.round, prompt});
+    }
     this.broadcast(hh, 'client:joined', client, conn);
     this.log(`${client.role} ${client.clientId} joined ${hh.snapshot.householdId}`);
   }
@@ -534,14 +677,19 @@ export class Hub {
   }
 
   private createHousehold(id: string): Household {
+    const finishGame = (state: GameState) => {
+      hh.snapshot.league = addToLeague(hh.snapshot.league, state);
+      this.broadcast(hh, 'league:updated', hh.snapshot.league);
+    };
     const hh: Household = {
       snapshot: demoHousehold(id, this.now(), this.weather),
       tvToken: null,
       pairCodes: new Map(),
       tokens: new Map(),
       tonightPending: false,
+      sketchPending: false,
       chats: new Map(),
-      game: new QuizEngine({
+      quiz: new QuizEngine({
         now: this.now,
         questionMs: this.opts.quizQuestionMs ?? 20_000,
         revealMs: this.opts.quizRevealMs ?? 7_000,
@@ -550,9 +698,43 @@ export class Hub {
           hh.snapshot.game = state;
           this.broadcast(hh, 'game:state', state);
         },
+        onFinish: finishGame,
+      }),
+      sketch: new SketchEngine({
+        now: this.now,
+        drawMs: this.opts.sketchDrawMs ?? 75_000,
+        revealMs: this.opts.sketchRevealMs ?? 6_000,
+        players: () => this.answerers(id),
+        onState: state => {
+          hh.snapshot.game = state;
+          hh.snapshot.sketch = hh.sketch.canvas;
+          this.broadcast(hh, 'game:state', state);
+        },
+        onPrompt: (drawerId, gameId, round, prompt) => {
+          for (const c of this.connections) {
+            const s = c.session;
+            if (s?.householdId === id && s.client.role === 'phone' && s.client.profileId === drawerId) this.send(c, 'sketch:prompt', {gameId, round, prompt});
+          }
+        },
         onFinish: state => {
-          hh.snapshot.league = addToLeague(hh.snapshot.league, state);
-          this.broadcast(hh, 'league:updated', hh.snapshot.league);
+          finishGame(state);
+          this.sketchDecided(hh, state.answer);
+        },
+      }),
+      vote: new VoteEngine({
+        now: this.now,
+        votingMs: this.opts.voteMs ?? 60_000,
+        suddenDeathMs: this.opts.suddenDeathMs ?? 20_000,
+        voters: () => this.answerers(id),
+        onState: vote => {
+          hh.snapshot.vote = vote;
+          this.broadcast(hh, 'tonight:vote-state', vote);
+        },
+        onDecided: winner => {
+          const tonight = hh.snapshot.tonight;
+          if (!tonight || winner === undefined) return;
+          hh.snapshot.tonight = {...tonight, chosen: winner};
+          this.broadcast(hh, 'tonight:picks', hh.snapshot.tonight);
         },
       }),
     };

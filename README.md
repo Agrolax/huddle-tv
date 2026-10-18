@@ -1,6 +1,6 @@
 # Huddle Home
 
-The family home screen for Fire TV (Vega OS): household widgets, a phone companion you join with a QR code, Amazon Bedrock picks for tonight, and Sketch it, a draw-and-guess game where phones are the pens.
+The family home screen for Fire TV (Vega OS): household widgets, a phone companion you join with a QR code, Amazon Bedrock picks for tonight that end by bedtime and that the family settles with a secret vote on their phones, and game night: a quiz about your own week and Sketch the pick, where phones are the pens.
 
 Built for the [Build, Ship, Shape: Amazon Developer Hackathon](https://amazonappdev2026.devpost.com/) · **Fire TV track** · AWS Builder + Open Source mini challenges.
 
@@ -29,7 +29,7 @@ Built for the [Build, Ship, Shape: Amazon Developer Hackathon](https://amazonapp
 ### Mini challenges (a project can win **one**, on top of its track)
 | Challenge | Requirement | Prize | Our plan |
 |---|---|---|---|
-| **AWS Builder** | Use AWS services with documented integration (Bedrock, AgentCore, Strands, Kiro, SageMaker…). Kiro alone qualifies. | $5,000 + $5k credits + meeting | Bedrock (Nova) for Tonight picks, phone AI chat and Sketch it prompts; DynamoDB, S3, Lightsail. Polly / Transcribe are stretch |
+| **AWS Builder** | Use AWS services with documented integration (Bedrock, AgentCore, Strands, Kiro, SageMaker…). Kiro alone qualifies. | $5,000 + $5k credits + meeting | Bedrock (Nova) for Tonight picks, phone AI chat and Watched It quiz questions; DynamoDB, S3, Lightsail. Polly / Transcribe are stretch |
 | **Open Source** | New open-source project or a PR/fork/branch to a public repo, made during the hackathon | $5,000 + $5k credits + meeting | `packages/tv-focus-kit`: D-pad focus primitives for React Native TV (MIT) |
 
 ### Judging (equally weighted, after a pass/fail viability check)

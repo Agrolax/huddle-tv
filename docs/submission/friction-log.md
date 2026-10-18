@@ -132,3 +132,12 @@ Severity: **Blocker** · **Major** · **Minor** · **Papercut**
 - **Severity:** Minor (demo screenshots look wrong; real devices use the user's zone)
 - **Workaround:** None yet. Times are correct relative to each other; we record the demo with this in mind.
 - **Suggestion:** Inherit the host time zone, or add a `--timezone` option to `vega virtual-device start`.
+
+### FL-14 — react-native-svg on Vega: Paths added after the first render don't show
+- **Tool / SDK:** `@amazon-devices/react-native-svg` 3.0.9000000001 (react-native-svg 15.11.1), React Native for Vega 0.72, Vega Virtual Device
+- **Task attempted:** Sketch the pick: the TV draws a phone's strokes live, one `<Path>` per stroke inside an `<Svg>`, adding a `<Path>` as each stroke arrives.
+- **Expected:** Every new `<Path>` child renders, as on iOS, Android and web.
+- **Actual:** The first six strokes showed. Strokes added after that never appeared, though the server had all of them, React state had all of them, and the jest tests passed. Nothing was logged. Screenshots in the step 6 PR.
+- **Severity:** Major (silent: looks like dropped network frames)
+- **Workaround:** Keep a fixed set of always-mounted `<Path>` elements (one per pen color) and grow each one's `d` string instead of adding children. That also means fewer native views for long drawings.
+- **Suggestion:** Fix child insertion in the Vega SVG view manager, or document the limit, and add a "draw live" sample to the react-native-svg port docs.
