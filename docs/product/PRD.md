@@ -7,7 +7,7 @@
 | **Hackathon** | Build, Ship, Shape: Amazon Developer Hackathon |
 | **Deadline** | Oct 23, 2026 · 3:00pm EDT (aim: submit Oct 22) |
 | **Primary track** | Fire TV |
-| **Mini challenges** | AWS Builder (Bedrock, DynamoDB, S3; Polly/Transcribe stretch) · Open Source (`tv-focus-kit`) |
+| **Mini challenges** | AWS Builder (Amazon Bedrock only. DynamoDB, S3, Lightsail, Polly and Transcribe are not used) · Open Source (`tv-focus-kit`, not published) |
 | **Bonus** | Friction log (up to +10%) |
 | **Related docs** | [Roadmap](roadmap.md) · [Architecture](../architecture/architecture.md) · [Design guide](../design/design-guide.md) · [Wireframes](../design/wireframes.html) · [Ideas backlog](ideas-backlog.md) |
 
@@ -27,7 +27,7 @@ The TV is the one screen the whole household shares, but its home screen is buil
 
 1. **Widgets on the TV**: Clock + weather, Family calendar, **Tonight** picks from Amazon Bedrock for whoever is in the room, and Profiles ("Who's here?"). Tonight decides as a group: **secret veto** (each phone votes in private, the TV shows only what everyone accepts) and **bedtime-aware** picks (the calendar sets an "ends by" time).
 2. **Phone companion via QR**: scan the code on the TV, no install. From the phone: switch profile, send a message to the TV, chat with the household AI.
-3. **Game night**, two games on one engine (join, question, phone answers, reveal, family league that carries over between nights):
+3. **Game night**, two games on one engine (join, question, phone answers, reveal, a family league that lasts for the server session):
    - **Household quiz** (Kahoot-style): Bedrock writes questions from the household's own life, not a generic pack. *Watched It* asks about the movie you just watched; *Our Week* asks about the family calendar and messages.
    - **Sketch the pick**: one phone draws, the strokes stream live to the TV, the others guess on their phones. The prompts are tonight's movie candidates, and the winning guess becomes tonight's movie.
 4. **Smart home widget (simulated)**: lights, thermostat, door lock you can see on the TV and flip from the phone, plus a demo doorbell (Ring on the phone → "Someone is at the door" on the TV). Simulated devices, real interaction model.
@@ -80,7 +80,7 @@ Built in steps. Each step ends with a PR, running on the Vega Virtual Device wit
 | 1 | **Shell**: npm workspaces monorepo, `tv-focus-kit` (FocusableCard, FocusGrid, focus ring), home screen with placeholder widget tiles, "Who's here?", shared protocol types, Echo Show research | ✅ Oct 14 |
 | 2 | **Server + companion pairing**: `apps/server` WebSocket hub, QR pairing, phone switches profile, phone → TV message | ✅ Oct 14 |
 | 3 | **Widgets live**: clock/weather (Open-Meteo), family calendar (server data), profiles, smart-home (simulated, toggled from the phone) | ✅ Oct 15 |
-| 4 | **Bedrock**: Tonight picks for who's here, phone AI chat | ✅ Oct 15 (on the mock) |
+| 4 | **Bedrock**: Tonight picks for who's here, phone AI chat | ✅ Oct 15 on the mock. Live Nova verified Oct 18 |
 | 5 | **Game night: household quiz**: game engine (rounds, phone answers, reveal, family league), *Watched It* + *Our Week* question sources, Bedrock + mock | ✅ Oct 17 |
 | 6 | **Sketch the pick + secret veto**: drawing on the same engine with Tonight picks as prompts; private yes/no voting on Tonight; bedtime-aware picks | ✅ Oct 17 |
 | 7 | Polish, focus/Back audit, judge setup, demo video | |
@@ -124,7 +124,7 @@ Real accounts/auth (household code only), replacing the system launcher, reading
 
 ## 8. Screens
 
-See [wireframes](../design/wireframes.html). Screenshots from the Vega Virtual Device: [step 1](../screenshots/step-1/), [step 2](../screenshots/step-2/).
+See [wireframes](../design/wireframes.html) and the redesign checklist [screen-inventory.md](../design/screen-inventory.md). Screenshots from the Vega Virtual Device: [step 1](../screenshots/step-1/) through [step 6](../screenshots/step-6/), plus the [design pass](../screenshots/design-pass/).
 
 **TV:** Who's here? · Home (greeting + "Connect phone" + 4×2 widget grid) · Pair (QR) · Tonight (+ voting progress and reveal) · Game night (quiz question / reveal / league, Sketch the pick canvas + guesses) · message toast · door alert.
 
@@ -147,5 +147,5 @@ See [wireframes](../design/wireframes.html). Screenshots from the Vega Virtual D
 | Looks like "just another launcher" | Lead the demo with household adaptation + phone → TV + ambient |
 | Watch-provider data is incomplete | Show "available on" only when known; otherwise "search in Netflix" |
 | Scope creep (hub + games + AI) | Scope locked Oct 14 (§2). Steps are sequential; the demo is the last finished step. Polly/Transcribe/Echo are stretch only. |
-| Bedrock quota 0 on new accounts, or no access on demo day | Every AI call sits behind one interface with a deterministic mock (`HUDDLE_AI=mock`, the default). Bedrock failures fall back to the mock per request, and the TV labels demo picks. Access still unverified as of Oct 15 (no credentials on the dev Mac) |
+| Bedrock quota or an outage on demo day | Every AI call sits behind one interface with a deterministic mock (`HUDDLE_AI=mock`, the default). Bedrock failures fall back to the mock per request, and the TV labels demo picks. Nova Micro, Lite and Pro answered in us-east-1 on Oct 18 |
 | Judges never run it | They may score from the text and video alone: make the video the priority; keep the hosted demo live through Nov 20 with zero-setup judge access |

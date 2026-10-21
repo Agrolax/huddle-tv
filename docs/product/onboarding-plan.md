@@ -82,7 +82,7 @@ New client messages (phone only, validated in `validate.ts` like the others):
 | `services:set` | `{services}` | Sets services |
 | `setup:complete` | `{}` | Flips `setupComplete`; the TV leaves the setup screen |
 
-The server keeps all of this in the snapshot (in memory today, DynamoDB later). The TV needs no new messages; it reads `household:state`.
+The server keeps all of this in the snapshot (in memory; a restart clears it). The TV needs no new messages; it reads `household:state`.
 
 ## How the AI uses it
 `Person` in `apps/server/src/ai/types.ts` grows to `{id, name, ageBand?, taste?}`. In `bedrock.ts`:

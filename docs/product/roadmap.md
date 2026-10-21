@@ -1,6 +1,6 @@
 # Roadmap
 
-Today: Oct 17 · Submit: **Oct 22** · Hard deadline: Oct 23, 3:00pm EDT
+Today: Oct 21 · Submit: **Oct 22** · Hard deadline: Oct 23, 3:00pm EDT
 
 Scope locked Oct 14 ([PRD §2](PRD.md#2-pitch)): widgets (clock/weather, family calendar, Bedrock Tonight, profiles), phone companion via QR (switch profile, message the TV, AI chat), one game (Sketch it), simulated smart-home widget. Polly/Transcribe are stretch.
 
@@ -34,7 +34,7 @@ Edit freely: this is the living plan. Tick boxes as you go. When a date slips, m
 - [x] [Echo Show research](../research/echo-show.md); friction log FL-01–FL-08
 
 ## Step 2: Server + pairing (Oct 14) ✅
-- [x] `apps/server` WebSocket hub on the shared protocol: pair codes (10 min), TV claim + TV token, session tokens, payload validation, crash-proof handler; 21 server tests. Household still in memory (DynamoDB later)
+- [x] `apps/server` WebSocket hub on the shared protocol: pair codes (10 min), TV claim + TV token, session tokens, payload validation, crash-proof handler; 21 server tests. Household is in memory for the session
 - [x] TV: reconnecting client (backoff, ping/pong), Connect overlay with QR (`@amazon-devices/react-native-qrcode-svg` 3.0), code and URL, focus trap, Back closes and focus returns to the chip
 - [x] TV: `profile:changed` updates Who's here + greeting; `message:new` → 8 s toast + greeting subline
 - [x] Companion: join from QR, pick yourself, switch who's watching, send a message (≤ 280)
@@ -52,7 +52,7 @@ Edit freely: this is the living plan. Tick boxes as you go. When a date slips, m
 - [x] Verified end to end: real server + Open-Meteo + phone companion in a phone-sized browser + scripted TV ([screenshot](../screenshots/step-3/))
 - [x] On the VVD: live tiles, smart-home sheet (D-pad toggle, Back returns focus to the tile). VVD clock is UTC ([FL-13](../submission/friction-log.md))
 
-## Step 4: Bedrock (Oct 15) ✅ on the mock, Bedrock unverified
+## Step 4: Bedrock (Oct 15) ✅ mock that day; Nova verified Oct 18
 - [ ] **Bedrock access check (Oct 15): blocked on credentials, not on quota.** The Mac has no AWS credentials (`aws sts get-caller-identity` → `NoCredentials`), so we couldn't call Nova or see the quota. To check: `aws login` (or set `AWS_PROFILE`), then `aws bedrock-runtime converse --region us-east-1 --model-id us.amazon.nova-micro-v1:0 --messages '[{"role":"user","content":[{"text":"Say hi"}]}]'`, then run the server with `HUDDLE_AI=bedrock`. If it returns quota 0 / AccessDenied, the mock stays the demo path and we say so in the submission
 - [x] Server: `HouseholdAI` interface with two implementations: `BedrockAI` (Nova Lite for Tonight via Converse, Nova Micro for chat via ConverseStream) and a deterministic `MockAI` (`HUDDLE_AI=mock`, the default). Bedrock errors or timeouts fall back to the mock, so the demo never shows an error
 - [x] `tonight:request {mood?}` → `tonight:picks` (3 picks: title, year, why, service) for the profiles present, broadcast to the TV and every phone and kept in the snapshot. Moods: Cozy / Funny / Edge-of-seat. Model JSON is parsed defensively and clipped
@@ -72,7 +72,7 @@ Edit freely: this is the living plan. Tick boxes as you go. When a date slips, m
 
 ## Step 5: Game night, household quiz (Oct 17) ✅
 - [x] Game engine on the server (`apps/server/src/quiz/engine.ts`): `game:start` / `game:answer` / `game:next` / `game:end` → `game:state` (`loading → question ⇄ reveal → final`). 20 s questions, 7 s reveals; the reveal starts early once every phone with a person has answered. Kahoot-style points: 500 for right + up to 500 for speed. The answer never leaves the server before the reveal
-- [x] Family league: totals, wins and games per person in the snapshot (`league:updated`); only finished games count (DynamoDB later)
+- [x] Family league: totals, wins and games per person in the snapshot (`league:updated`); only finished games count. Within a session; a restart clears it
 - [x] *Our Week*: questions straight from the calendar, messages, weather, thermostat and people, no AI, so the answers are always right (who has Dentist tomorrow, when is Soccer, who sent "Pizza night", today's high…). Five questions even in an empty week
 - [x] *Watched It*: Bedrock (Nova Lite, `HUDDLE_QUIZ_MODEL`) writes 5 questions as JSON about the latest Tonight pick or a title from the phone; parsed and sanitized; fewer than 3 usable → mock. The mock has hand-written sets for five catalog titles and family movie trivia for anything else
 - [x] TV: Home tile is now **Game night** (live round / last winner / league leader). Sheet: Our Week, Watched It, family league; question with A–D (letter + color), who answered and seconds left; reveal says "Right answer" in words and shows points; final scores + league. A game started from a phone opens on the TV. Remote only starts, skips and ends
@@ -94,11 +94,14 @@ Edit freely: this is the living plan. Tick boxes as you go. When a date slips, m
 ## Step 7: Ship (Oct 20–22)
 Day-by-day plan, open decisions and how to resume: [next-steps.md](next-steps.md). Feature-by-feature uniqueness: [uniqueness.md](../research/uniqueness.md).
 - [x] Submission drafts (Oct 18): [demo script](../submission/demo-script.md) (problem → solution → "Built on Vega"), [product feedback](../submission/product-feedback.md), [Devpost description](../submission/devpost-description.md), [checklist](../submission/checklist.md) with the four blockers. They need your `[confirm]` and `TODO` edits
-- [ ] **Decide the AWS story.** The code calls Bedrock only; docs and README still list DynamoDB, S3, Lightsail and Polly. Build DynamoDB persistence (households + league) or cut those claims
-- [ ] Make the repo public with a root LICENSE (or invite the reviewers), update the README status line, add an accurate architecture diagram
+- [x] **AWS claims cut (Oct 21).** README, PRD and [architecture](../architecture/architecture.md) match the code: WebSocket server + Amazon Bedrock (Nova). Household and league state are in memory. Polly, Transcribe, DynamoDB, S3 and Lightsail are not used
+- [x] README status line updated (steps 1–6 done, step 7 in progress) and the architecture diagram redrawn
+- [x] MIT `LICENSE` at the repo root. The repo stays private; visibility was not changed
+- [x] Screen and state inventory for the redesign: [screen-inventory.md](../design/screen-inventory.md). No UI changes
+- [ ] Make the repo public, or invite the reviewers at submit time
 - [ ] Focus + Back audit, `amazon-devices-scalable-ui-audit`, judge setup (hosted server + companion live through Nov 20, `.vpkg` + VVD steps)
-- [ ] Open Source: publish `tv-focus-kit` (see [checklist](../submission/checklist.md))
-- [ ] Oct 20–21: record and edit the [demo video](../submission/demo-script.md)
+- [ ] Open Source: publish `tv-focus-kit` (see [checklist](../submission/checklist.md)). Not part of the Oct 21 docs PR
+- [ ] Record and edit the [demo video](../submission/demo-script.md)
 - [ ] Oct 22: submit everything
 
 ## Stretch (only if step 6 is green)
@@ -138,3 +141,4 @@ Day-by-day plan, open decisions and how to resume: [next-steps.md](next-steps.md
 | Oct 18 | Submission drafts: demo script now ends on a "Built on Vega" beat (VVD, Vega CLI, Builder Tools MCP, focus kit) and drops DynamoDB/S3 from the voiceover; product feedback filled from the friction log; Devpost description; checklist with blockers (private repo, no LICENSE, no judge setup, docs overclaim AWS) |
 | Oct 18 | Bedrock verified with `aws login` (console session, us-east-1). $250 credits active. Prompts tuned on real Nova output (kid ratings, minutes, calendar day words); Watched It moves to Nova Pro with a check pass. Claude on Bedrock not available to the account |
 | Oct 18 | Added [uniqueness.md](../research/uniqueness.md) (all features scored), [family-league.md](family-league.md) and [next-steps.md](next-steps.md) (decisions D1–D6, schedule to Oct 23, how to resume). League needs no S3; DynamoDB is optional |
+| Oct 21 | Docs match the code: AWS claims cut to Bedrock only, README status is steps 1–6, architecture diagram redrawn, MIT LICENSE at the repo root (repo stays private), screen inventory for the redesign. League wording is within a session. No UI changes |

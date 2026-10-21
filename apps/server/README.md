@@ -1,6 +1,6 @@
 # apps/server
 
-Node + TypeScript WebSocket hub for the household (`ws://<LAN IP>:8787/ws`). In memory for now; DynamoDB and S3 land in later steps. Tonight picks and chat go through Amazon Bedrock (Nova) or a deterministic mock.
+Node + TypeScript WebSocket hub for the household (`ws://<LAN IP>:8787/ws`). Household and league state are in memory; a restart clears them. Tonight picks, phone chat and Watched It questions go through Amazon Bedrock (Nova) or a deterministic mock. DynamoDB, S3, Polly and Transcribe are not used.
 
 - `src/hub.ts`: pairing codes, the TV claim + TV token, session tokens, payload validation, topic routing. Each frame is handled inside a try/catch.
 - `src/ai/`: `HouseholdAI` interface, `BedrockAI` (Converse / ConverseStream), `MockAI` (deterministic, no AWS). The hub falls back to the mock when Bedrock fails.

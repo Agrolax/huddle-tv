@@ -15,7 +15,7 @@ Sharpened Oct 17 (`docs/research/differentiation.md`): game night = household qu
 - npm workspaces; `npm run check` = typecheck + tests for every workspace
 - `apps/tv`: React Native for Vega (SDK 0.24, RN 0.72). Build/run: see README › Apps. Screenshots: `scripts/vvd-capture.sh`
 - `apps/companion`: React + Vite phone web app
-- `apps/server`: Node + TS API, WebSocket, Bedrock/DynamoDB/S3
+- `apps/server`: Node + TS API, WebSocket, Amazon Bedrock (Nova). Household state is in memory
 - `packages/shared`: theme tokens + realtime protocol (`protocol.ts`, roles tv/phone/display/voice); `packages/tv-focus-kit`: D-pad focus primitives (open-source entry)
 
 ## Working rules
