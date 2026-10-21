@@ -4,7 +4,7 @@ The family home screen for Fire TV (Vega OS): household widgets, a phone compani
 
 Built for the [Build, Ship, Shape: Amazon Developer Hackathon](https://amazonappdev2026.devpost.com/) · **Fire TV track** · AWS Builder + Open Source mini challenges.
 
-> Status: **step 1 (shell) runs on the Vega Virtual Device** ([screenshots](docs/screenshots/step-1/)). Plan: [roadmap](docs/product/roadmap.md). Docs: [`docs/README.md`](docs/README.md).
+> Status: **steps 1–6 are on `main`**: home, QR pairing, live widgets, Tonight + Bedrock chat, the game-night quiz, secret veto, bedtime-aware Tonight, and Sketch the pick. **Step 7 (ship) is in progress.** Submission drafts: [`docs/submission/`](docs/submission/). Screenshots: [`docs/screenshots/`](docs/screenshots/). Plan: [roadmap](docs/product/roadmap.md). Docs: [`docs/README.md`](docs/README.md).
 
 ## Hackathon at a glance
 
@@ -14,7 +14,7 @@ Built for the [Build, Ship, Shape: Amazon Developer Hackathon](https://amazonapp
 |---|---|
 | **Oct 23, 2026 · 12:00pm PT / 3:00pm EDT** | Submission deadline (we aim for Oct 22) |
 | Oct 6, 1:30pm EDT · Oct 19, 12:00pm EDT | Live office hours with the Amazon team ([#1](https://amazon.zoom.us/webinar/register/WN_ny5v5N4GQNGeMMaJRLKerQ) · [#2](https://amazon.zoom.us/webinar/register/WN_kh9CSYi0QtuN31d8nsTuOQ)) |
-| Oct 21, 12:00pm PT | AWS credits form closes (✅ requested; $150 code pending) |
+| Oct 21, 12:00pm PT | AWS credits form closes (✅ requested; **$250 active** as of Oct 18: $150 hackathon + $100 Free Tier) |
 | Nov 9 – Nov 20 | Judging |
 | ~Dec 3 | Winners announced |
 
@@ -29,7 +29,7 @@ Built for the [Build, Ship, Shape: Amazon Developer Hackathon](https://amazonapp
 ### Mini challenges (a project can win **one**, on top of its track)
 | Challenge | Requirement | Prize | Our plan |
 |---|---|---|---|
-| **AWS Builder** | Use AWS services with documented integration (Bedrock, AgentCore, Strands, Kiro, SageMaker…). Kiro alone qualifies. | $5,000 + $5k credits + meeting | Bedrock (Nova) for Tonight picks, phone AI chat and Watched It quiz questions; DynamoDB, S3, Lightsail. Polly / Transcribe are stretch |
+| **AWS Builder** | Use AWS services with documented integration (Bedrock, AgentCore, Strands, Kiro, SageMaker…). Kiro alone qualifies. | $5,000 + $5k credits + meeting | Amazon Bedrock (Nova) for Tonight picks, phone AI chat and Watched It quiz questions. Polly, Transcribe, DynamoDB, S3 and Lightsail are not used |
 | **Open Source** | New open-source project or a PR/fork/branch to a public repo, made during the hackathon | $5,000 + $5k credits + meeting | `packages/tv-focus-kit`: D-pad focus primitives for React Native TV (MIT) |
 
 ### Judging (equally weighted, after a pass/fail viability check)
@@ -49,7 +49,7 @@ Text description · GitHub repo · demo video < 3 min (running on the device) ·
 |---|---|
 | `apps/tv` | Fire TV app (React Native for Vega OS; demo on the Vega Virtual Device) |
 | `apps/companion` | Phone companion (React + Vite web app, opened via QR) |
-| `apps/server` | API + realtime (Node + TS, WebSocket, Amazon Bedrock, DynamoDB, S3) |
+| `apps/server` | API + realtime (Node + TS, WebSocket, Amazon Bedrock). Household and league state are in memory |
 | `packages/shared` | Shared types + theme tokens |
 | `packages/tv-focus-kit` | Open-source candidate (D-pad focus / widget components) |
 | `docs/` | PRD, roadmap, architecture, design, references, submission |
@@ -122,4 +122,19 @@ Everything talks to the Mac on its **LAN IP**, never `localhost`:
 - **Vega Virtual Device → Mac** works on both the Mac's LAN IP and `10.0.2.2` (QEMU's alias for the host). `localhost` inside the VVD is the VVD itself. We use the LAN IP so the TV and the phone agree on one address. Checked with `vega exec vda shell "curl http://<ip>:<port>/"`.
 - **Phone → Mac** needs the same Wi-Fi, and no client isolation on that network (guest and some office networks block device-to-device traffic). macOS may ask to allow incoming connections for `node`. Say yes, or check *System Settings → Network → Firewall*.
 - **The LAN IP changed** (new network): rebuild the TV app (`npm run build:tv`) so it picks up the new address, and restart the server.
-- **Restarting** the server forgets households (in-memory until DynamoDB). The TV reclaims its household automatically. Phones need to scan the QR code again.
+- **Restarting** the server forgets households and the league. They live in memory for the session. The TV reclaims its household automatically. Phones need to scan the QR code again.
+
+## How it fits together
+
+The TV and the phones talk only to the WebSocket server. The server calls Amazon Bedrock. Household state stays in the server process. Diagram and the protocol: [architecture](docs/architecture/architecture.md).
+
+```mermaid
+flowchart LR
+  TV["Fire TV app<br/>Vega OS"]
+  Phone["Phone companion<br/>joins by QR"]
+  Server["WebSocket server<br/>in-memory household"]
+  Bedrock["Amazon Bedrock<br/>Nova"]
+  TV <--> Server
+  Phone <--> Server
+  Server <--> Bedrock
+```

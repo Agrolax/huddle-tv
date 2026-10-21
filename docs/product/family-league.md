@@ -7,13 +7,18 @@ Stored: points, wins and games per person. That is all.
 
 **Limits right now**
 - It lives in the server's memory. A restart wipes it ([household.ts](../../apps/server/src/household.ts): `league: {}`).
-- It never resets or ends, so the leader after a month is whoever played most.
+- It never resets on its own. In one long-lived process the leader is whoever played most. A restart clears it, so that is not "across nights".
 - There is no reason to open it between games.
 
 ## Why it matters to the pitch
-The research gap was "memory across nights": no Fire TV or Alexa product keeps a household score or knows whose turn it is ([differentiation.md](../research/differentiation.md), gap 4). The league is the only part of Huddle that remembers, so it needs to survive a restart to be true.
+The research gap was "memory across nights": no Fire TV or Alexa product keeps a household score or knows whose turn it is ([differentiation.md](../research/differentiation.md), gap 4). The league is the only part of Huddle that totals across games. It does not survive a restart, so the submission says **within a session**.
+
+## Decision (Oct 21)
+Wording only. No JSON file and no DynamoDB. Say "within a session", not "between nights".
 
 ## Do we need DynamoDB or S3 for it?
+No. Decided Oct 21: within a session, no new store. The notes below are the options that were on the table.
+
 No to S3: it stores files, and the league has none.
 
 DynamoDB is one way to make it survive a restart, not a requirement. The league is three numbers per person. The plain options, from least to most work:
@@ -32,6 +37,5 @@ DynamoDB is one way to make it survive a restart, not a requirement. The league 
 
 Recommended if only one: **earned pick power**. It links game night to the veto, which is the whole pitch ("the game ends on the decision"), and it needs only the existing totals.
 
-## Decisions for you
-- Persist it (JSON file, DynamoDB) or word the claim as "within a session"?
-- Add one of the ideas above, or leave the league as a scoreboard?
+## Still open
+- Add one of the ideas above, or leave the league as a scoreboard? Persistence is decided: within a session.

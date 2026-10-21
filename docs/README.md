@@ -8,7 +8,7 @@
 | Check what is unique vs already out there | [research/uniqueness.md](research/uniqueness.md) · [product/family-league.md](product/family-league.md) |
 | Park an idea for later | [product/ideas-backlog.md](product/ideas-backlog.md) |
 | See how it works technically | [architecture/architecture.md](architecture/architecture.md) |
-| Design screens | [design/design-guide.md](design/design-guide.md) · [design/wireframes.html](design/wireframes.html) |
+| Design screens | [design/design-guide.md](design/design-guide.md) · [design/wireframes.html](design/wireframes.html) · [design/screen-inventory.md](design/screen-inventory.md) (redesign checklist) |
 | Find docs, samples, links | [research/references.md](research/references.md) · [research/echo-show.md](research/echo-show.md) (Echo Show as a second screen) |
 | See the app as it runs | [screenshots/](screenshots/) (one folder per step, from the Vega Virtual Device) |
 | Prepare the submission | [submission/checklist.md](submission/checklist.md) · [demo-script.md](submission/demo-script.md) |

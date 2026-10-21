@@ -53,7 +53,7 @@ One 1920x1080 slide, same theme as the app. Left to right, only what exists toda
 - Server: Node WebSocket hub, one household protocol for TV, phones and future displays
 - AWS: Amazon Bedrock (Nova: Tonight, chat, quiz questions)
 
-No more than 20 words of text on the slide. The voiceover carries the rest. Keep the diagram accurate: the old ASCII diagram in `architecture.md` still shows photos, Polly and DynamoDB, so do not copy from it.
+No more than 20 words of text on the slide. The voiceover carries the rest. Copy the diagram from [architecture.md](../architecture/architecture.md): TV, phone via QR, WebSocket server, Bedrock. Do not add DynamoDB, S3, Polly or Lightsail.
 
 ## Shot list
 

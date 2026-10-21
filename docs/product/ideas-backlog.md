@@ -41,6 +41,6 @@ Already in the architecture: QR/6-char pairing, one WebSocket channel per househ
 - **Matter Casting**: Vega apps can declare a Matter identity and provide Content Launcher, Media Controls and Account Login clusters, so a phone can launch content and control playback on the TV through the platform rather than our server. The Matter casting SDKs are native iOS/Android, so this does not fit the web companion. Park it unless the web path is done and we want a "works with Amazon's own casting" line in the writeup. Check the `vega-matter-casting` skill and docs before committing.
 
 **Risks to check in the spikes**
-- TV and phone both reach the server only through the tunnel/Lightsail box. Make the phone's QR link use the public host, not `localhost`.
+- If a public host is added later, the TV and the phone both have to reach that host. Make the phone's QR link use it, not `localhost`. Nothing is hosted today.
 - Reconnect handling: TV sleeps, phone backgrounds. WebSocket needs resume-with-last-event-id so the Board does not go stale.
 - Judges may not have a phone handy: keep a "phone view in a browser tab" path and a mock mode.

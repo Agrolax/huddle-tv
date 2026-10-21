@@ -1,7 +1,7 @@
 import {EMPTY_CANVAS, IDLE_GAME, IDLE_VOTE} from '@huddle/shared';
 import type {CalendarEvent, HouseholdSnapshot, Weather} from '@huddle/shared';
 
-/** In-memory demo household. DynamoDB replaces this in a later step. */
+/** In-memory demo household. A server restart clears it. */
 export function demoHousehold(householdId: string, now = Date.now(), weather: Weather | null = null): HouseholdSnapshot {
   return {
     householdId,

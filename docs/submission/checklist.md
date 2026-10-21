@@ -2,20 +2,20 @@
 
 Due **Oct 23, 2026 · 3:00pm EDT**. Target **Oct 22**. Edits are allowed on Devpost until the deadline, so submit a complete draft early and polish after.
 
-Status as of **Oct 18**: written = a draft exists in this folder. Nothing is published, recorded or submitted yet.
+Status as of **Oct 21**: written = a draft exists in this folder. AWS claims, the README status line, the architecture diagram and the root LICENSE were updated Oct 21. The repo is still private. Nothing is published, recorded or submitted yet.
 
 ## Blockers (fix these first; each one can fail the submission)
-- [ ] **Repo is private and has no LICENSE.** `gh repo view` says `PRIVATE`, `licenseInfo: null`. Decide: public + MIT (also needed for the Open Source challenge), or private + invite the reviewers below at submit time.
+- [ ] **Repo is still private.** MIT `LICENSE` is at the repo root (Oct 21). Visibility was not changed. To clear this: make the repo public, or invite the reviewers below at submit time.
 - [ ] **No demo video.** Record Oct 20–21 from [demo-script.md](demo-script.md). It must be public on YouTube/Vimeo, under 3:00, English, show the app on the VVD or a device, and use no copyrighted music.
 - [ ] **No judge setup.** Judges may only read and watch, but if they run it they need: a hosted server + companion that stays up through Nov 20, a `.vpkg` in GitHub Releases built against the hosted server's `wss://` URL (the TV URL is baked in at build time by `apps/tv/scripts/write-config.mjs`), VVD steps, and a seeded demo household. No API keys or sign-ups for them.
-- [ ] **Docs claim AWS services the code does not use.** Only Bedrock is called. DynamoDB, S3, Lightsail and Polly appear in `README.md`, `PRD.md`, `architecture.md` (and its diagram). Either build one more AWS piece (DynamoDB for household + league is the small one) or change those docs to match the code. The Devpost text and product feedback already say Bedrock only.
+- [x] **Docs match the AWS the code uses (Oct 21).** Only Bedrock is called. README, PRD and architecture no longer list DynamoDB, S3, Lightsail or Polly as built. Household and league state are in memory. The Devpost text and product feedback already said Bedrock only.
 
 ## Required by Devpost
 - [x] **Text description** (written): [devpost-description.md](devpost-description.md). Fill the `TODO` links (video, repo, judge steps, music) and the `[confirm]` line about Builder Tools use
 - [ ] **GitHub repo** with setup and run steps in the README
-  - [ ] Public + LICENSE file at the repo root (detectable in the About section), **or**
-  - [ ] Private + add `testing@devpost.com` and the Amazon reviewers **at submit time** (invites expire after 7 days): `chris-trag`, `knmeiss`, `giolaq`, `anishamalde`, `mosesroth`, `emersonsklar`
-  - [ ] README status line still says "step 1 (shell)". Update to the current state and add the architecture diagram (below)
+  - [x] LICENSE file at the repo root (MIT, Oct 21). The About section will not show it until the repo is public
+  - [ ] Public, **or** private + add `testing@devpost.com` and the Amazon reviewers **at submit time** (invites expire after 7 days): `chris-trag`, `knmeiss`, `giolaq`, `anishamalde`, `mosesroth`, `emersonsklar`
+  - [x] README status line updated to steps 1–6 (Oct 21). Architecture diagram: [architecture.md](../architecture/architecture.md), linked from the README
   - [ ] No secrets in git: `git ls-files` shows only `.env.example` files, and a pattern scan for AWS and API keys found nothing on Oct 18. Re-run before submitting
 - [ ] **Demo video** under 3 min ([demo-script.md](demo-script.md)): problem → solution working → who it's for → Fire TV / Vega tools on screen
 - [x] **Product feedback** (written): [product-feedback.md](product-feedback.md). Resolve every `[confirm]` and either list the Builder Tools calls you used or cut that sentence. Delete the Kiro / AWS Knowledge MCP section if you did not use them
@@ -29,7 +29,7 @@ Status as of **Oct 18**: written = a draft exists in this folder. Nothing is pub
 ## AWS Builder
 - [x] Bedrock is called live from the server (Nova Micro / Lite / Pro; verified Oct 18). The Devpost text says which service does what
 - [ ] Show a live Bedrock call in the video (server log line with `source: bedrock`; shot 12b)
-- [ ] Architecture diagram in the README that matches the code: TV (Vega) ↔ WebSocket server ↔ Bedrock, phones via QR. No DynamoDB, S3 or Polly unless they get built
+- [x] Architecture diagram matches the code (Oct 21): [architecture.md](../architecture/architecture.md), linked from the README. TV (Vega) ↔ WebSocket server ↔ Bedrock, phones via QR. No DynamoDB, S3 or Polly
 - [ ] Set an AWS Budget alert ($25 / $50 / $75). Needs your OK, not set yet
 - [ ] Add the final credits used to the product feedback (Bedrock section)
 

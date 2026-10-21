@@ -2,27 +2,34 @@
 
 ## 1. Overview
 
+What runs today. The TV and the phones talk only to the WebSocket server. The server calls Amazon Bedrock. Household state (profiles, calendar, messages, devices, tonight, votes, games, the league) lives in the server process. A restart clears it.
+
+```mermaid
+flowchart LR
+  TV["Fire TV app<br/>apps/tv · Vega OS"]
+  Phone["Phone companion<br/>apps/companion · React<br/>joins by QR"]
+  Server["WebSocket server<br/>apps/server<br/>in-memory household"]
+  Bedrock["Amazon Bedrock<br/>Nova"]
+  Weather["Open-Meteo"]
+  TV <-->|"WebSocket"| Server
+  Phone <-->|"WebSocket"| Server
+  Server <-->|"Converse / ConverseStream"| Bedrock
+  Server -->|"poll"| Weather
 ```
-┌──────────────────────────────┐   HTTPS + WebSocket   ┌────────────────────────────────┐
-│ Fire TV app  (apps/tv)        │◄────────────────────►│ Huddle API  (apps/server)       │
-│ React Native for Vega OS     │                       │ Node + TypeScript               │
-│ - profile picker, home, widgets│                      │ - households, profiles          │
-│ - focus/D-pad system           │                      │ - board, events, photos         │
-│ - launches other apps (deep    │                      │ - launch log → patterns         │
-│   links via Linking)           │                      │ - realtime push (WebSocket)     │
-│ - ambient mode                 │                      │                                 │
-└──────────────────────────────┘                       │  ┌──────── AWS ───────────┐     │
-                                                       │  │ Bedrock: Tonight picks, │     │
-┌──────────────────────────────┐   HTTPS + WebSocket   │  │   daily brief, NL→event │     │
-│ Phone companion (apps/companion)◄───────────────────►│  │ Polly: TV voice (TTS)   │     │
-│  │ Transcribe: phone voice │     │
-│  │ DynamoDB: household data│     │
-│ React + Vite, mobile web       │                      │  │ S3: photos              │     │
-│ opened via QR                  │                      │  └─────────────────────────┘     │
-└──────────────────────────────┘                       │  External: weather, watch        │
-                                                       │  providers, sports scores        │
-                                                       └────────────────────────────────┘
+
 ```
+  Fire TV (apps/tv, Vega)  <---- WebSocket ---->  Huddle server (apps/server)
+  Phone (apps/companion)   <---- WebSocket ---->       |
+        ^                                              | in-memory household
+        | QR join URL                                  | and league
+        +----------------------------------------------+
+                                                       |
+                                                       v
+                                              Amazon Bedrock (Nova)
+                                              Tonight, chat, Watched It
+```
+
+Not used: DynamoDB, S3, Lightsail, Polly, Transcribe. Polly and Transcribe stay stretch. There is no hosted box.
 
 **The hub.** One household on the server. Clients join with a role:
 - **`tv`**: the Fire TV app (Vega, `apps/tv`). It is the main screen.
@@ -31,9 +38,9 @@
 - **`voice`** (stretch): an Alexa skill backend.
 
 **Principles**
-- The **server is the source of truth**. The TV, phones, and Alexa are views that subscribe to household updates.
-- The TV app must **work offline-ish**: cache the last household state so the home screen renders instantly.
-- AI calls are **never on the critical path** of rendering home. Precompute the brief; show "Tonight" behind a loading state.
+- The **server is the source of truth**. The TV and the phones are views. An Alexa `voice` client is stretch and not built.
+- Before the first `welcome`, the TV shows a local profile list. It does not persist the household. A server restart clears it.
+- AI calls are not on the path of painting Home. Tonight shows "Getting picks…" while a request is out.
 
 ## 2. Repo layout
 
@@ -52,18 +59,11 @@ npm workspaces. `npm run check` typechecks every workspace and runs all unit tes
 - **Base:** the Vega app in `react-native-multi-tv-app-sample`. Its web target is handy for fast design iteration in a browser. Stay on that sample's React Native version (0.72 until its 0.83 migration lands). SDK 0.24 can scaffold a new app on React Native 0.83, and several Expo libraries are not stabilized there yet.
 - **Navigation:** Amazon's react-navigation packages (skill: `amazon-devices-vega-navigation`)
 - **Focus:** `@huddle/tv-focus-kit`. `FocusGrid` computes each neighbour in plain TS (`grid.ts`, unit tested) and sets `nextFocus*` on Vega's `Pressable`. Edges fall back to native Cartesian focus. Grids sit inside `TVFocusGuideView autoFocus` so focus coming back from outside lands on the last cell. Verified on the VVD in step 1.
-- **Widgets:** each widget is a module with:
-  ```ts
-  interface Widget {
-    id: string;              // 'clock' | 'calendar' | 'profiles' | 'tonight' | 'sketch' | 'smart-home'
-    Tile: React.FC<{ size: 'S' | 'M' | 'L'; focused: boolean }>;
-    Expanded: React.FC;      // full-screen view on Select
-    dataKey: string;         // which household slice it subscribes to
-  }
-  ```
-  Step 1 has the tiles only (`FocusGridItem.render` + `WidgetTile` chrome). Expanded views come with each widget's step.
+- **Widgets:** there is no shared `Widget` type. Home is a `FocusGrid` of six tiles (`clock`, `calendar`, `profiles`, `tonight`, `game`, `smart-home`), each a `FocusGridItem` plus `WidgetTile`. Select opens a sheet for Tonight, Game night and Home. Clock and calendar are focusable and do not open a sheet. States: [screen-inventory.md](../design/screen-inventory.md).
 
 ## 4. App launching
+
+**Not built.** Demoted Oct 17. The TV app does not call `Linking`. The notes below are the spike that was never run.
 
 **The TV app targets Vega OS.** Vega has no Android `PackageManager`, so Huddle does not scan the device for installed apps. The phone companion stores which services the household has. The TV opens them with React Native `Linking`:
 
@@ -99,15 +99,7 @@ Launch flow: `canOpenURL(titleUri)` → open title; else `canOpenURL(appUri)` �
 ## 5. Server
 
 - **Realtime:** one WebSocket channel per household; events below.
-- **Storage (DynamoDB, single table):**
-  | PK | SK | Item |
-  |---|---|---|
-  | `HH#<id>` | `META` | household name, pairing code, services owned |
-  | `HH#<id>` | `PROFILE#<id>` | name, avatar, colour, teams |
-  | `HH#<id>` | `NOTE#<ts>` | board note, author, expiry |
-  | `HH#<id>` | `EVENT#<date>#<id>` | agenda item |
-  | `HH#<id>` | `PHOTO#<ts>` | S3 key |
-  | `HH#<id>` | `LAUNCH#<ts>` | app launch log |
+- **Storage:** in memory, one household object per id (`apps/server/src/household.ts`, held by `hub.ts`). The snapshot is profiles, who's here, calendar, messages, simulated devices, weather, Tonight (including the vote), the game, the Sketch canvas and the league. DynamoDB and S3 are not used. A restart wipes the household and the league. The TV reclaims its household on the next `hello`. Phones scan the QR again. The league is **within a session**: it totals finished games until the process stops, and it does not carry across nights.
 - **Pairing (step 2, built):**
   1. The TV says `hello` as `tv` for its household (`HOUSEHOLD_ID`, default `home`). The **first TV claims the household** and gets a TV token in `welcome`, which it keeps in AsyncStorage. After that, only a TV holding that token may connect as `tv` (`tv-claimed` otherwise). A reconnecting TV replaces its old socket.
   2. "Connect phone" → `pair:request` → `pair:code {code, expiresAt, joinUrl}`. Codes are 6 characters from an unambiguous alphabet, live 10 minutes and can be reused within that window. The TV asks for a new one 30 s before expiry. `joinUrl` = `COMPANION_URL?h=<householdId>&c=<code>`, and that's what the QR encodes.
@@ -141,38 +133,30 @@ Source of truth: [`packages/shared/src/protocol.ts`](../../packages/shared/src/p
 
 ## 6. AI features (Bedrock)
 
-| Feature | Input | Output (JSON) | When |
-|---|---|---|---|
-| **Watched It quiz** | movie title, people present | `{questions: [{question, choices[4], answer}]}`, sanitized; < 3 usable → mock bank | Game night (step 5). *Our Week* needs no model: questions come straight from the calendar, messages, weather and devices, so answers are always right |
-| **Tonight picker** | profiles present (ages, likes), mood, services owned, recent picks | `[{ title, year, why, service, deepLink? }]` | On demand |
-| **Daily brief** | agenda, board, weather, sports | `{ greeting, lines[] }` per profile | Precomputed hourly / on change |
-| **NL → event** | "dentist Thursday 4pm for Ammu" | `{ title, start, profileIds }` | Phone input |
-| **Pattern phrasing** | launch stats | `"Saturday mornings are YouTube Kids time"` | Precomputed |
+The hub talks to a `HouseholdAI` interface (`apps/server/src/ai/`). `BedrockAI` calls Nova through the Converse API. `MockAI` is deterministic and uses no AWS. `HUDDLE_AI=bedrock` turns Bedrock on. The mock is the default and the per-request fallback, so a Bedrock error or timeout never shows on the TV. Verified Oct 18 in us-east-1: Tonight ~1.1 s, chat ~0.5 s, quiz ~2.7 s, all `source: bedrock`. Claude models on Bedrock are not available on this account.
 
-**Built in step 4** (`apps/server/src/ai/`): the hub talks to a `HouseholdAI` interface. `BedrockAI` calls Nova through the Converse API (Tonight: `us.amazon.nova-lite-v1:0`, JSON-only prompt, parsed and clipped by hand; chat: `us.amazon.nova-micro-v1:0` via ConverseStream). `MockAI` gives deterministic picks from a small catalog and rule-based answers from the household context. `HUDDLE_AI=bedrock` turns Bedrock on; the mock is the default and the per-request fallback (10 s Tonight timeout, 25 s chat). Tonight picks are broadcast on the `tonight` topic and kept in the snapshot; chat replies go only to the client that asked. The picks are not yet checked against a watch-provider source (below).
+| Feature | Model | What the code does |
+|---|---|---|
+| **Tonight picks** | `us.amazon.nova-lite-v1:0` (Converse) | Three picks (title, year, why, service, minutes) for the people present and a mood. JSON is parsed and clipped by hand. Picks that run past the bedtime limit are dropped and topped up from the mock. Broadcast on `tonight` and kept in the snapshot |
+| **Phone chat** | `us.amazon.nova-micro-v1:0` (ConverseStream) | Streamed to the asking phone only. The prompt has who's here, the calendar, the weather and the devices. Tonight times out at 10 s, chat at 25 s, the quiz at 12 s |
+| **Watched It** | `us.amazon.nova-pro-v1:0` | Asks for 8 questions, then a second cold pass keeps only the ones both passes agree on. Fewer than 3 usable questions → the mock bank. *Our Week* does not call a model: questions come from the calendar, messages, weather and devices |
 
-- **Model choice:** start with **Amazon Nova** (Lite/Micro) on Bedrock: first-party, cheap, definitely covered by credits. Third-party models (e.g. Claude) on Bedrock may be billed via AWS Marketplace, which promotional credits often don't cover, so check the Billing console after one test call before relying on them.
-- Validate every response with `zod`; retry once on invalid JSON.
-- Watch-provider availability: AI suggests titles, then **verify availability with a data source** (e.g. TMDB watch providers for region CA, which requires attribution). Never trust the model for "it's on Netflix".
-- Stretch: wrap these as a Strands agent with tools (`get_agenda`, `get_launch_stats`, `search_titles`), which makes for a stronger AWS Builder story.
+Not built: a daily brief, natural-language calendar entry, launch-pattern phrases, a watch-provider check (no TMDB call), and a Strands agent. The model is not trusted for "it's on Netflix"; the pick card shows the service the model named, with no availability lookup.
 
-### Voice (Polly + Transcribe)
-- **Polly (TTS):** server synthesizes short lines (brief, announcements) with a neural voice → caches MP3 in S3 keyed by text hash → sends the URL to the TV, which plays it. Precompute the daily brief audio together with its text.
-- **Transcribe (speech-to-text):** phone companion records with `MediaRecorder` (hold-to-talk), streams audio over the existing WebSocket to the server, server uses **Transcribe streaming** → final text goes through the same Bedrock NL parser as typed input. Show the live transcript on the phone.
-- Both are covered by the AWS credits; keep clips short (a few seconds) so costs stay at cents.
+### Voice
+Polly and Transcribe are **not used**. The server does not synthesize speech, and the phone has no hold-to-talk. Both stay stretch.
 
 ## 7. External data
-| Need | Option | Key? |
-|---|---|---|
-| Weather | Open-Meteo | No |
-| Titles + where to watch | TMDB API (watch/providers) | Free key, attribution |
-| Sports scores | TheSportsDB or similar | Free tier |
+| Need | What the code does |
+|---|---|
+| Weather | Open-Meteo, no key. The server polls every 15 min (`apps/server/src/weather.ts`) |
+| Titles and where to watch | Not called. No TMDB |
+| Sports scores | Not called |
 
-## 8. Hosting
-- Dev: server on laptop + tunnel (cloudflared / ngrok) so the stick and phone reach it.
-- Demo: **Lightsail** instance (cheapest; WebSockets fine) or EC2, plus DynamoDB and S3, in one region with Bedrock access. Covered by the $250 credits.
-- Companion served as static files from the server.
-- Secrets in `.env` (gitignored); `.env.example` committed.
+## 8. Where it runs
+- Dev and the current demo: the Node server and the Vite companion on the same machine as the Vega Virtual Device, on the LAN. See the README › Networking. The TV's server URL is baked in at build time.
+- No Lightsail, EC2 or other host is set up. The companion is not served by the API process.
+- Secrets in `.env` (gitignored); `.env.example` committed. $250 AWS credits are active (Oct 18). Spend so far is Bedrock only.
 
 ## 9. Open questions
 - ~~Vega or Fire OS?~~ **Vega OS** (Oct 7). Demo on the Vega Virtual Device. The Stick HD on Fire OS 8 cannot run this build.

@@ -2,18 +2,21 @@
 
 React Native for Vega, SDK 0.24, RN 0.72 (`@amazon-devices/react-native-kepler` 2.1.0). Part of the npm workspaces monorepo: run installs from the repo root.
 
-## Screens (step 1)
+## Screens
+Full state list: [docs/design/screen-inventory.md](../../docs/design/screen-inventory.md).
+
 1. **Who's here?** Multi-select profiles. Select toggles; Continue goes Home.
 2. **Home.** Greeting, "Connect phone", and a 4×2 widget grid built with `@huddle/tv-focus-kit`'s `FocusGrid`:
 
    ```
    clock & weather | family calendar (2 wide) | who's here
-   tonight (2 wide)       | sketch it         | home (smart, simulated)
+   tonight (2 wide)       | game night        | home (smart, simulated)
    ```
-   Back on Home → Who's here. Back on Who's here exits.
-3. **Connect phone** (step 2): from the chip above the grid. Shows a big QR, the code and the join URL. Focus is trapped in the sheet. Back or Done closes it, and focus returns to the chip.
+   Back on Home → Who's here. Back on Who's here exits. Select on Tonight, Game night or Home opens a sheet. Clock and calendar do not.
+3. **Sheets:** Connect phone (QR), Tonight (picks and the secret vote), Game night (quiz and Sketch the pick), Home devices. Focus stays in the sheet. Back or Done closes it and returns focus to the control that opened it.
+4. **Overlays that do not take focus:** a message toast (8 s, bottom right) and a door alert (15 s, bottom left).
 
-Live household (step 2): `src/net/HouseholdContext.tsx` wraps the shared `HuddleSocket` (reconnects with backoff). A phone's `profile:changed` updates Who's here and the greeting. `message:new` shows a toast for 8 s and stays in the greeting subline. The status pill shows Online / Reconnecting / Offline.
+Live household: `src/net/HouseholdContext.tsx` wraps the shared `HuddleSocket` (reconnects with backoff). A phone's `profile:changed` updates Who's here. `message:new` shows the toast only. When the socket is not open, Home shows an Offline pill.
 
 ## Server address
 `scripts/write-config.mjs` runs before build, start, test and typecheck. It writes `src/config.generated.ts` (gitignored) with `SERVER_URL = ws://<this Mac's LAN IP>:8787/ws`. Override with `HUDDLE_SERVER_URL=ws://… npm run build:tv`, and the household with `HUDDLE_HOUSEHOLD`. The VVD reaches the Mac on its LAN IP (and on `10.0.2.2`). See the README › Networking.
