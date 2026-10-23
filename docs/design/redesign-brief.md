@@ -44,4 +44,4 @@ Recommendation: A plus the Home tile content and the Tonight card from B. It is 
 | Video title card | 1920×1080 | Replaces the first card in `scripts/demo/assemble.mjs` if you like |
 
 ## Decisions that are yours
-Tier A, B, C or D. Playful or calm (the guide leans calm home, playful details). Whether the phone changes. Whether to keep the amber focus ring or the white Vega ring (the theme now uses white; `design-guide.md` still says amber in places).
+Tier A, B, C or D. Playful or calm (the guide leans calm home, playful details). Whether the phone changes. Whether to keep the amber focus ring or the white Vega ring (the theme uses white; `references.md` still lists an amber ring as a deliberate difference).
