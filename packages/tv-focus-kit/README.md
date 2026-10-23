@@ -36,6 +36,9 @@ Navigation rules (see `test/grid.test.ts`):
 
 On Vega, wrap the grid in `TVFocusGuideView autoFocus` (from `@amazon-devices/react-native-kepler`) so focus entering the grid from outside returns to the last cell.
 
+## No build step
+The package ships TypeScript source (`main` is `src/index.ts`). Metro (React Native) and ts-jest compile it directly, so add it as a workspace dependency or copy the folder in. There is no `dist/`. `apps/tv` in this repo is the runnable example: its Home grid is a `FocusGrid`.
+
 ## Develop
 ```bash
 npm test -w @huddle/tv-focus-kit

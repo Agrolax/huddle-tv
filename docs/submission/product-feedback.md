@@ -26,7 +26,7 @@ Draft status (Oct 18): written from the friction log, the roadmap and the code. 
 - **Used for:** `vega virtual-device start`, `vega project doctor` / `install`, `react-native build-vega`, `vega device list`, `vega exec vda shell` with `inputd-cli` to drive the remote, `npm run tv:install` / `tv:launch` wrappers.
 - **What worked well:** the VVD boots reliably and installs a `.vpkg` in seconds. `inputd-cli button_press KEY_RIGHT` made the app scriptable, so our screenshot and end-to-end checks run without a person at the remote. `vda shell curl` was a fast way to test networking from the device (FL-12).
 - **What needs work:**
-  - No screenshot or screen recording command for the VVD. The Builder Tools docs point to a tool that "only works on physical devices" (FL-01). We wrote `scripts/vvd-capture.sh` with CoreGraphics and `screencapture`; it breaks when the window is on another Space.
+  - No screenshot or screen recording command for the VVD (FL-16 for recording). The Builder Tools docs point to a tool that "only works on physical devices" (FL-01). We wrote `scripts/vvd-capture.sh` with CoreGraphics and `screencapture`; it breaks when the window is on another Space.
   - The VVD clock is UTC regardless of the host zone (FL-13), so calendar and clock screenshots look wrong.
   - `vega project install` skips libraries the docs list as supported for SDK 0.24 (QR code, async-storage, mmkv) with "not in OS version 1.2 profile" (FL-09). The CLI and the docs disagree and the message does not say which is right.
   - Reaching a dev server from the VVD (`10.0.2.2`, LAN IP, not `localhost`) is only mentioned on the Charles Proxy page (FL-12).
@@ -74,7 +74,7 @@ Covers `@amazon-devices/react-native-qrcode-svg` 3.0.0, `@amazon-devices/react-n
 ## Feature requests
 | Request | Why it matters | Priority |
 |---|---|---|
-| `vega device screenshot --out file.png` and `screenrecord` that work on the Vega Virtual Device (FL-01) | Screenshots and recordings are how developers write bug reports, docs and demo videos, and the VVD is the only device most developers (and every judge) has | Critical |
+| `vega device screenshot --out file.png` and `screenrecord` that work on the Vega Virtual Device (FL-01, FL-16) | Screenshots and recordings are how developers write bug reports, docs and demo videos, and the VVD is the only device most developers (and every judge) has | Critical |
 | Make the app template test-ready: Jest 29, the Kepler preset and `react-native` mapping, a focus test, working BackHandler and StatusBar mocks (FL-02, FL-03, FL-04) | Focus is the main interaction on TV; today it cannot be unit tested from the template | Important |
 | Make `vega project install` and the supported-libraries docs come from one source, and say why a package is skipped (FL-09) | Developers cannot tell whether the CLI or the docs is right | Important |
 | Fix or document `react-native-svg` child insertion on Vega, and translucent overlay compositing (FL-14, FL-11) | Both fail silently, with passing tests and no log | Important |

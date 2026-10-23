@@ -124,6 +124,17 @@ Everything talks to the Mac on its **LAN IP**, never `localhost`:
 - **The LAN IP changed** (new network): rebuild the TV app (`npm run build:tv`) so it picks up the new address, and restart the server.
 - **Restarting** the server forgets households and the league. They live in memory for the session. The TV reclaims its household automatically. Phones need to scan the QR code again.
 
+## Redesigning the UI, then putting the demo back
+Redesign the screens first, then regenerate everything the submission shows. Nothing in `scripts/demo/` needs editing unless the layout moves.
+
+1. **Design in code.** TV screens are in `apps/tv/src/screens` and `apps/tv/src/components`, the phone in `apps/companion/src`, tokens in `packages/shared/src/theme.ts`. The checklist of every screen and state is [`docs/design/screen-inventory.md`](docs/design/screen-inventory.md). Keep: 1920×1080, 5% safe area, a visible focus ring on every focusable element, no text input on the TV.
+2. **Check it.** `npm run check`, then `npm run build:tv && npm run tv:install && npm run tv:launch` on the Vega Virtual Device. Press through every screen with the remote and Back.
+3. **Walk the demo without recording.** `node scripts/demo/record.mjs --dry` plays the whole script and saves one screenshot per beat to `.tmp/demo/dry/`. If a beat lands on the wrong control, fix the key presses in `scripts/demo/record.mjs` (they are grouped by beat: Who's here, Home, Connect, Tonight, quiz, Sketch). A different grid layout is the usual cause.
+4. **Record and render.** `node scripts/demo/record.mjs && node scripts/demo/assemble.mjs` writes `.tmp/demo/out/huddle-home-demo.mp4` (about 8 minutes). For the live Amazon Nova take run `aws login` and set `HUDDLE_AI=bedrock` on both commands. Start the server before launching the TV app.
+5. **Replace the stills.** Copy the new `.tmp/demo/dry/` screenshots over `docs/submission/gallery/` (same file names: 01-home, 02-tonight-ends-by, 03-secret-vote-result, 04-household-quiz, 05-sketch-the-pick, 06-phones-join-by-qr). `scripts/vvd-capture.sh out.png KEY_RIGHT …` takes a single one.
+6. **Put the docs back in step.** Update `docs/design/screen-inventory.md` and the design guide, add a row to the roadmap change log, log any Vega snag in `docs/submission/friction-log.md`, and re-read `docs/submission/devpost-description.md` against the new UI (beat timestamps come from the new video).
+7. **Ship it.** One PR from a branch off `main`, no co-author trailer. Upload the new video, replace the gallery images on Devpost, and resubmit before the deadline (Devpost allows edits until Oct 23, 3:00pm EDT).
+
 ## How it fits together
 
 The TV and the phones talk only to the WebSocket server. The server calls Amazon Bedrock. Household state stays in the server process. Diagram and the protocol: [architecture](docs/architecture/architecture.md).

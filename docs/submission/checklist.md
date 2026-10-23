@@ -2,11 +2,11 @@
 
 Due **Oct 23, 2026 · 3:00pm EDT**. Target **Oct 22**. Edits are allowed on Devpost until the deadline, so submit a complete draft early and polish after.
 
-Status as of **Oct 21**: written = a draft exists in this folder. AWS claims, the README status line, the architecture diagram and the root LICENSE were updated Oct 21. The repo is still private. Nothing is published, recorded or submitted yet.
+Status as of **Oct 23, morning**: written = a draft exists in this folder. AWS claims, README status, architecture diagram and the root LICENSE were done Oct 21. On Oct 23 a scripted demo video was rendered (not uploaded), gallery stills and the focus kit's own LICENSE were added, and the Devpost TODOs were filled except the video link. The repo is still private and nothing is submitted. The ordered to-do for submit day is [noon-runbook.md](noon-runbook.md).
 
 ## Blockers (fix these first; each one can fail the submission)
 - [ ] **Repo is still private.** MIT `LICENSE` is at the repo root (Oct 21). Visibility was not changed. To clear this: make the repo public, or invite the reviewers below at submit time.
-- [ ] **No demo video.** Record Oct 20–21 from [demo-script.md](demo-script.md). It must be public on YouTube/Vimeo, under 3:00, English, show the app on the VVD or a device, and use no copyrighted music.
+- [ ] **Demo video: rendered, not uploaded.** A 2:27 take (captions, no audio, no music) is at `.tmp/demo/out/huddle-home-demo.mp4` (gitignored), made by `scripts/demo/` on the VVD. Watch it, upload it public to YouTube, paste the link. It runs on the offline demo AI; for the AWS Builder challenge re-record with `aws login` + `HUDDLE_AI=bedrock` (3 commands in the runbook). It must be public on YouTube/Vimeo, under 3:00, English, show the app on the VVD or a device, and use no copyrighted music.
 - [ ] **No judge setup.** Judges may only read and watch, but if they run it they need: a hosted server + companion that stays up through Nov 20, a `.vpkg` in GitHub Releases built against the hosted server's `wss://` URL (the TV URL is baked in at build time by `apps/tv/scripts/write-config.mjs`), VVD steps, and a seeded demo household. No API keys or sign-ups for them.
 - [x] **Docs match the AWS the code uses (Oct 21).** Only Bedrock is called. README, PRD and architecture no longer list DynamoDB, S3, Lightsail or Polly as built. Household and league state are in memory. The Devpost text and product feedback already said Bedrock only.
 
@@ -21,10 +21,10 @@ Status as of **Oct 21**: written = a draft exists in this folder. AWS claims, th
 - [x] **Product feedback** (written): [product-feedback.md](product-feedback.md). Resolve every `[confirm]` and either list the Builder Tools calls you used or cut that sentence. Delete the Kiro / AWS Knowledge MCP section if you did not use them
 - [ ] **Track:** Fire TV
 - [ ] **Mini challenges:** AWS Builder, Open Source
-- [ ] **Built-during-the-hackathon statement:** in the description (first app code Oct 9, repo started Oct 4)
+- [x] **Built-during-the-hackathon statement:** in the description (first app code Oct 9, repo started Oct 4). Paste it into the form
 - [ ] **Built With** tags: React Native for Vega, Vega OS, Amazon Bedrock, TypeScript, Node.js, React, Vite (full list in the description file)
-- [ ] **Gallery images:** 3–5 stills from `docs/screenshots/` (Home, Tonight with "Ends by", vote result, quiz question, Sketch the pick board) plus the architecture slide
-- [ ] **Music** track, source and licence noted in the description
+- [x] **Gallery images:** six 1920×1080 stills from today's build are in [gallery/](gallery/) (Home, Tonight with "Ends by", vote result, quiz, Sketch the pick, phones join by QR). Upload 3–5. The architecture picture is in [architecture.md](../architecture/architecture.md)
+- [x] **Music:** none. The video has no audio, and the description says so
 
 ## AWS Builder
 - [x] Bedrock is called live from the server (Nova Micro / Lite / Pro; verified Oct 18). The Devpost text says which service does what
@@ -35,14 +35,14 @@ Status as of **Oct 21**: written = a draft exists in this folder. AWS claims, th
 
 ## Open Source
 Pick **B** (a new repo is the realistic option in four days); A (a PR to a popular RN TV library) scores higher if one can land with tests.
-- [ ] **B.** Publish `packages/tv-focus-kit` as its own public repo (or a public folder with its own LICENSE): LICENSE file (MIT is already in `package.json`), README, a runnable example, tests passing (22 today)
-  - [ ] `package.json`: `main` points at `src/index.ts`. Fine for Metro, but say so in the README or add a build
+- [ ] **B.** `packages/tv-focus-kit` as a public folder with its own LICENSE (the checklist's second option, done Oct 23: `packages/tv-focus-kit/LICENSE`, README, 22 tests; the runnable example is `apps/tv`, which uses it for the Home grid). It counts once the repo is public. A separate repo would be nicer but is not needed
+  - [x] `package.json`: `main` points at `src/index.ts`. The README now says so (Metro and ts-jest compile it, no build step)
   - [ ] Check it installs and imports from a clean app outside this monorepo
 - [ ] Fields: contribution URL, project repo URL, GitHub username (`Agrolax`), what you did / how it works / why it matters (use the Open source paragraph in the description)
 - [ ] (Optional) check whether it also counts for Hacktoberfest
 
 ## Bonus
-- [x] **Friction log**: 15 entries (FL-01 to FL-15) in [friction-log.md](friction-log.md). Add new ones as they happen; up to +10%
+- [x] **Friction log**: 16 entries (FL-01 to FL-16) in [friction-log.md](friction-log.md). Add new ones as they happen; up to +10%
 - [x] **Feature requests**: table at the end of [product-feedback.md](product-feedback.md)
 
 ## Step 7 work that feeds the submission (from the [roadmap](../product/roadmap.md))
