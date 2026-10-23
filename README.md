@@ -124,6 +124,19 @@ Everything talks to the Mac on its **LAN IP**, never `localhost`:
 - **The LAN IP changed** (new network): rebuild the TV app (`npm run build:tv`) so it picks up the new address, and restart the server.
 - **Restarting** the server forgets households and the league. They live in memory for the session. The TV reclaims its household automatically. Phones need to scan the QR code again.
 
+## Next steps to submit (Oct 23, deadline 3:00pm EDT)
+The full ordered list is [`docs/submission/noon-runbook.md`](docs/submission/noon-runbook.md); the state of every item is in [`docs/submission/checklist.md`](docs/submission/checklist.md).
+
+1. Watch the rendered demo video (`.tmp/demo/out/huddle-home-demo.mp4`, 2:27, silent, captioned).
+2. Optional: `aws login`, then re-record with `HUDDLE_AI=bedrock` so the AWS Builder shot shows live Nova.
+3. Upload to YouTube as Public and copy the link.
+4. Make the repo public (`gh repo edit Agrolax/huddle-tv --visibility public --accept-visibility-change-consequences`), or invite the reviewers at submit time. Check the About box shows the MIT license.
+5. Resolve the `[confirm]` lines in `docs/submission/product-feedback.md` (onboarding times, which Builder Tools calls you used, Bedrock cost) and delete the Kiro section if unused.
+6. Fill Devpost from `docs/submission/devpost-description.md`: Fire TV track, AWS Builder + Open Source challenges, video link, gallery stills from `docs/submission/gallery/`, product feedback, friction log.
+7. Preview as a judge (video plays logged out, repo opens, license shows), submit, and screenshot the confirmation.
+
+Still open and optional: an AWS Budget alert, a hosted demo, a real-phone QR test, the focus and Back audit, and the redesign (below).
+
 ## Redesigning the UI, then putting the demo back
 Redesign the screens first, then regenerate everything the submission shows. Nothing in `scripts/demo/` needs editing unless the layout moves.
 
