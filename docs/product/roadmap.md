@@ -1,6 +1,6 @@
 # Roadmap
 
-Today: Oct 21 · Submit: **Oct 22** · Hard deadline: Oct 23, 3:00pm EDT
+Today: Oct 23 · Submit: **Oct 23, noon target** · Hard deadline: Oct 23, 3:00pm EDT
 
 Scope locked Oct 14 ([PRD §2](PRD.md#2-pitch)): widgets (clock/weather, family calendar, Bedrock Tonight, profiles), phone companion via QR (switch profile, message the TV, AI chat), one game (Sketch it), simulated smart-home widget. Polly/Transcribe are stretch.
 
@@ -100,8 +100,8 @@ Day-by-day plan, open decisions and how to resume: [next-steps.md](next-steps.md
 - [x] Screen and state inventory for the redesign: [screen-inventory.md](../design/screen-inventory.md). No UI changes
 - [ ] Make the repo public, or invite the reviewers at submit time
 - [ ] Focus + Back audit, `amazon-devices-scalable-ui-audit`, judge setup (hosted server + companion live through Nov 20, `.vpkg` + VVD steps)
-- [ ] Open Source: publish `tv-focus-kit` (see [checklist](../submission/checklist.md)). Not part of the Oct 21 docs PR
-- [ ] Record and edit the [demo video](../submission/demo-script.md)
+- [x] Open Source: `tv-focus-kit` has its own LICENSE and README note (Oct 23); it counts once the repo is public (see [checklist](../submission/checklist.md))
+- [x] Demo video take rendered Oct 23 with `scripts/demo/` (silent, captions). Open: watch it, upload, and re-record with Bedrock for the AWS Builder shot ([runbook](../submission/noon-runbook.md))
 - [ ] Oct 22: submit everything
 
 ## Stretch (only if step 6 is green)
@@ -142,3 +142,4 @@ Day-by-day plan, open decisions and how to resume: [next-steps.md](next-steps.md
 | Oct 18 | Bedrock verified with `aws login` (console session, us-east-1). $250 credits active. Prompts tuned on real Nova output (kid ratings, minutes, calendar day words); Watched It moves to Nova Pro with a check pass. Claude on Bedrock not available to the account |
 | Oct 18 | Added [uniqueness.md](../research/uniqueness.md) (all features scored), [family-league.md](family-league.md) and [next-steps.md](next-steps.md) (decisions D1–D6, schedule to Oct 23, how to resume). League needs no S3; DynamoDB is optional |
 | Oct 21 | Docs match the code: AWS claims cut to Bedrock only, README status is steps 1–6, architecture diagram redrawn, MIT LICENSE at the repo root (repo stays private), screen inventory for the redesign. League wording is within a session. No UI changes |
+| Oct 23 | Submission prep: scripted, re-runnable demo recording (`scripts/demo/`: VVD remote + scripted phones + captions, 2:27 silent take), gallery stills, `tv-focus-kit` LICENSE, Devpost TODOs filled, [noon runbook](../submission/noon-runbook.md). No UI changes. Offline demo AI used for the take; Bedrock take needs `aws login` |

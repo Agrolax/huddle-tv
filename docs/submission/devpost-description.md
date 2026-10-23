@@ -41,7 +41,7 @@ Huddle is a React Native for Vega app, so it is built on the Vega toolchain:
 - **Vega SDK, CLI and Virtual Device.** `vega virtual-device start`, `vega project doctor`, `react-native build-vega` and `inputd-cli` drive the build, install and a scripted remote. Our screenshots and end-to-end checks drive the VVD with `inputd-cli`.
 - **Vega focus model.** `TVFocusGuideView` and `nextFocus*` on `Pressable`, wrapped by our focus kit. Every element has a visible focus ring, Back is predictable, and sheets trap focus and return it to the tile.
 - **Vega libraries.** `@amazon-devices/react-native-svg` for the live drawing board, `react-native-qrcode-svg` for pairing, and `async-storage` for the TV token.
-- **Amazon Devices Builder Tools (MCP and Agent Skills).** Configured for Claude Code through `.adbt-config.json` and the project context file. We used its documentation search and Vega guides while building, and the problems we hit are in the friction log and product feedback. **[confirm: name two or three concrete uses]**
+- **Amazon Devices Builder Tools (MCP and Agent Skills).** Configured for Claude Code through `.adbt-config.json` and the project context file. We used its documentation search while building: to ask how to screenshot a Vega app (FL-01) and whether an Echo Show can run a Vega app (FL-08), and its Vega get-started guide for project setup. The problems we hit are in the friction log and product feedback.
 
 ## How it uses AWS
 **Amazon Bedrock** is the AI layer, called live from our server through the Converse and ConverseStream APIs:
@@ -54,10 +54,10 @@ Huddle is a React Native for Vega app, so it is built on the Vega toolchain:
 Every AI call sits behind one interface with a deterministic fallback, so a Bedrock error or timeout never shows on the TV. Household data is held in the server's memory for this submission; DynamoDB and S3 are not used.
 
 ## Open source
-`tv-focus-kit` (MIT) is a small React Native TV package. Native Cartesian focus picks the nearest element in the pressed direction, which on an uneven widget grid sends Down to a random neighbour and never returns Up to where you were. The kit computes each neighbour in plain, tested TypeScript, remembers the last cell per row, and wires the result into `nextFocus*`. It has `FocusGrid`, `FocusableCard` and `FocusRing`, and the navigation logic is pure functions you can use without React. **TODO: repo URL once it is public.**
+`tv-focus-kit` (MIT) is a small React Native TV package. Native Cartesian focus picks the nearest element in the pressed direction, which on an uneven widget grid sends Down to a random neighbour and never returns Up to where you were. The kit computes each neighbour in plain, tested TypeScript, remembers the last cell per row, and wires the result into `nextFocus*`. It has `FocusGrid`, `FocusableCard` and `FocusRing`, and the navigation logic is pure functions you can use without React. Code: [packages/tv-focus-kit](https://github.com/Agrolax/huddle-tv/tree/main/packages/tv-focus-kit), with its own MIT `LICENSE` and README, 22 unit tests.
 
 ## Challenges we ran into
-Honest list; all 15 entries are in the [friction log](friction-log.md).
+Honest list; all 16 entries are in the [friction log](friction-log.md).
 
 - Testing focus. The Vega app template's Jest setup loads upstream React Native, so `onFocus` never fires in tests, and its mocks crash. We switched to the Kepler preset.
 - Silent rendering bugs on the Virtual Device. A translucent overlay painted over its own children, and `react-native-svg` dropped every stroke added after the first six. We keep a fixed set of always-mounted paths and grow each one.
@@ -68,7 +68,7 @@ Honest list; all 15 entries are in the [friction log](friction-log.md).
 - A secret vote that is actually secret: the server never sends ballots to the TV or to other phones.
 - A game that asks about your own week, built from household data with no model, so the answers are always right.
 - A TV app where every element has focus, Back always does the same thing, and nothing needs text input on the TV.
-- 15 friction-log entries with workarounds, written as we hit them.
+- 16 friction-log entries with workarounds, written as we hit them.
 
 ## What we learned
 - On TV, the second screen is the phone: text input, private choices and drawing all moved there, and the TV got simpler.
@@ -86,11 +86,11 @@ React Native for Vega · Vega OS · Vega SDK 0.24 · Vega Virtual Device · Amaz
 
 ## Try it
 - **Track:** Fire TV. **Mini challenges:** AWS Builder, Open Source.
-- **Demo video (under 3 minutes):** TODO YouTube link. Beats at 0:00 problem · 0:12 Who's here · 0:25 live widgets · 0:45 phone joins · 1:15 Tonight and secret veto · 1:45 household quiz · 2:00 Sketch the pick · 2:25 built on Vega · 2:45 close.
-- **Code:** TODO GitHub URL. Setup and run steps are in the README.
-- **Run it:** TODO judge steps: hosted companion URL and server, the `.vpkg` from GitHub Releases, Vega Virtual Device steps, and the demo household (no keys or sign-ups needed). Not live yet; see the [checklist](checklist.md).
-- **Music:** TODO track name, source and licence.
+- **Demo video (2:27, captions, no audio):** TODO YouTube link. Beats at 0:00 problem · 0:05 Who's here · 0:14 live widgets · 0:28 phone joins by QR · 0:54 Tonight, bedtime-aware · 1:04 secret vote · 1:22 household quiz · 1:54 Sketch the pick · 2:13 built on Vega · 2:23 close.
+- **Code:** https://github.com/Agrolax/huddle-tv (MIT). Setup and run steps are in the README.
+- **Run it:** there is no hosted demo; the video shows the app running on the Vega Virtual Device. To run it yourself, follow README › Setup: start the Vega Virtual Device, `npm install`, `npm run dev:server` (the offline demo AI is the default, so no keys or sign-ups), `npm run build:tv && npm run tv:install && npm run tv:launch`, then open the QR code from Connect phone on a phone on the same Wi-Fi. `npm run check` runs about 257 tests.
+- **Music:** none. The video is silent with burned-in captions, so there is no third-party audio.
 - **Built during the hackathon window:** everything in this repository was written during the hackathon (the repo started Oct 4 with planning docs; first app code Oct 9).
 
 ## Product feedback and friction log
-Product feedback for every tool is in [product-feedback.md](product-feedback.md). The friction log has 15 entries ([friction-log.md](friction-log.md)).
+Product feedback for every tool is in [product-feedback.md](product-feedback.md). The friction log has 16 entries ([friction-log.md](friction-log.md)).

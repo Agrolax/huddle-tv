@@ -10,6 +10,17 @@ Household in the demo: Rafi and Nanu on the couch, Ammu on the phone. These are 
 
 Claims check (what the voiceover may say): Bedrock is the only AWS service the server calls. Do not say DynamoDB, S3, Polly or Lightsail. Say "open source" only once `tv-focus-kit` is public with a LICENSE (checklist › Open Source).
 
+## Automated take (Oct 23)
+The video the submission uses was recorded by a script, so it can be re-recorded in about 8 minutes after a UI change. It is silent with burned-in captions, so it has no music or voice to license. A human voiceover can still be laid over it (the voiceover table below fits the beats).
+
+```bash
+source ~/vega/env && vega virtual-device start      # once
+npm run build:tv && npm run tv:install               # once, and after any TV change
+node scripts/demo/record.mjs                         # about 5 min: drives the VVD remote and three scripted phones
+node scripts/demo/assemble.mjs                       # crop, captions, title and Vega cards -> .tmp/demo/out/huddle-home-demo.mp4
+```
+For the live Amazon Nova take run `aws login`, then set `HUDDLE_AI=bedrock` on both commands. `--dry` on `record.mjs` walks the same script and saves one screenshot per beat to `.tmp/demo/dry/`. The server runs at UTC+4 (`DEMO_TZ`) so "Ends by" shows even though the VVD clock is UTC (FL-13). What it does not include: real phones in hand, the couch shots, Claude Code and the Builder Tools MCP on screen, and the architecture slide. Add them in an editor if there is time; the take is complete without them.
+
 ## Timeline
 
 | Time | Beat | On screen | Needs |

@@ -150,3 +150,13 @@ Severity: **Blocker** · **Major** · **Minor** · **Papercut**
 - **Severity:** Minor (cost 20 minutes; on demo day it would look like a broken integration)
 - **Workaround:** Retry after a minute. The server already falls back to the mock on any Bedrock error, so the TV never shows it.
 - **Suggestion:** Say *why* an account is being verified and where to see its status, and say what a new account needs to use a listed model.
+
+### FL-16 — Recording the Vega Virtual Device: no recorder, and the window capture changes size between runs
+- **Tool / SDK:** Vega Virtual Device (VVD), Vega CLI 1.4.5, macOS `screencapture`
+- **Task attempted:** Record the TV screen for the demo video, scripted, so it can be re-recorded after a redesign.
+- **Expected:** `vega device` has a screen-record command (FL-01 is the same gap for screenshots).
+- **Actual:** There is none, so we record the VVD window with `screencapture -v -l <window id>`. Three things bite: `screencapture` only writes the file when its own `-V` timer ends (a SIGINT discards the take), the shadow margin around the window differs between recordings (the TV screen sat 67 px further right and 46 px lower in a later take of the same window), and the title bar and remote panel come along. We find the window corner in the first frame and crop 1920×1080 from it.
+- **Severity:** Minor (cost about 40 minutes)
+- **Workaround:** `scripts/demo/record.mjs` and `scripts/demo/assemble.mjs`.
+- **Suggestion:** A `vega virtual-device record --out file.mp4` (and `screenshot`) that captures only the TV framebuffer at 1920×1080.
+
