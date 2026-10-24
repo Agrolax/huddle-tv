@@ -6,6 +6,7 @@ Honest state of each feature, and the one place to edit it. Nothing here changes
 | Feature | State | Notes |
 |---|---|---|
 | Tonight picks | **Real**: Amazon Bedrock (Nova Lite) with a mock fallback | Titles come from the model; availability on a service is **not** checked (no watch-provider data) |
+| Movie posters | **Optional.** TMDB `/search/movie` when `TMDB_API_KEY` (v3) or `TMDB_READ_TOKEN` (v4) is set. Cached in memory. Mock picks get posters too | No key, no match (common for series), or a failed lookup leaves the mood-coloured title card. Not a watch-provider check |
 | Bedtime-aware picks | **Real** | Rule-based (below), applied after the model answers. Picks that run past the limit are dropped |
 | Moods | **Real**, three fixed moods: Cozy, Funny, Edge-of-seat | Same list on TV and phone |
 | Secret veto | **Real** | Ballots stay on the server |
@@ -26,6 +27,7 @@ Honest state of each feature, and the one place to edit it. Nothing here changes
 | Mark someone as a child | `kid: true` on the profile in `apps/server/src/household.ts` |
 | Change what Bedrock is told | `tonightPrompt` and `kidsLine` in `apps/server/src/ai/bedrock.ts` (ratings, runtime, JSON shape). Models: `HUDDLE_TONIGHT_MODEL`, `HUDDLE_CHAT_MODEL`, `HUDDLE_QUIZ_MODEL` in `apps/server/.env.example` |
 | Change the offline picks | `CATALOG` in `apps/server/src/ai/mock.ts` (title, minutes, moods, one-line reason). Keep `minutes` right: bedtime filtering uses it |
+| Change poster lookup | `apps/server/src/posters/tmdb.ts`. The hub calls it after the picks are chosen (`apps/server/src/hub.ts`). The TV draws `posterUrl` in `apps/tv/src/screens/HomeScreen.tsx` |
 | Change quiz questions | Our Week: `apps/server/src/quiz/ourWeek.ts`. Watched It fallback bank: `MOVIE_TRIVIA` in `apps/server/src/quiz/watchedIt.ts`. Number of rounds: `QUIZ_ROUNDS` in the protocol |
 | Change the family or the demo calendar | `demoHousehold` and `demoEvents` in `apps/server/src/household.ts` |
 | Change vote or round timers | The engines: `apps/server/src/tonight/vote.ts`, `quiz/engine.ts`, `sketch/engine.ts` |

@@ -11,7 +11,7 @@
 | Design screens | [design/design-guide.md](design/design-guide.md) · [design/wireframes.html](design/wireframes.html) · [design/screen-inventory.md](design/screen-inventory.md) (redesign checklist) |
 | Find docs, samples, links | [research/references.md](research/references.md) · [research/echo-show.md](research/echo-show.md) (Echo Show as a second screen) |
 | See the app as it runs | [screenshots/](screenshots/) (one folder per step, from the Vega Virtual Device) |
-| Prepare the submission | [submission/checklist.md](submission/checklist.md) · [demo-script.md](submission/demo-script.md) |
+| Prepare the submission | [submission/hackathon.md](submission/hackathon.md) (archived; not submitted) · [checklist.md](submission/checklist.md) · [demo-script.md](submission/demo-script.md) |
 | Log tool pain (+10% bonus) | [submission/friction-log.md](submission/friction-log.md) |
 | Write required tool feedback | [submission/product-feedback.md](submission/product-feedback.md) |
 

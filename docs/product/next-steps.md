@@ -1,6 +1,6 @@
 # Next steps (written Oct 18, to resume later)
 
-State: steps 1–6 are merged to `main` (PRs #1–#11), `npm run check` passes, and the submission drafts are in [docs/submission/](../submission/). Nothing is submitted, recorded or hosted yet.
+State as of Oct 24: the Oct 23 deadline passed and Huddle was not submitted. The README is the portfolio page. Rules, prizes and the submit checklist are archived in [hackathon.md](../submission/hackathon.md). Steps 1–6 are on `main` (PRs #1–#11). The repo stays private.
 
 Oct 21 docs: AWS claims cut to Bedrock, README status is steps 1–6, architecture diagram redrawn, MIT LICENSE at the repo root (repo stays private), screen inventory added for the redesign. Video, hosting, a public repo and the Devpost form are still open. Publishing `tv-focus-kit` is not part of that work.
 

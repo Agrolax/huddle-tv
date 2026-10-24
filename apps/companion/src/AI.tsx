@@ -1,5 +1,5 @@
 import {useEffect, useRef, useState} from 'react';
-import {CHAT_MAX_LENGTH, Profile, TONIGHT_MOODS, TonightMood, TonightPicks} from '@huddle/shared';
+import {CHAT_MAX_LENGTH, Profile, TMDB_ATTRIBUTION, TONIGHT_MOODS, TonightMood, TonightPicks} from '@huddle/shared';
 import type {ChatState} from './useHuddle';
 
 const SUGGESTIONS = ['What should we watch?', "What's on the calendar?", 'Do I need a jacket?'];
@@ -152,6 +152,11 @@ export function TonightCard({
             {tonight.source === 'mock' ? ' · demo picks' : ''}
           </li>
         </ul>
+      ) : null}
+      {tonight?.picks.some(p => p.posterUrl) ? (
+        <p className="muted small" data-testid="tmdb-credit">
+          {TMDB_ATTRIBUTION}
+        </p>
       ) : null}
       {tonight && tonight.picks.length >= 2 && !voting ? (
         <button className="chip small-chip" onClick={onVote} disabled={disabled || loading}>

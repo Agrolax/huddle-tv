@@ -1,6 +1,6 @@
 # Roadmap
 
-Today: Oct 23 · Submit: **Oct 23, noon target** · Hard deadline: Oct 23, 3:00pm EDT
+The hackathon deadline (Oct 23, 2026, 3:00pm EDT) has passed. Huddle was not submitted. The build through step 6 is done; step 7 (public repo, Devpost) was not finished. Archived submit notes: [hackathon.md](../submission/hackathon.md).
 
 Scope locked Oct 14 ([PRD §2](PRD.md#2-pitch)): widgets (clock/weather, family calendar, Bedrock Tonight, profiles), phone companion via QR (switch profile, message the TV, AI chat), one game (Sketch it), simulated smart-home widget. Polly/Transcribe are stretch.
 
@@ -143,3 +143,4 @@ Day-by-day plan, open decisions and how to resume: [next-steps.md](next-steps.md
 | Oct 18 | Added [uniqueness.md](../research/uniqueness.md) (all features scored), [family-league.md](family-league.md) and [next-steps.md](next-steps.md) (decisions D1–D6, schedule to Oct 23, how to resume). League needs no S3; DynamoDB is optional |
 | Oct 21 | Docs match the code: AWS claims cut to Bedrock only, README status is steps 1–6, architecture diagram redrawn, MIT LICENSE at the repo root (repo stays private), screen inventory for the redesign. League wording is within a session. No UI changes |
 | Oct 23 | Submission prep: scripted, re-runnable demo recording (`scripts/demo/`: VVD remote + scripted phones + captions, 2:27 silent take), gallery stills, `tv-focus-kit` LICENSE, Devpost TODOs filled, [noon runbook](../submission/noon-runbook.md). No UI changes. Offline demo AI used for the take; Bedrock take needs `aws login` |
+| Oct 24 | Not submitted. README is a portfolio page; hackathon tables, prizes, judging and the submit steps moved to [hackathon.md](../submission/hackathon.md). Optional TMDB posters on Tonight picks when a key is set; title cards stay when it is not. Repo stays private |
