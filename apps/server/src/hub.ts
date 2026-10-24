@@ -55,6 +55,7 @@ import type {ArtStore} from './art.js';
 import {demoHousehold} from './household.js';
 import {QuizEngine} from './quiz/engine.js';
 import {SketchEngine} from './sketch/engine.js';
+import type {PosterLookup} from './posters/tmdb.js';
 import {endsByOf, fitPicks, tonightLimit} from './tonight/bedtime.js';
 import {VoteEngine} from './tonight/vote.js';
 import {ourWeekQuestions} from './quiz/ourWeek.js';
@@ -81,6 +82,8 @@ export interface HubOptions {
   ai?: HouseholdAI;
   /** Used when `ai` fails, so the demo never shows an error. Defaults to the mock. */
   fallbackAI?: HouseholdAI;
+  /** Optional TMDB posters. Unset leaves the text cards. */
+  posters?: PosterLookup;
   tonightTimeoutMs?: number;
   /** Paints Tonight backdrops (Nova Canvas). Without it, the TV draws its own. */
   art?: ArtStore;
@@ -147,6 +150,7 @@ export class Hub {
   private readonly log: NonNullable<HubOptions['log']>;
   private readonly ai: HouseholdAI;
   private readonly fallbackAI: HouseholdAI;
+  private readonly posters: PosterLookup | null;
 
   constructor(private readonly opts: HubOptions) {
     this.now = opts.now ?? Date.now;
@@ -155,6 +159,7 @@ export class Hub {
     this.log = opts.log ?? (() => {});
     this.fallbackAI = opts.fallbackAI ?? new MockAI();
     this.ai = opts.ai ?? this.fallbackAI;
+    this.posters = opts.posters ?? null;
   }
 
   /** Register a socket. Returns the callbacks to wire to its `message` and `close` events. */
@@ -458,41 +463,52 @@ export class Hub {
 
   /**
    * Ask the AI for picks for whoever is here, fall back to the mock on failure,
-   * drop picks that run past bedtime, and broadcast them. A vote on the old picks ends.
+   * drop picks that run past bedtime, attach posters when TMDB is configured,
+   * and broadcast them. A vote on the old picks ends. `tonightPending` stays
+   * set through the poster lookup so a second request gets `busy`.
    */
   private async makeTonight(hh: Household, mood: TonightMood | undefined): Promise<void> {
     hh.tonightPending = true;
     hh.vote.reset();
-    const forProfileIds = [...hh.snapshot.activeProfileIds];
-    const now = new Date(this.now());
-    const limit = tonightLimit(hh.snapshot.profiles, forProfileIds, hh.snapshot.events, now);
-    const ctx = {people: this.people(hh, forProfileIds), ...(mood ? {mood} : {}), now, ...(limit ? {endsBy: limit} : {})};
-    let source = this.ai.source;
-    let picks;
     try {
-      picks = await this.ai.tonight(ctx, AbortSignal.timeout(this.opts.tonightTimeoutMs ?? 10_000));
-    } catch (e) {
-      this.log(`tonight via ${this.ai.source} failed, using the mock`, errorText(e));
-      source = 'mock';
-      picks = await this.fallbackAI.tonight(ctx);
+      const forProfileIds = [...hh.snapshot.activeProfileIds];
+      const now = new Date(this.now());
+      const limit = tonightLimit(hh.snapshot.profiles, forProfileIds, hh.snapshot.events, now);
+      const ctx = {people: this.people(hh, forProfileIds), ...(mood ? {mood} : {}), now, ...(limit ? {endsBy: limit} : {})};
+      let source = this.ai.source;
+      let picks;
+      try {
+        picks = await this.ai.tonight(ctx, AbortSignal.timeout(this.opts.tonightTimeoutMs ?? 10_000));
+      } catch (e) {
+        this.log(`tonight via ${this.ai.source} failed, using the mock`, errorText(e));
+        source = 'mock';
+        picks = await this.fallbackAI.tonight(ctx);
+      }
+      if (limit) {
+        const max = minutesUntil(limit.at, now);
+        picks = fitPicks(picks, mockTonight(ctx.people, mood, max), max);
+      }
+      if (this.posters) {
+        try {
+          picks = await this.posters.attach(picks);
+        } catch (e) {
+          this.log('poster lookup failed', errorText(e));
+        }
+      }
+      const result: TonightPicks = {
+        picks,
+        ...(mood ? {mood} : {}),
+        forProfileIds,
+        at: new Date(this.now()).toISOString(),
+        source,
+        ...(limit ? {endsBy: endsByOf(limit)} : {}),
+      };
+      hh.snapshot.tonight = result;
+      this.broadcast(hh, 'tonight:picks', result);
+      void this.paintTonight(hh, result.at);
     } finally {
       hh.tonightPending = false;
     }
-    if (limit) {
-      const max = minutesUntil(limit.at, now);
-      picks = fitPicks(picks, mockTonight(ctx.people, mood, max), max);
-    }
-    const result: TonightPicks = {
-      picks,
-      ...(mood ? {mood} : {}),
-      forProfileIds,
-      at: new Date(this.now()).toISOString(),
-      source,
-      ...(limit ? {endsBy: endsByOf(limit)} : {}),
-    };
-    hh.snapshot.tonight = result;
-    this.broadcast(hh, 'tonight:picks', result);
-    void this.paintTonight(hh, result.at);
   }
 
   /** Backdrops come after the picks: each one is broadcast as soon as it is painted, if those picks are still up. */

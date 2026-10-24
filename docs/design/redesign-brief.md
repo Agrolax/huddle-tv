@@ -33,7 +33,7 @@ Recommendation: A plus the Home tile content and the Tonight card from B. It is 
 2. Variables for colour, type, spacing and radius, so they map straight to `theme.ts`.
 3. Hand over finished frames, not every tweak. Send the frame link; the Figma MCP can pull the frames and I turn them into `apps/tv/src` code and rebuild.
 4. Check on the Vega Virtual Device, not the canvas (focus ring, text size, safe area).
-5. Put the demo back: `node scripts/demo/record.mjs --dry`, then record and render ([README](../../README.md#redesigning-the-ui-then-putting-the-demo-back)). Replace the gallery stills.
+5. Put the demo back: `node scripts/demo/record.mjs --dry`, then record and render ([hackathon notes](../submission/hackathon.md#redesigning-the-ui-then-putting-the-demo-back)). Replace the gallery stills.
 
 ## Deliverables beyond the app (for Devpost)
 | Asset | Spec | Where it goes |

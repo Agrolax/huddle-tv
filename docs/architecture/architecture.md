@@ -2,7 +2,7 @@
 
 ## 1. Overview
 
-What runs today. The TV and the phones talk only to the WebSocket server. The server calls Amazon Bedrock. Household state (profiles, calendar, messages, devices, tonight, votes, games, the league) lives in the server process. A restart clears it.
+What runs today. The TV and the phones talk only to the WebSocket server. The server calls Amazon Bedrock. With `TMDB_API_KEY` or `TMDB_READ_TOKEN`, it also looks up a poster for each Tonight title (`/search/movie`) and caches the image URL in memory. No key, no match, or a failed lookup leaves the title card. Household state (profiles, calendar, messages, devices, tonight, votes, games, the league) lives in the server process. A restart clears it, including the poster cache.
 
 ```mermaid
 flowchart LR
@@ -11,10 +11,12 @@ flowchart LR
   Server["WebSocket server<br/>apps/server<br/>in-memory household"]
   Bedrock["Amazon Bedrock<br/>Nova"]
   Weather["Open-Meteo"]
+  TMDB["TMDB<br/>optional posters"]
   TV <-->|"WebSocket"| Server
   Phone <-->|"WebSocket"| Server
   Server <-->|"Converse / ConverseStream"| Bedrock
   Server -->|"poll"| Weather
+  Server -->|"search/movie"| TMDB
 ```
 
 ```
@@ -24,9 +26,11 @@ flowchart LR
         | QR join URL                                  | and league
         +----------------------------------------------+
                                                        |
-                                                       v
-                                              Amazon Bedrock (Nova)
-                                              Tonight, chat, Watched It
+                         +-----------------------------+
+                         |                             |
+                         v                             v
+              Amazon Bedrock (Nova)           TMDB (optional posters)
+              Tonight, chat, Watched It       /search/movie, cached
 ```
 
 Not used: DynamoDB, S3, Lightsail, Polly, Transcribe. Polly and Transcribe stay stretch. There is no hosted box.

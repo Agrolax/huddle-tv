@@ -1,6 +1,6 @@
 import React, {useEffect, useRef, useState} from 'react';
 import {StyleSheet, Text, View} from 'react-native';
-import {TONIGHT_MOODS, TonightPick, TonightPicks} from '@huddle/shared';
+import {TMDB_ATTRIBUTION, TONIGHT_MOODS, TonightPick, TonightPicks} from '@huddle/shared';
 import {namesFor} from '../data/profiles';
 import {useHousehold} from '../net/HouseholdContext';
 import {colors, radius, space, type} from '../theme';
@@ -146,6 +146,7 @@ function PicksView({current, onClose, names}: {current: TonightPicks | null; onC
           </Text>
         ) : null}
       </View>
+      {current ? <TmdbCredit picks={current.picks} /> : null}
     </Sheet>
   );
 }
@@ -192,6 +193,7 @@ function VoteView({tonight}: {tonight: TonightPicks}) {
           <Button testID="vote-done" label="Done" primary preferred onPress={endVote} containerStyle={styles.moodGap} />
           <Button testID="vote-again" label="Vote again" disabled={!online} onPress={startVote} />
         </View>
+        <TmdbCredit picks={tonight.picks} />
       </View>
     );
   }
@@ -222,7 +224,17 @@ function VoteView({tonight}: {tonight: TonightPicks}) {
         <Button testID="vote-next" label="Show result" preferred onPress={voteNext} containerStyle={styles.moodGap} />
         <Button testID="vote-end" label="Stop vote" onPress={endVote} />
       </View>
+      <TmdbCredit picks={tonight.picks} />
     </View>
+  );
+}
+
+function TmdbCredit({picks}: {picks: TonightPick[]}) {
+  if (!picks.some(p => p.posterUrl)) return null;
+  return (
+    <Text style={styles.credit} testID="tmdb-credit">
+      {TMDB_ATTRIBUTION}
+    </Text>
   );
 }
 
@@ -410,5 +422,10 @@ const styles = StyleSheet.create({
     color: colors.mute,
     fontSize: type.chip,
     marginLeft: space.lg,
+  },
+  credit: {
+    color: colors.mute,
+    fontSize: type.chip,
+    marginTop: space.md,
   },
 });

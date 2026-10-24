@@ -1,5 +1,5 @@
 import {useEffect, useRef, useState} from 'react';
-import {CHAT_MAX_LENGTH, Profile, TONIGHT_MOODS, TonightMood, TonightPicks} from '@huddle/shared';
+import {CHAT_MAX_LENGTH, Profile, TMDB_ATTRIBUTION, TONIGHT_MOODS, TonightMood, TonightPicks} from '@huddle/shared';
 import {serverUrl} from './session';
 import type {ChatState} from './useHuddle';
 
@@ -141,7 +141,18 @@ export function TonightCard({
         <ul className="list picks">
           {tonight.picks.map((p, i) => (
             <li key={`${p.title}-${i}`}>
-              {p.image ? <img className="art" src={artUrl(p.image)} alt="" /> : null}
+              {p.posterUrl || p.image ? (
+                <img
+                  className="art"
+                  src={p.posterUrl ?? artUrl(p.image!)}
+                  alt=""
+                  onError={e => {
+                    // Poster failed: fall back to the painted art, or hide.
+                    if (p.posterUrl && p.image && e.currentTarget.src === p.posterUrl) e.currentTarget.src = artUrl(p.image);
+                    else e.currentTarget.style.display = 'none';
+                  }}
+                />
+              ) : null}
               <strong>{p.title}</strong>
               <span className="muted small"> {[p.year, p.service, p.minutes ? `${p.minutes} min` : undefined].filter(Boolean).join(' · ')}</span>
               {tonight.chosen === i ? <span className="small ok-text"> · Tonight's pick</span> : null}
@@ -154,6 +165,11 @@ export function TonightCard({
             {tonight.source === 'mock' ? ' · demo picks' : ''}
           </li>
         </ul>
+      ) : null}
+      {tonight?.picks.some(p => p.posterUrl) ? (
+        <p className="muted small" data-testid="tmdb-credit">
+          {TMDB_ATTRIBUTION}
+        </p>
       ) : null}
       {tonight && tonight.picks.length >= 2 && !voting ? (
         <button className="chip small-chip" onClick={onVote} disabled={disabled || loading}>

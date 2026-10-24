@@ -1,65 +1,63 @@
 # Huddle Home
 
-The family home screen for Fire TV (Vega OS): household widgets, a phone companion you join with a QR code, Amazon Bedrock picks for tonight that end by bedtime and that the family settles with a secret vote on their phones, and game night: a quiz about your own week and Sketch the pick, where phones are the pens.
+Huddle Home is a family home screen for Fire TV on Vega OS. The TV shows the household that is actually on the couch: the clock and the weather, today's calendar, who is here, and what to watch tonight. Phones join with a QR code and become the keyboard, the private ballot, and the pens. Tonight's picks come from Amazon Bedrock (Nova), finish in time for bedtime, and the family settles them with a secret vote. Game night is a quiz about your own week, plus Sketch the pick.
 
-Built for the [Build, Ship, Shape: Amazon Developer Hackathon](https://amazonappdev2026.devpost.com/) · **Fire TV track** · AWS Builder + Open Source mini challenges.
+Built for the Amazon Developer Hackathon (Oct 2026). The project was not submitted. Rules, prizes, judging and the submit checklist are in [docs/submission/hackathon.md](docs/submission/hackathon.md).
 
-> Status: **steps 1–6 are on `main`**: home, QR pairing, live widgets, Tonight + Bedrock chat, the game-night quiz, secret veto, bedtime-aware Tonight, and Sketch the pick. **Step 7 (ship) is in progress.** Submission drafts: [`docs/submission/`](docs/submission/). Screenshots: [`docs/screenshots/`](docs/screenshots/). Plan: [roadmap](docs/product/roadmap.md). Docs: [`docs/README.md`](docs/README.md).
+> Status: **done.**
 
-## Hackathon at a glance
+## Screens
 
-**Build, Ship, Shape: Amazon Developer Hackathon** · [site](https://amazonappdev2026.devpost.com/) · [rules](https://amazonappdev2026.devpost.com/rules) · [resources](https://amazonappdev2026.devpost.com/resources)
+![Home: clock, calendar, who's here, Tonight, game night and the home tile](docs/submission/gallery/01-home.png)
 
-| Date | What |
-|---|---|
-| **Oct 23, 2026 · 12:00pm PT / 3:00pm EDT** | Submission deadline (we aim for Oct 22) |
-| Oct 6, 1:30pm EDT · Oct 19, 12:00pm EDT | Live office hours with the Amazon team ([#1](https://amazon.zoom.us/webinar/register/WN_ny5v5N4GQNGeMMaJRLKerQ) · [#2](https://amazon.zoom.us/webinar/register/WN_kh9CSYi0QtuN31d8nsTuOQ)) |
-| Oct 21, 12:00pm PT | AWS credits form closes (✅ requested; **$250 active** as of Oct 18: $150 hackathon + $100 Free Tier) |
-| Nov 9 – Nov 20 | Judging |
-| ~Dec 3 | Winners announced |
+![Tonight picks that end by bedtime](docs/submission/gallery/02-tonight-ends-by.png)
 
-### Tracks (a project can win **one** track prize)
-| Track | What you build | Prizes |
-|---|---|---|
-| **Fire TV** ← *our track* | Demo-ready app on Fire OS or Vega OS (any framework). Priority: AI-enhanced viewing, sports, fitness, family entertainment, multi-modal UX, computer vision | 🥇 $25,000 + $15k AWS credits + meeting with Amazon team · 🥈 $15,000 + $5k credits · 🥉 $4,000 + $1k credits |
-| Alexa+ | MCP server (spec 2025-11-25+, Streamable HTTP) or Agent Skill, or a simulated Alexa+ web app | 🥇 $25,000 + $15k · 🥈 $15,000 + $5k · 🥉 $4,000 + $1k |
-| Bee (Wearable AI) | Project using live data from a Bee device / Apple Watch with Bee | 🥇 $12,000 + meeting · 🥈 $8,000 |
-| Ring | App using Ring APIs, SDKs or simulator | 🥇 $12,000 + meeting · 🥈 $8,000 |
+![Secret vote result on the TV](docs/submission/gallery/03-secret-vote-result.png)
 
-### Mini challenges (a project can win **one**, on top of its track)
-| Challenge | Requirement | Prize | Our plan |
-|---|---|---|---|
-| **AWS Builder** | Use AWS services with documented integration (Bedrock, AgentCore, Strands, Kiro, SageMaker…). Kiro alone qualifies. | $5,000 + $5k credits + meeting | Amazon Bedrock (Nova) for Tonight picks, phone AI chat and Watched It quiz questions. Polly, Transcribe, DynamoDB, S3 and Lightsail are not used |
-| **Open Source** | New open-source project or a PR/fork/branch to a public repo, made during the hackathon | $5,000 + $5k credits + meeting | `packages/tv-focus-kit`: D-pad focus primitives for React Native TV (MIT) |
+![Household quiz](docs/submission/gallery/04-household-quiz.png)
 
-### Judging (equally weighted, after a pass/fail viability check)
-1. **Tech implementation**: how well it's built and how well it uses the platform
-2. **Design**: complete, coherent experience; interaction model fits the device
-3. **Potential impact**: credible customer need, audience beyond the hackathon
-4. **Quality of idea**: creative, not "obvious". For Fire TV, *obvious* = basic streaming UI / video player / remote game; *creative* = AI viewing that adapts to household patterns, multi-modal voice + D-pad + visual
+![Sketch the pick](docs/submission/gallery/05-sketch-the-pick.png)
 
-**Bonus:** friction log entries can add **up to 10%** to the final score → [`docs/submission/friction-log.md`](docs/submission/friction-log.md)
+![Phones join by QR](docs/submission/gallery/06-phones-join-by-qr.png)
 
-### What we submit
-Text description · GitHub repo · demo video < 3 min (running on the device) · product feedback for every tool · track + mini challenges · optional friction log + feature requests. Full list: [`docs/submission/checklist.md`](docs/submission/checklist.md)
+Stills from the Vega Virtual Device are also in [`docs/screenshots/`](docs/screenshots/).
 
-## Structure
+## Features
 
-| Path | What |
-|---|---|
-| `apps/tv` | Fire TV app (React Native for Vega OS; demo on the Vega Virtual Device) |
-| `apps/companion` | Phone companion (React + Vite web app, opened via QR) |
-| `apps/server` | API + realtime (Node + TS, WebSocket, Amazon Bedrock). Household and league state are in memory |
-| `packages/shared` | Shared types + theme tokens |
-| `packages/tv-focus-kit` | Open-source candidate (D-pad focus / widget components) |
-| `docs/` | PRD, roadmap, architecture, design, references, submission |
-| `reference/` | Amazon sample apps (gitignored): `./scripts/fetch-references.sh` |
+- **Home.** Clock, weather from Open-Meteo, family calendar, who's here, Tonight, game night, and a home tile. The lamp, thermostat, lock and doorbell are simulated. The doorbell is not a Ring camera.
+- **Tonight.** Three picks for the people in the room, from Amazon Bedrock Nova Lite, or a deterministic mock when Bedrock is off. Moods are Cozy, Funny and Edge-of-seat. A child's bedtime, or an early start tomorrow, drops picks that run too long. Whether a title is actually on a streaming service is not checked.
+- **Posters.** With a TMDB key on the server, each pick can show a movie poster. No key, no match, or a failed lookup keeps a title card coloured by the mood.
+- **Secret vote.** Each phone says yes or no in private. The TV shows who has voted, then only the picks everyone accepted.
+- **Game night.** Our Week is a quiz built from the household, with no model. Watched It is written by Nova Pro and falls back to a mock bank. Sketch the pick: one phone draws, the others guess. Scores sit in a family league that lives in memory and resets when the server restarts.
+- **Phone.** Join from the QR code, pick who you are, change who's watching, message the TV, chat (Nova Micro, or the mock), vote, answer and draw.
+- **Focus kit.** [`packages/tv-focus-kit`](packages/tv-focus-kit/README.md) is a small set of D-pad focus primitives for React Native TV (MIT).
 
-## Dev tooling
-- **Amazon Devices Builder Tools** (MCP + Agent Skills) is configured for Claude Code. Context: `.claude/amazon-devices/CLAUDE.md`; platform: `.adbt-config.json`. Check with:
-  `npx -y @amazon-devices/amazon-devices-buildertools-mcp@latest check-status --agent claude-code-cli`
-- Update it with:
-  `npx -y @amazon-devices/amazon-devices-buildertools-mcp@latest init-context --agent claude-code-cli -p .claude/amazon-devices -m --force`
+Polly, Transcribe, DynamoDB, S3 and Lightsail are not used. What is real and what is simulated: [docs/product/customizing.md](docs/product/customizing.md).
+
+## Tech stack
+
+- React Native for Vega OS TV app
+- React + Vite phone companion
+- Node/TS WebSocket server
+- Amazon Bedrock Nova
+- npm workspaces
+
+Open-Meteo supplies the weather and needs no key. TMDB supplies posters when `TMDB_API_KEY` or `TMDB_READ_TOKEN` is set.
+
+## How it fits together
+
+The TV and the phones talk only to the WebSocket server. The server calls Amazon Bedrock. Household state stays in the server process. With a TMDB key, the server also looks up a poster for each Tonight title and caches it in memory. Diagram and the protocol: [architecture](docs/architecture/architecture.md).
+
+```mermaid
+flowchart LR
+  TV["Fire TV app<br/>Vega OS"]
+  Phone["Phone companion<br/>joins by QR"]
+  Server["WebSocket server<br/>in-memory household"]
+  Bedrock["Amazon Bedrock<br/>Nova"]
+  TV <--> Server
+  Phone <--> Server
+  Server <--> Bedrock
+```
 
 ## Setup
 
@@ -103,11 +101,18 @@ D-pad: the remote on the VVD window, or `vega exec vda shell "inputd-cli button_
 **Server and phone companion**
 
 ```bash
+cp apps/server/.env.example apps/server/.env   # optional
 npm run dev:server     # ws://<LAN IP>:8787/ws; prints the URLs it detected
 npm run dev:companion  # http://<LAN IP>:5173, the page the QR code opens
 ```
 
-**Pair a phone (step 2):** start both, then build and launch the TV app. On the TV press Up to reach **Connect phone**, then Select. Scan the QR with a phone on the same Wi-Fi. From the phone you can switch who's watching and send a message to the TV.
+`HUDDLE_AI=mock` (the default) needs no AWS account. `HUDDLE_AI=bedrock` calls Amazon Nova with the default AWS credential chain. See [apps/server/.env.example](apps/server/.env.example).
+
+**Movie posters (optional).** Set `TMDB_API_KEY` to a [TMDB v3 API key](https://www.themoviedb.org/settings/api), or `TMDB_READ_TOKEN` to a v4 read access token, in `apps/server/.env`. The server calls `/search/movie` for each Tonight title, takes `poster_path`, and sends `https://image.tmdb.org/t/p/w342/…` as `posterUrl`. Results are cached in memory. Mock mode and Bedrock mode both get posters when a key is present. Series often have no movie match. Leave the variables unset and the TV keeps the title cards.
+
+This product uses the TMDB API but is not endorsed or certified by TMDB.
+
+**Pair a phone:** start the server and the phone app, then build and launch the TV app. On the TV press Up to reach **Connect phone**, then Select. Scan the QR with a phone on the same Wi-Fi. From the phone you can switch who's watching and send a message to the TV.
 
 #### Networking: TV, phone and server on one LAN
 Everything talks to the Mac on its **LAN IP**, never `localhost`:
@@ -122,43 +127,24 @@ Everything talks to the Mac on its **LAN IP**, never `localhost`:
 - **Vega Virtual Device → Mac** works on both the Mac's LAN IP and `10.0.2.2` (QEMU's alias for the host). `localhost` inside the VVD is the VVD itself. We use the LAN IP so the TV and the phone agree on one address. Checked with `vega exec vda shell "curl http://<ip>:<port>/"`.
 - **Phone → Mac** needs the same Wi-Fi, and no client isolation on that network (guest and some office networks block device-to-device traffic). macOS may ask to allow incoming connections for `node`. Say yes, or check *System Settings → Network → Firewall*.
 - **The LAN IP changed** (new network): rebuild the TV app (`npm run build:tv`) so it picks up the new address, and restart the server.
-- **Restarting** the server forgets households and the league. They live in memory for the session. The TV reclaims its household automatically. Phones need to scan the QR code again.
+- **Restarting** the server forgets households, the league and the poster cache. They live in memory for the session. The TV reclaims its household automatically. Phones need to scan the QR code again.
 
-## Next steps to submit (Oct 23, deadline 3:00pm EDT)
-The full ordered list is [`docs/submission/noon-runbook.md`](docs/submission/noon-runbook.md); the state of every item is in [`docs/submission/checklist.md`](docs/submission/checklist.md).
+## Repository
 
-1. Watch the rendered demo video (`.tmp/demo/out/huddle-home-demo.mp4`, 2:27, silent, captioned).
-2. Optional: `aws login`, then re-record with `HUDDLE_AI=bedrock` so the AWS Builder shot shows live Nova.
-3. Upload to YouTube as Public and copy the link.
-4. Make the repo public (`gh repo edit Agrolax/huddle-tv --visibility public --accept-visibility-change-consequences`), or invite the reviewers at submit time. Check the About box shows the MIT license.
-5. Resolve the `[confirm]` lines in `docs/submission/product-feedback.md` (onboarding times, which Builder Tools calls you used, Bedrock cost) and delete the Kiro section if unused.
-6. Fill Devpost from `docs/submission/devpost-description.md`: Fire TV track, AWS Builder + Open Source challenges, video link, gallery stills from `docs/submission/gallery/`, product feedback, friction log.
-7. Preview as a judge (video plays logged out, repo opens, license shows), submit, and screenshot the confirmation.
+| Path | What |
+|---|---|
+| `apps/tv` | Fire TV app (React Native for Vega OS; demo on the Vega Virtual Device) |
+| `apps/companion` | Phone companion (React + Vite web app, opened via QR) |
+| `apps/server` | API + realtime (Node + TS, WebSocket, Amazon Bedrock). Household and league state are in memory |
+| `packages/shared` | Shared types + theme tokens |
+| `packages/tv-focus-kit` | D-pad focus primitives (MIT) |
+| `docs/` | PRD, roadmap, architecture, design, references, submission archive |
+| `reference/` | Amazon sample apps (gitignored): `./scripts/fetch-references.sh` |
 
-Still open and optional: an AWS Budget alert, a hosted demo, a real-phone QR test, the focus and Back audit, and the redesign (below).
+Plan: [roadmap](docs/product/roadmap.md). Docs index: [`docs/README.md`](docs/README.md).
 
-## Redesigning the UI, then putting the demo back
-Redesign the screens first, then regenerate everything the submission shows. Nothing in `scripts/demo/` needs editing unless the layout moves.
-
-1. **Design in code.** TV screens are in `apps/tv/src/screens` and `apps/tv/src/components`, the phone in `apps/companion/src`, tokens in `packages/shared/src/theme.ts`. The checklist of every screen and state is [`docs/design/screen-inventory.md`](docs/design/screen-inventory.md). Keep: 1920×1080, 5% safe area, a visible focus ring on every focusable element, no text input on the TV.
-2. **Check it.** `npm run check`, then `npm run build:tv && npm run tv:install && npm run tv:launch` on the Vega Virtual Device. Press through every screen with the remote and Back.
-3. **Walk the demo without recording.** `node scripts/demo/record.mjs --dry` plays the whole script and saves one screenshot per beat to `.tmp/demo/dry/`. If a beat lands on the wrong control, fix the key presses in `scripts/demo/record.mjs` (they are grouped by beat: Who's here, Home, Connect, Tonight, quiz, Sketch). A different grid layout is the usual cause.
-4. **Record and render.** `node scripts/demo/record.mjs && node scripts/demo/assemble.mjs` writes `.tmp/demo/out/huddle-home-demo.mp4` (about 8 minutes). For the live Amazon Nova take run `aws login` and set `HUDDLE_AI=bedrock` on both commands. Start the server before launching the TV app.
-5. **Replace the stills.** Copy the new `.tmp/demo/dry/` screenshots over `docs/submission/gallery/` (same file names: 01-home, 02-tonight-ends-by, 03-secret-vote-result, 04-household-quiz, 05-sketch-the-pick, 06-phones-join-by-qr). `scripts/vvd-capture.sh out.png KEY_RIGHT …` takes a single one.
-6. **Put the docs back in step.** Update `docs/design/screen-inventory.md` and the design guide, add a row to the roadmap change log, log any Vega snag in `docs/submission/friction-log.md`, and re-read `docs/submission/devpost-description.md` against the new UI (beat timestamps come from the new video).
-7. **Ship it.** One PR from a branch off `main`, no co-author trailer. Upload the new video, replace the gallery images on Devpost, and resubmit before the deadline (Devpost allows edits until Oct 23, 3:00pm EDT).
-
-## How it fits together
-
-The TV and the phones talk only to the WebSocket server. The server calls Amazon Bedrock. Household state stays in the server process. Diagram and the protocol: [architecture](docs/architecture/architecture.md).
-
-```mermaid
-flowchart LR
-  TV["Fire TV app<br/>Vega OS"]
-  Phone["Phone companion<br/>joins by QR"]
-  Server["WebSocket server<br/>in-memory household"]
-  Bedrock["Amazon Bedrock<br/>Nova"]
-  TV <--> Server
-  Phone <--> Server
-  Server <--> Bedrock
-```
+### Dev tooling
+- **Amazon Devices Builder Tools** (MCP + Agent Skills) is configured for Claude Code. Context: `.claude/amazon-devices/CLAUDE.md`; platform: `.adbt-config.json`. Check with:
+  `npx -y @amazon-devices/amazon-devices-buildertools-mcp@latest check-status --agent claude-code-cli`
+- Update it with:
+  `npx -y @amazon-devices/amazon-devices-buildertools-mcp@latest init-context --agent claude-code-cli -p .claude/amazon-devices -m --force`

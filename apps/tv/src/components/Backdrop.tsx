@@ -1,4 +1,4 @@
-import React, {memo} from 'react';
+import React, {memo, useState} from 'react';
 import {Image, StyleProp, StyleSheet, View, ViewStyle} from 'react-native';
 import Svg, {Circle, Path, Rect} from '@amazon-devices/react-native-svg';
 import type {TonightPick} from '@huddle/shared';
@@ -42,22 +42,25 @@ export function artUrl(serverUrl: string, path: string): string {
 }
 
 type Props = {
-  pick: Pick<TonightPick, 'title' | 'image'>;
+  pick: Pick<TonightPick, 'title' | 'image' | 'posterUrl'>;
   serverUrl: string;
   style?: StyleProp<ViewStyle>;
   testID?: string;
 };
 
 /**
- * A pick's art, edge to edge. Nova Canvas paints it on the server when Bedrock is on;
- * until it arrives (or offline) the TV draws a flat scene of its own.
+ * A pick's art, edge to edge. A TMDB poster when the server found one; else Nova Canvas
+ * paints it on the server when Bedrock is on; until it arrives (or offline, or the poster
+ * fails to load) the TV draws a flat scene of its own.
  * Every shape is mounted from the first render and only its props change (FL-14).
  */
 export const Backdrop = memo(function Backdrop({pick, serverUrl, style, testID}: Props) {
+  const [posterBroken, setPosterBroken] = useState<string | null>(null);
+  const showPoster = Boolean(pick.posterUrl) && posterBroken !== pick.posterUrl;
   const s = sceneFor(pick.title);
   const [sky, sun, far, near, ground] = s.palette;
   return (
-    <View style={[styles.fill, style]} testID={testID} accessibilityLabel={pick.image ? 'Painted backdrop' : 'Drawn backdrop'}>
+    <View style={[styles.fill, style]} testID={testID} accessibilityLabel={showPoster ? 'Movie poster' : pick.image ? 'Painted backdrop' : 'Drawn backdrop'}>
       <Svg width="100%" height="100%" viewBox="0 0 160 90" preserveAspectRatio="xMidYMid slice">
         <Rect x={0} y={0} width={160} height={90} fill={sky} />
         <Circle testID="scene" cx={s.sun.cx} cy={s.sun.cy} r={s.sun.r} fill={sun} />
@@ -66,6 +69,16 @@ export const Backdrop = memo(function Backdrop({pick, serverUrl, style, testID}:
         <Path testID="scene" d={s.ground} fill={ground} />
       </Svg>
       {pick.image ? <Image source={{uri: artUrl(serverUrl, pick.image)}} style={styles.fill} resizeMode="cover" testID={testID ? `${testID}-image` : undefined} /> : null}
+      {showPoster && pick.posterUrl ? (
+        <Image
+          accessible={false}
+          source={{uri: pick.posterUrl}}
+          style={styles.fill}
+          resizeMode="cover"
+          onError={() => setPosterBroken(pick.posterUrl ?? null)}
+          testID={testID ? `${testID}-poster` : undefined}
+        />
+      ) : null}
     </View>
   );
 });
