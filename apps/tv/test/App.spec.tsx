@@ -1,6 +1,6 @@
 import React from 'react';
 import {act, fireEvent, render, waitFor} from '@testing-library/react-native';
-import {BackHandler} from 'react-native';
+import {BackHandler, Image} from 'react-native';
 import {App} from '../src/App';
 import {FakeServer, fakePicks} from './fakeServer';
 
@@ -325,6 +325,17 @@ describe('Tonight', () => {
     act(() => server.push('profile:changed', {profileIds: ['ammu']}));
     fireEvent.press(utils.getByTestId('grid-cell-tonight'));
     expect(requests(server)).toHaveLength(1);
+  });
+
+  it('renders a poster image when the pick has a posterUrl, and keeps the title', async () => {
+    const server = new FakeServer();
+    const picks = fakePicks('cozy').map((p, i) => (i === 0 ? {...p, posterUrl: 'https://image.tmdb.org/t/p/w342/abc.jpg'} : p));
+    server.tonight = {picks, mood: 'cozy', forProfileIds: ['nanu', 'rafi'], at: new Date().toISOString(), source: 'mock'};
+    const utils = await goHome(server);
+    expect(textOf(utils.getByTestId('tonight-tile-pick-0'))).toBe('cozy pick 1');
+    const images = utils.UNSAFE_getAllByType(Image);
+    expect(images.some(img => img.props.source?.uri === 'https://image.tmdb.org/t/p/w342/abc.jpg')).toBe(true);
+    expect(images.filter(img => String(img.props.source?.uri).includes('tmdb'))).toHaveLength(1);
   });
 
   it('picks a phone asked for show up on the tile', async () => {

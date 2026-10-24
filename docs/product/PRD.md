@@ -92,7 +92,7 @@ Built in steps. Each step ends with a PR, running on the Vega Virtual Device wit
 | Clock & weather | Real clock, static weather | Open-Meteo |
 | Family calendar | Three demo events | Server events, added from the phone |
 | Who's here (profiles) | Avatars of the selected profiles; Select opens "Who's here?" | Profile switch from the phone too |
-| Tonight | Three mood placeholders | Three Bedrock picks for the people present, by mood (Cozy / Funny / Edge-of-seat); a deterministic mock when Bedrock is off |
+| Tonight | Three mood placeholders | Three Bedrock picks for the people present, by mood (Cozy / Funny / Edge-of-seat); a deterministic mock when Bedrock is off. Optional TMDB poster on the home tile when a server key is set; otherwise a mood-coloured title card |
 | Game night | Entry tile | Quiz (question + answer reveal + scores) or Sketch the pick (live canvas + guesses); family league |
 | Home (smart home) | Three simulated devices | Toggle from phone; state on TV; demo doorbell alert |
 

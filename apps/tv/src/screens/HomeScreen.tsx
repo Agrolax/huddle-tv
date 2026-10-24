@@ -1,8 +1,9 @@
 import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
-import {StyleSheet, Text, View} from 'react-native';
+import {Image, StyleSheet, Text, View} from 'react-native';
 import {TVFocusGuideView} from '@amazon-devices/react-native-kepler';
 import {
   GameState,
+  TonightMood,
   TonightPicks,
   League,
   Profile,
@@ -173,19 +174,18 @@ export function HomeScreen({onSwitchProfiles, onOpenWidget, onFocusChange}: Prop
             <View style={styles.posters}>
               {tonight
                 ? tonight.picks.map((p, i) => (
-                    <View
+                    <TonightPoster
                       key={`${p.title}-${i}`}
-                      style={[styles.poster, i > 0 && styles.posterGap, tonight.chosen === i && styles.posterChosen]}
-                      testID={`tonight-tile-pick-${i}`}>
-                      <Text style={styles.posterTitle} numberOfLines={2}>
-                        {p.title}
-                      </Text>
-                    </View>
+                      title={p.title}
+                      posterUrl={p.posterUrl}
+                      fill={moodFill(tonight.mood, i)}
+                      chosen={tonight.chosen === i}
+                      gap={i > 0}
+                      testID={`tonight-tile-pick-${i}`}
+                    />
                   ))
                 : TONIGHT_MOODS.map((m, i) => (
-                    <View key={m.id} style={[styles.poster, i > 0 && styles.posterGap]}>
-                      <Text style={styles.posterTitle}>{m.label}</Text>
-                    </View>
+                    <TonightPoster key={m.id} title={m.label} fill={MOOD_FILL[m.id]} gap={i > 0} />
                   ))}
             </View>
           </WidgetTile>
@@ -292,6 +292,61 @@ export function gameTileLine(game: GameState, league: League, profiles: Profile[
   const leader = standings(leaguePoints(league))[0];
   if (leader && leader.points > 0) return `${name(leader.profileId)} leads the league.`;
   return 'Play a quiz on your phones.';
+}
+
+/** Cozy is warm, Funny is bright, Edge-of-seat is deep. White type except on the bright card. */
+const MOOD_FILL: Record<TonightMood, {bg: string; ink: string}> = {
+  cozy: {bg: '#8C4E32', ink: colors.ink},
+  funny: {bg: '#E2B340', ink: '#1C1404'},
+  'edge-of-seat': {bg: '#1A2744', ink: colors.ink},
+};
+
+function moodFill(mood: TonightMood | undefined, index: number): {bg: string; ink: string} {
+  return MOOD_FILL[mood ?? TONIGHT_MOODS[index]?.id ?? 'cozy'];
+}
+
+/**
+ * A poster when the server sent one, otherwise a mood-coloured title card.
+ * The image is not focusable; the tile around it keeps D-pad focus.
+ */
+function TonightPoster({
+  title,
+  posterUrl,
+  fill,
+  chosen,
+  gap,
+  testID,
+}: {
+  title: string;
+  posterUrl?: string;
+  fill: {bg: string; ink: string};
+  chosen?: boolean;
+  gap?: boolean;
+  testID?: string;
+}) {
+  const [broken, setBroken] = useState(false);
+  const showArt = Boolean(posterUrl) && !broken;
+  return (
+    <View
+      focusable={false}
+      style={[styles.poster, gap && styles.posterGap, {backgroundColor: fill.bg}, chosen && styles.posterChosen]}
+      testID={testID}>
+      {showArt && posterUrl ? (
+        <Image accessible={false} source={{uri: posterUrl}} style={styles.posterImage} resizeMode="cover" onError={() => setBroken(true)} />
+      ) : null}
+      {showArt ? (
+        <View style={styles.posterScrim}>
+          <Text style={styles.posterTitle} numberOfLines={2}>
+            {title}
+          </Text>
+        </View>
+      ) : (
+        <Text style={[styles.posterTitle, {color: fill.ink}]} numberOfLines={2}>
+          {title}
+        </Text>
+      )}
+    </View>
+  );
 }
 
 /** "Tonight", "Tonight · Paddington 2", "Tonight · ends by 8:30", or a nudge when the people changed. */
@@ -411,9 +466,19 @@ const styles = StyleSheet.create({
   poster: {
     flex: 1,
     borderRadius: radius.sm,
-    backgroundColor: colors.surfaceRaised,
     padding: space.sm,
     justifyContent: 'flex-end',
+    overflow: 'hidden',
+  },
+  posterImage: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  posterScrim: {
+    backgroundColor: 'rgba(15, 17, 17, 0.78)',
+    marginHorizontal: -space.sm,
+    marginBottom: -space.sm,
+    paddingHorizontal: space.sm,
+    paddingVertical: space.xs,
   },
   posterChosen: {
     borderWidth: 4,

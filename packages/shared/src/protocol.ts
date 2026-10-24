@@ -106,7 +106,15 @@ export interface TonightPick {
   deepLink?: string;
   /** Running time (one episode for a series). */
   minutes?: number;
+  /**
+   * Poster image, when the server could look one up (TMDB).
+   * Missing when there is no key, no match, or the lookup failed.
+   */
+  posterUrl?: string;
 }
+
+/** Required wherever TMDB artwork is shown. https://www.themoviedb.org/about/logos-attribution */
+export const TMDB_ATTRIBUTION = 'This product uses the TMDB API but is not endorsed or certified by TMDB.';
 
 /** Why tonight has a finish time: a child's bedtime or an early start tomorrow. */
 export interface EndsBy {
