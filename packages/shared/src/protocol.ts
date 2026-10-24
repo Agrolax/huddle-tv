@@ -75,6 +75,7 @@ export interface Profile {
   id: string;
   name: string;
   color: string;
+  /** A `BlobKind` (see avatars.ts). */
   avatar?: string;
   /** A child: Tonight ends by their bedtime when they are here. */
   kid?: boolean;
@@ -106,6 +107,10 @@ export interface TonightPick {
   deepLink?: string;
   /** Running time (one episode for a series). */
   minutes?: number;
+  /** What the backdrop shows: setting, light, mood. Written by the Tonight model; no names or people. */
+  scene?: string;
+  /** Backdrop art on the Huddle server, e.g. `/art/3f2a….png`. Arrives a little after the picks. */
+  image?: string;
 }
 
 /** Why tonight has a finish time: a child's bedtime or an early start tomorrow. */
@@ -114,7 +119,7 @@ export interface EndsBy {
   at: string;
   /** "8:30", in the server's local time (the TV's clock may be UTC). */
   label: string;
-  /** "Rafi's bedtime", "Dentist at 8:00 tomorrow". */
+  /** "Leo's bedtime", "Dentist at 8:00 tomorrow". */
   reason: string;
 }
 
@@ -370,6 +375,8 @@ export type ClientMessage =
   | {type: 'pair:request'; payload: Record<string, never>}
   | {type: 'subscribe'; payload: {topics: Topic[]}}
   | {type: 'profile:switch'; payload: {profileIds: string[]}}
+  /** Add a person (no `profileId`) or edit one. Names are typed on a phone, never on the TV. */
+  | {type: 'profile:save'; payload: {profileId?: string; name: string; color: string; avatar: string; kid?: boolean}}
   | {type: 'message:send'; payload: {text: string; fromProfileId?: string}}
   | {type: 'calendar:add'; payload: {title: string; start: string; end?: string; profileIds: string[]}}
   | {type: 'calendar:remove'; payload: {eventId: string}}
@@ -405,6 +412,8 @@ export type ServerMessage =
   | {type: 'client:joined'; payload: ClientInfo}
   | {type: 'client:left'; payload: {clientId: string}}
   | {type: 'profile:changed'; payload: {profileIds: string[]}}
+  /** Someone was added or edited. `savedId` is the profile that changed. */
+  | {type: 'profiles:updated'; payload: {profiles: Profile[]; savedId: string}}
   | {type: 'calendar:updated'; payload: {events: CalendarEvent[]}}
   | {type: 'message:new'; payload: FamilyMessage}
   /** Streamed to the asking client only: chunks of `text` in order, then one frame with `done: true`. */
@@ -449,6 +458,7 @@ export const SERVER_MESSAGE_TOPIC: Record<ServerMessage['type'], Topic | null> =
   'client:joined': 'household',
   'client:left': 'household',
   'profile:changed': 'household',
+  'profiles:updated': 'household',
   'calendar:updated': 'calendar',
   'message:new': 'messages',
   'chat:reply': 'chat',
@@ -473,6 +483,7 @@ export const CLIENT_MESSAGE_ROLES: Record<ClientMessage['type'], readonly Client
   subscribe: ['tv', 'phone', 'display', 'voice'],
   'pair:request': ['tv'],
   'profile:switch': ['tv', 'phone', 'voice'],
+  'profile:save': ['phone'],
   'message:send': ['phone', 'voice'],
   'calendar:add': ['phone', 'voice'],
   'calendar:remove': ['phone', 'voice'],

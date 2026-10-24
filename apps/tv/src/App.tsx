@@ -8,7 +8,7 @@ import {WhoHereScreen} from './screens/WhoHereScreen';
 
 type Screen = {name: 'who'} | {name: 'home'};
 
-const DEFAULT_PROFILES = ['rafi', 'nanu'];
+const DEFAULT_PROFILES = ['maya', 'leo'];
 
 type Props = {
   /** Tests inject a fake socket; the app uses the platform WebSocket. */

@@ -1,0 +1,12 @@
+{
+	"folders": [
+		{
+			"path": "."
+		},
+		{
+			"name": "tv",
+			"path": "apps/tv"
+		}
+	],
+	"settings": {}
+}

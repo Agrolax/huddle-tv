@@ -9,6 +9,7 @@ import {
   HouseholdSnapshot,
   PAIR_CODE_TTL_MS,
   PairCode,
+  Profile,
   ServerMessage,
   Topic,
   buildJoinUrl,
@@ -42,6 +43,7 @@ import {
   validateEmpty,
   validateHello,
   validateMessageSend,
+  validateProfileSave,
   validateProfileSwitch,
   validateSmartHomeSet,
   validateSubscribe,
@@ -49,6 +51,7 @@ import {
 } from '@huddle/shared';
 import {ChatContext, ChatTurn, HouseholdAI, MockAI, Person, mockTonight} from './ai/index.js';
 import {minutesUntil} from './ai/types.js';
+import type {ArtStore} from './art.js';
 import {demoHousehold} from './household.js';
 import {QuizEngine} from './quiz/engine.js';
 import {SketchEngine} from './sketch/engine.js';
@@ -67,6 +70,8 @@ export interface HubSocket {
 export interface HubOptions {
   /** Base URL of the phone companion; the QR encodes this + `?h=&c=`. */
   companionUrl: string;
+  /** Who a new household starts with. Defaults to the demo family. */
+  people?: Profile[];
   pairTtlMs?: number;
   now?: () => number;
   /** For the pair code alphabet; crypto-backed by default. */
@@ -77,6 +82,8 @@ export interface HubOptions {
   /** Used when `ai` fails, so the demo never shows an error. Defaults to the mock. */
   fallbackAI?: HouseholdAI;
   tonightTimeoutMs?: number;
+  /** Paints Tonight backdrops (Nova Canvas). Without it, the TV draws its own. */
+  art?: ArtStore;
   chatTimeoutMs?: number;
   /** Game night timing; tests make these short. */
   quizQuestionMs?: number;
@@ -127,6 +134,7 @@ export const CLOSE = {rejected: 4001, replaced: 4002} as const;
 const MAX_FRAME_BYTES = 16 * 1024;
 const CHAT_TURNS_KEPT = 12;
 const CHATS_KEPT = 50;
+const MAX_PROFILES = 12;
 
 export class Hub {
   private readonly households = new Map<string, Household>();
@@ -247,6 +255,20 @@ export class Hub {
         if (unknown.length) return this.error(conn, 'bad-request', `unknown profile(s): ${unknown.join(', ')}`, frameId);
         hh.snapshot.activeProfileIds = v.value.profileIds;
         this.broadcast(hh, 'profile:changed', {profileIds: hh.snapshot.activeProfileIds});
+        return;
+      }
+      case 'profile:save': {
+        const v = validateProfileSave(payload);
+        if (!v.ok) return this.error(conn, 'bad-request', v.error, frameId);
+        const {profileId, ...fields} = v.value;
+        const profiles = hh.snapshot.profiles;
+        if (profileId && !profiles.some(p => p.id === profileId)) return this.error(conn, 'bad-request', `unknown profile ${profileId}`, frameId);
+        if (!profileId && profiles.length >= MAX_PROFILES) return this.error(conn, 'bad-request', `a household has at most ${MAX_PROFILES} people`, frameId);
+        const id = profileId ?? this.newProfileId(hh, fields.name);
+        hh.snapshot.profiles = profileId
+          ? profiles.map(p => (p.id === id ? {...p, ...fields} : p))
+          : [...profiles.filter(p => p.id !== 'guest'), {id, ...fields}, ...profiles.filter(p => p.id === 'guest')];
+        this.broadcast(hh, 'profiles:updated', {profiles: hh.snapshot.profiles, savedId: id});
         return;
       }
       case 'message:send': {
@@ -470,6 +492,23 @@ export class Hub {
     };
     hh.snapshot.tonight = result;
     this.broadcast(hh, 'tonight:picks', result);
+    void this.paintTonight(hh, result.at);
+  }
+
+  /** Backdrops come after the picks: each one is broadcast as soon as it is painted, if those picks are still up. */
+  private async paintTonight(hh: Household, at: string): Promise<void> {
+    const art = this.opts.art;
+    const picks = hh.snapshot.tonight?.picks;
+    if (!art || !picks) return;
+    await Promise.all(
+      picks.map(async pick => {
+        const image = await art.ensure(pick);
+        const current = hh.snapshot.tonight;
+        if (!image || current?.at !== at) return;
+        hh.snapshot.tonight = {...current, picks: current.picks.map(p => (p.title === pick.title ? {...p, image} : p))};
+        this.broadcast(hh, 'tonight:picks', hh.snapshot.tonight);
+      }),
+    );
   }
 
   private newGameId(prefix = 'g'): string {
@@ -591,6 +630,15 @@ export class Hub {
     if (hh.chats.size > CHATS_KEPT) hh.chats.delete(hh.chats.keys().next().value!);
   }
 
+  /** "Grandma Jo" → "grandma-jo", with a number when that is taken. */
+  private newProfileId(hh: Household, name: string): string {
+    const base = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 24) || 'person';
+    const taken = new Set(hh.snapshot.profiles.map(p => p.id));
+    let id = base;
+    for (let n = 2; taken.has(id); n++) id = `${base}-${n}`;
+    return id;
+  }
+
   private unknownProfiles(hh: Household, ids: readonly string[]): string[] {
     const known = new Set(hh.snapshot.profiles.map(p => p.id));
     return ids.filter(id => !known.has(id));
@@ -683,7 +731,7 @@ export class Hub {
       this.broadcast(hh, 'league:updated', hh.snapshot.league);
     };
     const hh: Household = {
-      snapshot: demoHousehold(id, this.now(), this.weather),
+      snapshot: demoHousehold(id, this.now(), this.weather, this.opts.people),
       tvToken: null,
       pairCodes: new Map(),
       tokens: new Map(),

@@ -35,14 +35,14 @@ describe('quiz questions', () => {
 
   it('Our Week answers match the household data', () => {
     const snap = demoHousehold('home', thu.getTime(), {place: 'Toronto', tempC: 9, code: 3, highC: 12, lowC: 4, updatedAt: thu.toISOString()});
-    snap.messages = [{id: 'm1', text: 'Pizza night 🍕', fromProfileId: 'nanu', fromClient: 'phone', at: thu.toISOString()}];
+    snap.messages = [{id: 'm1', text: 'Pizza night 🍕', fromProfileId: 'nora', fromClient: 'phone', at: thu.toISOString()}];
     // Several seeds, so every kind of question shows up at least once.
     const all = [1, 2, 3, 4, 5, 6, 7, 8].flatMap(seed => ourWeekQuestions(snap, thu, seeded(seed)));
     const right = (text: string) => all.filter(i => i.text === text).map(i => i.choices[i.answer]);
-    assert.ok(right('Who has Dentist tomorrow?').every(a => a === 'Ammu'));
-    assert.ok(right('Who has Soccer practice on Saturday?').every(a => a === 'Rafi'));
+    assert.ok(right('Who has Dentist tomorrow?').every(a => a === 'Maya'));
+    assert.ok(right('Who has Soccer practice on Saturday?').every(a => a === 'Leo'));
     assert.ok(right('When is Dentist?').every(a => a === 'Tomorrow'));
-    assert.ok(right('Who sent “Pizza night 🍕”?').every(a => a === 'Nanu'));
+    assert.ok(right('Who sent “Pizza night 🍕”?').every(a => a === 'Nora'));
     assert.ok(right('What is the high today in Toronto?').every(a => a === '12°'));
     assert.ok(right('What is the thermostat set to?').every(a => a === '21°'));
     assert.ok(all.length > 0);
@@ -148,8 +148,8 @@ describe('game night over the wire', () => {
   }
 
   it('runs an Our Week quiz: questions hide the answer, the reveal scores, the league updates', async () => {
-    const {hh, tv, phones, close} = await room('rafi', 'nanu');
-    const [rafi, nanu] = phones as [TestClient, TestClient];
+    const {hh, tv, phones, close} = await room('leo', 'nora');
+    const [leo, nora] = phones as [TestClient, TestClient];
     tv.send('game:start', {kind: 'quiz', source: 'our-week'});
     assert.equal((await untilPhase(tv, 'loading')).title, 'Our Week');
     const question = await untilPhase(tv, 'question');
@@ -158,16 +158,16 @@ describe('game night over the wire', () => {
     assert.equal(question.question.choices.length, QUIZ_CHOICES);
     assert.equal(question.correct, undefined, 'the answer must not leak before the reveal');
 
-    // Rafi answers 0, Nanu answers 1: exactly one of them can be right unless neither is.
-    rafi.send('game:answer', {gameId: question.gameId, round: 1, choice: 0});
+    // Leo answers 0, Nora answers 1: exactly one of them can be right unless neither is.
+    leo.send('game:answer', {gameId: question.gameId, round: 1, choice: 0});
     const afterRafi = await untilPhase(tv, 'question');
-    assert.deepEqual(afterRafi.answered, ['rafi']);
-    nanu.send('game:answer', {gameId: question.gameId, round: 1, choice: 1});
+    assert.deepEqual(afterRafi.answered, ['leo']);
+    nora.send('game:answer', {gameId: question.gameId, round: 1, choice: 1});
     // Everyone with a phone answered, so the reveal comes before the timer.
     const reveal = await untilPhase(tv, 'reveal', 300);
     assert.equal(typeof reveal.correct, 'number');
-    assert.deepEqual(reveal.choices, {rafi: 0, nanu: 1});
-    for (const id of ['rafi', 'nanu']) {
+    assert.deepEqual(reveal.choices, {leo: 0, nora: 1});
+    for (const id of ['leo', 'nora']) {
       const right = reveal.choices[id] === reveal.correct;
       // The test clock stands still, so a right answer is worth the full 1000.
       assert.equal(reveal.gained[id], right ? 1000 : 0);
@@ -177,15 +177,15 @@ describe('game night over the wire', () => {
     const final = await untilPhase(tv, 'final', 5000);
     assert.deepEqual(final.scores, reveal.scores);
     const league = (await tv.nextOf('league:updated')).payload;
-    assert.equal(league.rafi.games, 1);
-    assert.equal(league.nanu.games, 1);
-    assert.equal(server.hub.household(hh)!.league.rafi!.points, reveal.scores.rafi);
+    assert.equal(league.leo.games, 1);
+    assert.equal(league.nora.games, 1);
+    assert.equal(server.hub.household(hh)!.league.leo!.points, reveal.scores.leo);
     assert.equal(server.hub.household(hh)!.game.phase, 'final');
     close();
   });
 
   it('Watched It asks the AI about the latest Tonight pick or the title sent', async () => {
-    const {tv, phones, close} = await room('rafi');
+    const {tv, phones, close} = await room('leo');
     phones[0]!.send('game:start', {kind: 'quiz', source: 'watched-it', title: 'Up'});
     const state = await untilPhase(tv, 'question');
     assert.equal(state.title, 'Watched It: Up');
@@ -200,7 +200,7 @@ describe('game night over the wire', () => {
     ai.impl = async () => {
       throw new Error('throttled');
     };
-    const {tv, close} = await room('rafi');
+    const {tv, close} = await room('leo');
     tv.send('game:start', {kind: 'quiz', source: 'watched-it', title: 'Knives Out'});
     const state = await untilPhase(tv, 'question');
     assert.equal(state.aiSource, 'mock');
@@ -211,18 +211,18 @@ describe('game night over the wire', () => {
   });
 
   it('rejects a second start, late or repeated answers, and phones without a person', async () => {
-    const {hh, tv, phones, close} = await room('rafi', 'nanu');
+    const {hh, tv, phones, close} = await room('leo', 'nora');
     tv.send('game:start', {kind: 'quiz', source: 'our-week'});
     const question = await untilPhase(tv, 'question');
     tv.send('game:start', {kind: 'quiz', source: 'our-week'});
     assert.equal((await tv.nextOf('error')).payload.code, 'busy');
 
-    const rafi = phones[0]!;
-    rafi.send('game:answer', {gameId: question.gameId, round: 1, choice: 2});
-    rafi.send('game:answer', {gameId: question.gameId, round: 1, choice: 3});
-    assert.equal((await rafi.nextOf('error')).payload.message, 'already answered');
-    rafi.send('game:answer', {gameId: question.gameId, round: 2, choice: 0});
-    assert.equal((await rafi.nextOf('error')).payload.message, 'that question is closed');
+    const leo = phones[0]!;
+    leo.send('game:answer', {gameId: question.gameId, round: 1, choice: 2});
+    leo.send('game:answer', {gameId: question.gameId, round: 1, choice: 3});
+    assert.equal((await leo.nextOf('error')).payload.message, 'already answered');
+    leo.send('game:answer', {gameId: question.gameId, round: 2, choice: 0});
+    assert.equal((await leo.nextOf('error')).payload.message, 'that question is closed');
 
     const pair = await (async () => {
       tv.send('pair:request', {});
@@ -241,7 +241,7 @@ describe('game night over the wire', () => {
   });
 
   it('game:next skips the timer, and ending early leaves the league alone', async () => {
-    const {hh, tv, close} = await room('rafi');
+    const {hh, tv, close} = await room('leo');
     tv.send('game:start', {kind: 'quiz', source: 'our-week'});
     const question = await untilPhase(tv, 'question');
     tv.send('game:next', {gameId: question.gameId});
@@ -262,11 +262,11 @@ describe('game night over the wire', () => {
     const question = await untilPhase(tv, 'question');
     tv.send('pair:request', {});
     const code = (await tv.nextOf('pair:code')).payload.code;
-    const {phone, welcome} = await pairPhone(server.url, code, {client: {clientId: 'late', role: 'phone', profileId: 'abbu'}}, hh);
+    const {phone, welcome} = await pairPhone(server.url, code, {client: {clientId: 'late', role: 'phone', profileId: 'sam'}}, hh);
     assert.equal(welcome.payload.snapshot.game.phase, 'question');
     assert.equal(welcome.payload.snapshot.game.correct, undefined);
     phone.send('game:answer', {gameId: question.gameId, round: 1, choice: 0});
-    assert.deepEqual((await untilPhase(tv, 'reveal', 300)).answered, ['abbu']);
+    assert.deepEqual((await untilPhase(tv, 'reveal', 300)).answered, ['sam']);
     tv.send('game:end', {gameId: question.gameId});
     phone.close();
     close();

@@ -14,27 +14,27 @@ describe('quiz scoring', () => {
   });
 
   it('ranks with shared places for ties', () => {
-    expect(standings({nanu: 900, rafi: 1500, ammu: 900, abbu: 0}, ['rafi', 'nanu', 'ammu', 'abbu'])).toEqual([
-      {profileId: 'rafi', points: 1500, place: 1},
-      {profileId: 'nanu', points: 900, place: 2},
-      {profileId: 'ammu', points: 900, place: 2},
-      {profileId: 'abbu', points: 0, place: 4},
+    expect(standings({nora: 900, leo: 1500, maya: 900, sam: 0}, ['leo', 'nora', 'maya', 'sam'])).toEqual([
+      {profileId: 'leo', points: 1500, place: 1},
+      {profileId: 'nora', points: 900, place: 2},
+      {profileId: 'maya', points: 900, place: 2},
+      {profileId: 'sam', points: 0, place: 4},
     ]);
   });
 
   it('adds a game to the league: points, games and wins (ties all win)', () => {
-    const once = addToLeague({}, {scores: {rafi: 800, nanu: 800, ammu: 0}});
+    const once = addToLeague({}, {scores: {leo: 800, nora: 800, maya: 0}});
     expect(once).toEqual({
-      rafi: {points: 800, wins: 1, games: 1},
-      nanu: {points: 800, wins: 1, games: 1},
-      ammu: {points: 0, wins: 0, games: 1},
+      leo: {points: 800, wins: 1, games: 1},
+      nora: {points: 800, wins: 1, games: 1},
+      maya: {points: 0, wins: 0, games: 1},
     });
-    expect(addToLeague(once, {scores: {ammu: 300}}).ammu).toEqual({points: 300, wins: 1, games: 2});
+    expect(addToLeague(once, {scores: {maya: 300}}).maya).toEqual({points: 300, wins: 1, games: 2});
     expect(addToLeague(once, {scores: {}})).toBe(once);
   });
 
   it('nobody wins a game where everyone scored 0', () => {
-    expect(addToLeague({}, {scores: {rafi: 0}}).rafi!.wins).toBe(0);
+    expect(addToLeague({}, {scores: {leo: 0}}).leo!.wins).toBe(0);
   });
 
   it('knows when a game is live', () => {
@@ -58,7 +58,7 @@ describe('game validators', () => {
 
   it('game:answer checks the round and the choice range', () => {
     expect(validateGameAnswer({gameId: 'g1', round: 2, choice: 3})).toEqual({ok: true, value: {gameId: 'g1', round: 2, choice: 3}});
-    expect(validateGameAnswer({gameId: 'g1', round: 1, choice: 0, profileId: 'nanu'}).ok).toBe(true);
+    expect(validateGameAnswer({gameId: 'g1', round: 1, choice: 0, profileId: 'nora'}).ok).toBe(true);
     expect(validateGameAnswer({gameId: 'g1', round: 0, choice: 0}).ok).toBe(false);
     expect(validateGameAnswer({gameId: 'g1', round: 1, choice: 4}).ok).toBe(false);
     expect(validateGameAnswer({gameId: 'g1', round: 1, choice: 1.5}).ok).toBe(false);

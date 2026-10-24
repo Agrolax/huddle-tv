@@ -11,24 +11,29 @@ interface CatalogEntry {
   moods: TonightMood[];
   /** Finishes the sentence "… <blurb>" in the why line. */
   blurb: string;
+  /** Rated G, PG, TV-Y7, TV-G or TV-PG: fine when a child is here. */
+  family?: boolean;
 }
 
 /** A small hand-picked catalog. Services are illustrative; availability varies by region. */
 const CATALOG: readonly CatalogEntry[] = [
-  {title: 'Paddington 2', minutes: 104, year: 2017, service: 'Prime Video', moods: ['cozy', 'funny'], blurb: 'warm, silly and kind'},
-  {title: 'My Neighbor Totoro', minutes: 86, year: 1988, service: 'Max', moods: ['cozy'], blurb: 'gentle and dreamy'},
-  {title: 'The Great British Baking Show', minutes: 60, year: 2010, service: 'Netflix', moods: ['cozy'], blurb: 'low stakes and lots of cake'},
-  {title: 'Up', minutes: 96, year: 2009, service: 'Disney+', moods: ['cozy'], blurb: 'a big adventure with a soft heart'},
+  {title: 'Paddington 2', minutes: 104, year: 2017, service: 'Prime Video', moods: ['cozy', 'funny'], blurb: 'warm, silly and kind', family: true},
+  {title: 'My Neighbor Totoro', minutes: 86, year: 1988, service: 'Max', moods: ['cozy'], blurb: 'gentle and dreamy', family: true},
+  {title: 'The Great British Baking Show', minutes: 60, year: 2010, service: 'Netflix', moods: ['cozy'], blurb: 'low stakes and lots of cake', family: true},
+  {title: 'Up', minutes: 96, year: 2009, service: 'Disney+', moods: ['cozy'], blurb: 'a big adventure with a soft heart', family: true},
+  {title: 'Bluey', minutes: 7, year: 2018, service: 'Disney+', moods: ['cozy', 'funny'], blurb: 'tiny episodes grown-ups love too', family: true},
   {title: 'Ted Lasso', minutes: 30, year: 2020, service: 'Apple TV+', moods: ['cozy', 'funny'], blurb: 'feel-good and quick to love'},
-  {title: 'The Mitchells vs. the Machines', minutes: 114, year: 2021, service: 'Netflix', moods: ['funny'], blurb: 'a chaotic family road trip'},
+  {title: 'The Mitchells vs. the Machines', minutes: 114, year: 2021, service: 'Netflix', moods: ['funny'], blurb: 'a chaotic family road trip', family: true},
   {title: 'School of Rock', minutes: 109, year: 2003, service: 'Paramount+', moods: ['funny'], blurb: 'loud, funny and easy to share'},
-  {title: 'Wallace & Gromit: Vengeance Most Fowl', minutes: 79, year: 2024, service: 'Netflix', moods: ['funny', 'cozy'], blurb: 'clever jokes for every age'},
+  {title: 'Wallace & Gromit: Vengeance Most Fowl', minutes: 79, year: 2024, service: 'Netflix', moods: ['funny', 'cozy'], blurb: 'clever jokes for every age', family: true},
   {title: 'Game Night', minutes: 100, year: 2018, service: 'Max', moods: ['funny', 'edge-of-seat'], blurb: 'laughs with a real mystery'},
   {title: 'Knives Out', minutes: 130, year: 2019, service: 'Prime Video', moods: ['edge-of-seat', 'funny'], blurb: 'a whodunit you can solve together'},
   {title: 'Reacher', minutes: 50, year: 2022, service: 'Prime Video', moods: ['edge-of-seat'], blurb: 'fast, punchy episodes'},
   {title: 'Top Gun: Maverick', minutes: 131, year: 2022, service: 'Paramount+', moods: ['edge-of-seat'], blurb: 'big-screen thrills'},
-  {title: 'Apollo 13', minutes: 140, year: 1995, service: 'Peacock', moods: ['edge-of-seat'], blurb: 'true-story tension'},
+  {title: 'Apollo 13', minutes: 140, year: 1995, service: 'Peacock', moods: ['edge-of-seat'], blurb: 'true-story tension', family: true},
   {title: 'Jack Ryan', minutes: 60, year: 2018, service: 'Prime Video', moods: ['edge-of-seat'], blurb: 'a binge-worthy spy chase'},
+  {title: 'How to Train Your Dragon', minutes: 98, year: 2010, service: 'Peacock', moods: ['edge-of-seat', 'cozy'], blurb: 'soaring flights and a loyal dragon', family: true},
+  {title: 'The Incredibles', minutes: 115, year: 2004, service: 'Disney+', moods: ['edge-of-seat', 'funny'], blurb: 'a superhero family that bickers like yours', family: true},
 ];
 
 /** FNV-1a, so the same people + mood always get the same picks. */
@@ -53,16 +58,17 @@ export function mockTonight(people: readonly Person[], mood?: TonightMood, maxMi
     const fit = list.filter(e => e.minutes <= maxMinutes);
     return fit.length ? fit : [...list].sort((a, b) => a.minutes - b.minutes).slice(0, 1);
   };
+  const catalog = people.some(p => p.kid) ? CATALOG.filter(e => e.family) : CATALOG;
   const chosen: CatalogEntry[] = [];
   if (mood) {
-    const pool = CATALOG.filter(e => e.moods.includes(mood));
+    const pool = catalog.filter(e => e.moods.includes(mood));
     const fit = pool.filter(e => e.minutes <= maxMinutes);
     const short = pool.filter(e => !fit.includes(e)).sort((a, b) => a.minutes - b.minutes);
     chosen.push(...[...rotate(fit, seed), ...short].slice(0, 3));
   } else {
     // No mood: one of each, so the sheet shows the range.
     for (const m of TONIGHT_MOODS) {
-      const options = inTime(CATALOG.filter(e => e.moods[0] === m.id && !chosen.includes(e)));
+      const options = inTime(catalog.filter(e => e.moods[0] === m.id && !chosen.includes(e)));
       chosen.push(rotate(options, seed)[0]!);
     }
   }

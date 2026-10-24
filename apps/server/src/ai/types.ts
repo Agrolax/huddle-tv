@@ -70,7 +70,7 @@ export interface HouseholdAI {
   quiz(ctx: QuizContext, signal?: AbortSignal): Promise<QuizResult>;
 }
 
-/** "Rafi", "Rafi and Nanu", "Rafi, Nanu and Ammu". */
+/** "Leo", "Leo and Nora", "Leo, Nora and Maya". */
 export function joinNames(people: readonly Person[]): string {
   const names = people.map(p => p.name);
   if (names.length === 0) return 'everyone';
@@ -80,6 +80,7 @@ export function joinNames(people: readonly Person[]): string {
 
 const TITLE_MAX = 80;
 const WHY_MAX = 160;
+const SCENE_MAX = 200;
 const SERVICE_MAX = 30;
 
 function clip(s: string, max: number): string {
@@ -93,7 +94,7 @@ export function sanitizePicks(raw: unknown): TonightPick[] {
   const picks: TonightPick[] = [];
   for (const item of raw) {
     if (typeof item !== 'object' || item === null) continue;
-    const {title, year, why, service, minutes} = item as Record<string, unknown>;
+    const {title, year, why, service, minutes, scene} = item as Record<string, unknown>;
     if (typeof title !== 'string' || !title.trim() || typeof why !== 'string' || !why.trim()) continue;
     const y = typeof year === 'string' ? Number(year) : year;
     const m = typeof minutes === 'string' ? Number(minutes) : minutes;
@@ -103,6 +104,7 @@ export function sanitizePicks(raw: unknown): TonightPick[] {
       why: clip(why, WHY_MAX),
       ...(typeof service === 'string' && service.trim() ? {service: clip(service, SERVICE_MAX)} : {}),
       ...(typeof m === 'number' && Number.isInteger(m) && m > 0 && m <= 600 ? {minutes: m} : {}),
+      ...(typeof scene === 'string' && scene.trim() ? {scene: clip(scene, SCENE_MAX)} : {}),
     });
   }
   return picks;

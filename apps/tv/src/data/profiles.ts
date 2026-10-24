@@ -2,11 +2,9 @@ import type {Profile} from '@huddle/shared';
 
 /** Offline fallback; the server's household replaces it on connect. */
 export const PROFILES: Profile[] = [
-  {id: 'rafi', name: 'Rafi', color: '#3D8BFF'},
-  {id: 'nanu', name: 'Nanu', color: '#F5A524'},
-  {id: 'ammu', name: 'Ammu', color: '#3DCF8E'},
-  {id: 'abbu', name: 'Abbu', color: '#B57BFF'},
-  {id: 'guest', name: 'Guest', color: '#9AA3B2'},
+  {id: 'maya', name: 'Maya', color: '#3D8BFF', avatar: 'bean'},
+  {id: 'leo', name: 'Leo', color: '#F5A524', avatar: 'drop', kid: true},
+  {id: 'guest', name: 'Guest', color: '#9AA3B2', avatar: 'cloud'},
 ];
 
 export function namesFor(ids: string[], profiles: Profile[] = PROFILES): string {

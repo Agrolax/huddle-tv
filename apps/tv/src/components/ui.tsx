@@ -6,6 +6,9 @@
 import React, {useEffect, useRef, useState} from 'react';
 import {BackHandler, findNodeHandle, StyleProp, StyleSheet, Text, View, ViewStyle} from 'react-native';
 import {FocusManager, TVFocusGuideView} from '@amazon-devices/react-native-kepler';
+import Svg, {Circle, Path} from '@amazon-devices/react-native-svg';
+import {BLOB_EYE_RADIUS, BLOB_INK, BLOB_PUPIL_RADIUS, blobFor} from '@huddle/shared';
+import type {Profile} from '@huddle/shared';
 import {FocusableCard} from '@huddle/tv-focus-kit';
 import {colors, focus, radius, space, type} from '../theme';
 
@@ -64,10 +67,21 @@ export const Button = React.forwardRef<View, ButtonProps>(function Button(
   );
 });
 
-export function Avatar({name, color, size = 64, dim}: {name: string; color: string; size?: number; dim?: boolean}) {
+/** A person's blob (see packages/shared/src/avatars.ts). Every part is mounted from the first render (FL-14). */
+export function Avatar({profile, size = 64, dim}: {profile: Pick<Profile, 'id' | 'name' | 'color' | 'avatar'>; size?: number; dim?: boolean}) {
+  const blob = blobFor(profile);
   return (
-    <View style={[styles.avatar, {width: size, height: size, borderRadius: size / 2, backgroundColor: color}, dim && styles.dim]}>
-      <Text style={[styles.avatarLetter, {fontSize: Math.round(size * 0.42)}]}>{name[0]}</Text>
+    <View style={[{width: size, height: size}, dim && styles.dim]} accessibilityLabel={profile.name} testID={`avatar-${profile.id}`}>
+      <Svg width={size} height={size} viewBox="0 0 100 100">
+        <Path testID="blob" d={blob.body} fill={profile.color} />
+        {blob.eyes.map(([x, y], i) => (
+          <Circle key={`w${i}`} testID="blob" cx={x} cy={y} r={BLOB_EYE_RADIUS} fill="#FFFFFF" />
+        ))}
+        {blob.eyes.map(([x, y], i) => (
+          <Circle key={`p${i}`} testID="blob" cx={x + 1.5} cy={y + 1.5} r={BLOB_PUPIL_RADIUS} fill={BLOB_INK} />
+        ))}
+        <Path testID="blob" d={blob.mouth} stroke={BLOB_INK} strokeWidth={4} strokeLinecap="round" fill="none" />
+      </Svg>
     </View>
   );
 }
@@ -79,6 +93,8 @@ type SheetProps = {
   onClose: () => void;
   width?: number;
   testID: string;
+  /** Full-screen art behind the sheet (Tonight). The card goes clear and wide, over a flat scrim. */
+  backdrop?: React.ReactNode;
   children: React.ReactNode;
 };
 
@@ -86,7 +102,7 @@ type SheetProps = {
  * Full-screen modal sheet. The page dims, focus stays inside, Back closes.
  * The backdrop is a sibling of the card: on Vega a translucent parent paints over its children (FL-11).
  */
-export function Sheet({title, subtitle, onClose, width = 1400, testID, children}: SheetProps) {
+export function Sheet({title, subtitle, onClose, width = 1400, testID, backdrop, children}: SheetProps) {
   const rootRef = useRef<View>(null);
 
   useEffect(() => {
@@ -115,9 +131,16 @@ export function Sheet({title, subtitle, onClose, width = 1400, testID, children}
 
   return (
     <View ref={rootRef} style={styles.sheetRoot} testID={testID}>
-      <View style={styles.backdrop} />
-      <View style={[styles.sheet, {width}]}>
-        <TVFocusGuideView trapFocusUp trapFocusDown trapFocusLeft trapFocusRight style={styles.sheetInner}>
+      {backdrop ? (
+        <>
+          <View style={[styles.fill, styles.layerArt]}>{backdrop}</View>
+          <View style={[styles.fill, styles.scrim, styles.layerScrim]} />
+        </>
+      ) : (
+        <View style={styles.backdrop} />
+      )}
+      <View style={backdrop ? styles.bare : [styles.sheet, {width}]}>
+        <TVFocusGuideView trapFocusUp trapFocusDown trapFocusLeft trapFocusRight style={[styles.sheetInner, backdrop ? styles.bareInner : null]}>
           <Text style={styles.sheetTitle}>{title}</Text>
           {subtitle ? <Text style={styles.sheetSub}>{subtitle}</Text> : null}
           {children}
@@ -159,14 +182,6 @@ const styles = StyleSheet.create({
   buttonTextFocused: {
     color: colors.bg,
   },
-  avatar: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  avatarLetter: {
-    color: colors.bg,
-    fontWeight: '700',
-  },
   dim: {
     opacity: 0.3,
   },
@@ -191,6 +206,37 @@ const styles = StyleSheet.create({
   sheet: {
     borderRadius: radius.lg,
     backgroundColor: colors.surface,
+  },
+  fill: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+  },
+  /** Flat, not a gradient: enough to read white text on any painting. */
+  scrim: {
+    backgroundColor: '#000000',
+    opacity: 0.5,
+  },
+  /** The inner padding (space.xl) lands the content on the 5% safe area. */
+  bare: {
+    zIndex: 2,
+    position: 'absolute',
+    top: space.safeY - space.md,
+    bottom: space.safeY - space.md,
+    left: space.safeX - space.xl,
+    right: space.safeX - space.xl,
+  },
+  layerArt: {
+    zIndex: 0,
+  },
+  layerScrim: {
+    zIndex: 1,
+  },
+  bareInner: {
+    flex: 1,
+    paddingVertical: space.md,
   },
   sheetInner: {
     padding: space.xl,

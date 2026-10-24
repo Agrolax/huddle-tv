@@ -71,6 +71,48 @@ export function eventWhen(startIso: string, now: Date): string {
   return `${MONTHS[start.getMonth()]} ${start.getDate()}`;
 }
 
+export interface WeekDay {
+  /** Local midnight, ms. */
+  start: number;
+  /** "Mon". */
+  name: string;
+  /** Day of the month. */
+  date: number;
+  today: boolean;
+  /** Events that start that day, by start time. */
+  events: CalendarEvent[];
+}
+
+/** Today and the next `count - 1` days, each with the events that start on it. */
+export function weekDays(events: readonly CalendarEvent[], now: Date, count = 7): WeekDay[] {
+  const sorted = [...events].sort((a, b) => Date.parse(a.start) - Date.parse(b.start));
+  return Array.from({length: count}, (_, i) => {
+    const day = new Date(now.getFullYear(), now.getMonth(), now.getDate() + i);
+    const start = day.getTime();
+    const end = new Date(now.getFullYear(), now.getMonth(), now.getDate() + i + 1).getTime();
+    return {
+      start,
+      name: DAYS[day.getDay()]!,
+      date: day.getDate(),
+      today: i === 0,
+      events: sorted.filter(e => {
+        const t = Date.parse(e.start);
+        return t >= start && t < end;
+      }),
+    };
+  });
+}
+
+/** From 5pm: events that haven't ended yet and start before midnight. */
+export function tonightEvents(events: readonly CalendarEvent[], now: Date): CalendarEvent[] {
+  const evening = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 17).getTime();
+  const midnight = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1).getTime();
+  return upcomingEvents(events, now).filter(e => {
+    const t = Date.parse(e.start);
+    return t < midnight && endOf(e) > evening;
+  });
+}
+
 // --- Smart home ------------------------------------------------------------
 
 export const THERMOSTAT_RANGE = {min: 16, max: 28} as const;

@@ -13,12 +13,12 @@
 }
 * { box-sizing: border-box; }
 html, body { margin: 0; background: var(--bg); color: var(--ink); }
-body { font: 17px/1.4 system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; -webkit-tap-highlight-color: transparent; }
+body { font: 17px/1.4 'Nunito', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; -webkit-tap-highlight-color: transparent; }
 button, textarea { font: inherit; color: inherit; }
 .shell { max-width: 480px; margin: 0 auto; padding: max(16px, env(safe-area-inset-top)) 16px max(24px, env(safe-area-inset-bottom)); display: flex; flex-direction: column; gap: 12px; min-height: 100dvh; }
 .header { padding: 8px 4px 4px; }
 .eyebrow { margin: 0; color: var(--mute); font-size: 13px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; }
-h1 { margin: 2px 0 8px; font-size: 28px; line-height: 1.15; }
+h1 { margin: 2px 0 8px; font-size: 28px; line-height: 1.15; font-weight: 800; }
 h2 { margin: 0 0 4px; font-size: 18px; }
 .muted { color: var(--mute); }
 .small { font-size: 14px; }
@@ -94,3 +94,19 @@ button:disabled { cursor: default; }
 .swatch { width: 36px; height: 36px; border-radius: 50%; border: 3px solid transparent; cursor: pointer; }
 .swatch.on { border-color: var(--ink); outline: 2px solid var(--bg); outline-offset: -5px; }
 .hint { margin: 0; font-size: 22px; font-weight: 800; letter-spacing: .3em; word-break: break-word; }
+
+.blob { display: block; flex: none; }
+.person:not(.on) .blob { opacity: .4; }
+.people { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 8px; }
+.tile { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 12px 6px; border-radius: 14px; border: 2px solid transparent; background: var(--raised); cursor: pointer; font-weight: 700; }
+.tile.on { border-color: var(--focus); }
+.tile.add { background: var(--bg); border: 2px dashed var(--raised); color: var(--mute); }
+.tile .plus { display: flex; align-items: center; justify-content: center; width: 64px; height: 64px; font-size: 40px; font-weight: 300; }
+.ghost { min-height: 48px; border: 2px dashed var(--raised); border-radius: 12px; background: none; color: var(--mute); font-weight: 700; cursor: pointer; }
+.swatches { display: flex; flex-wrap: wrap; gap: 8px; }
+.swatch { border: 3px solid transparent; cursor: pointer; }
+.swatch.blob-pick { display: flex; align-items: center; justify-content: center; width: 64px; height: 64px; padding: 0; border-radius: 14px; background: var(--raised); }
+.swatch.color { width: 40px; height: 40px; padding: 0; border-radius: 10px; }
+.swatch.on { border-color: var(--ink); }
+input.check { width: 24px; min-height: 24px; height: 24px; flex: none; }
+.picks .art { display: block; width: 100%; aspect-ratio: 16 / 9; object-fit: cover; border-radius: 12px; margin-bottom: 8px; }

@@ -1,5 +1,6 @@
 import {useEffect, useRef, useState} from 'react';
 import {CHAT_MAX_LENGTH, Profile, TONIGHT_MOODS, TonightMood, TonightPicks} from '@huddle/shared';
+import {serverUrl} from './session';
 import type {ChatState} from './useHuddle';
 
 const SUGGESTIONS = ['What should we watch?', "What's on the calendar?", 'Do I need a jacket?'];
@@ -140,6 +141,7 @@ export function TonightCard({
         <ul className="list picks">
           {tonight.picks.map((p, i) => (
             <li key={`${p.title}-${i}`}>
+              {p.image ? <img className="art" src={artUrl(p.image)} alt="" /> : null}
               <strong>{p.title}</strong>
               <span className="muted small"> {[p.year, p.service, p.minutes ? `${p.minutes} min` : undefined].filter(Boolean).join(' · ')}</span>
               {tonight.chosen === i ? <span className="small ok-text"> · Tonight's pick</span> : null}
@@ -160,4 +162,9 @@ export function TonightCard({
       ) : null}
     </section>
   );
+}
+
+/** Tonight art lives on the Huddle server, next to the socket. */
+function artUrl(path: string): string {
+  return serverUrl(location.search, location).replace(/^ws(s?):/, 'http$1:').replace(/\/ws\/?$/, '') + path;
 }

@@ -7,9 +7,9 @@ import {VoteEngine} from '../src/tonight/vote.js';
 import {TestClient, TestServer, claimTv, pairPhone, startServer} from './helpers.js';
 
 const PROFILES: Profile[] = [
-  {id: 'rafi', name: 'Rafi', color: '#000000', kid: true},
-  {id: 'nanu', name: 'Nanu', color: '#000000'},
-  {id: 'ammu', name: 'Ammu', color: '#000000'},
+  {id: 'leo', name: 'Leo', color: '#000000', kid: true},
+  {id: 'nora', name: 'Nora', color: '#000000'},
+  {id: 'maya', name: 'Maya', color: '#000000'},
 ];
 
 /** Thu Oct 15 2026 at `h:m`, local time. Tomorrow is a Friday, a school day. */
@@ -17,29 +17,29 @@ const thu = (h: number, m = 0) => new Date(2026, 9, 15, h, m);
 
 describe('bedtime', () => {
   it("ends by a kid's bedtime when the kid is here", () => {
-    const limit = tonightLimit(PROFILES, ['rafi', 'nanu'], [], thu(18));
-    assert.deepEqual(limit, {at: thu(20, 30), reason: "Rafi's bedtime"});
-    assert.equal(tonightLimit(PROFILES, ['nanu', 'ammu'], [], thu(18)), null, 'no kid, no early start: no limit');
+    const limit = tonightLimit(PROFILES, ['leo', 'nora'], [], thu(18));
+    assert.deepEqual(limit, {at: thu(20, 30), reason: "Leo's bedtime"});
+    assert.equal(tonightLimit(PROFILES, ['nora', 'maya'], [], thu(18)), null, 'no kid, no early start: no limit');
   });
 
   it('gives an extra hour when tomorrow is the weekend', () => {
     const fri = new Date(2026, 9, 16, 18);
-    assert.deepEqual(tonightLimit(PROFILES, ['rafi'], [], fri)?.at, new Date(2026, 9, 16, 21, 30));
+    assert.deepEqual(tonightLimit(PROFILES, ['leo'], [], fri)?.at, new Date(2026, 9, 16, 21, 30));
   });
 
   it('plans around an early event tomorrow for someone here', () => {
     const events = [
-      {id: 'e1', title: 'Flight', start: new Date(2026, 9, 16, 7, 0).toISOString(), profileIds: ['ammu']},
-      {id: 'e2', title: 'Late', start: new Date(2026, 9, 16, 11, 0).toISOString(), profileIds: ['ammu']},
+      {id: 'e1', title: 'Flight', start: new Date(2026, 9, 16, 7, 0).toISOString(), profileIds: ['maya']},
+      {id: 'e2', title: 'Late', start: new Date(2026, 9, 16, 11, 0).toISOString(), profileIds: ['maya']},
     ];
-    // 7:00 minus 10.5 hours: 20:30, but it's Ammu's event, so only when Ammu is here.
-    assert.deepEqual(tonightLimit(PROFILES, ['ammu'], events, thu(18)), {at: thu(20, 30), reason: 'Flight at 7:00 tomorrow'});
-    assert.equal(tonightLimit(PROFILES, ['nanu'], events, thu(18)), null);
+    // 7:00 minus 10.5 hours: 20:30, but it's Maya's event, so only when Maya is here.
+    assert.deepEqual(tonightLimit(PROFILES, ['maya'], events, thu(18)), {at: thu(20, 30), reason: 'Flight at 7:00 tomorrow'});
+    assert.equal(tonightLimit(PROFILES, ['nora'], events, thu(18)), null);
   });
 
   it('only plans a few hours ahead, and not after the time has passed', () => {
-    assert.equal(tonightLimit(PROFILES, ['rafi'], [], thu(10)), null);
-    assert.equal(tonightLimit(PROFILES, ['rafi'], [], thu(21)), null);
+    assert.equal(tonightLimit(PROFILES, ['leo'], [], thu(10)), null);
+    assert.equal(tonightLimit(PROFILES, ['leo'], [], thu(21)), null);
   });
 
   it('drops picks that run long and tops up from the extras', () => {
@@ -50,8 +50,17 @@ describe('bedtime', () => {
     assert.deepEqual(fitPicks([p('A', 150), p('B', 120)], [p('C', 130)], 30).map(x => x.title), ['B', 'C', 'A']);
   });
 
+  it('the mock only picks family titles when a child is here', () => {
+    const grownUps = ['Ted Lasso', 'Reacher', 'Jack Ryan', 'Game Night', 'Knives Out', 'School of Rock', 'Top Gun: Maverick'];
+    for (const mood of [undefined, 'cozy', 'funny', 'edge-of-seat'] as const) {
+      const picks = mockTonight([{id: 'leo', name: 'Leo', kid: true}, {id: 'maya', name: 'Maya'}], mood);
+      assert.equal(picks.length, 3);
+      assert.ok(picks.every(p => !grownUps.includes(p.title)), `${mood}: ${picks.map(p => p.title).join(', ')}`);
+    }
+  });
+
   it('the mock picks titles that finish in time', () => {
-    const picks = mockTonight([{id: 'rafi', name: 'Rafi'}], 'funny', 100);
+    const picks = mockTonight([{id: 'leo', name: 'Leo'}], 'funny', 100);
     assert.equal(picks.length, 3);
     assert.ok(picks.every(x => x.minutes! <= 100), picks.map(x => `${x.title} ${x.minutes}`).join(', '));
   });
@@ -148,8 +157,8 @@ describe('secret veto over the wire', () => {
   it('phones vote in private, the TV sees who voted, the overlap becomes the pick', async () => {
     const hh = `veto-${++n}`;
     const {tv, pair} = await claimTv(server.url, hh);
-    const {phone: rafi} = await pairPhone(server.url, pair.code, {client: {clientId: 'p-rafi', role: 'phone', profileId: 'rafi'}}, hh);
-    const {phone: nanu} = await pairPhone(server.url, pair.code, {client: {clientId: 'p-nanu', role: 'phone', profileId: 'nanu'}}, hh);
+    const {phone: leo} = await pairPhone(server.url, pair.code, {client: {clientId: 'p-leo', role: 'phone', profileId: 'leo'}}, hh);
+    const {phone: nora} = await pairPhone(server.url, pair.code, {client: {clientId: 'p-nora', role: 'phone', profileId: 'nora'}}, hh);
 
     tv.send('tonight:vote-start', {});
     assert.equal((await tv.nextOf('error')).payload.message, 'get Tonight picks before you vote');
@@ -160,11 +169,11 @@ describe('secret veto over the wire', () => {
     const voting = await untilVote(tv, 'voting');
     assert.deepEqual(voting.options, [0, 1, 2]);
 
-    rafi.send('tonight:vote', {voteId: voting.voteId, yes: [0, 1]});
+    leo.send('tonight:vote', {voteId: voting.voteId, yes: [0, 1]});
     const progress = await untilVote(tv, 'voting');
-    assert.deepEqual(progress.voted, ['rafi']);
+    assert.deepEqual(progress.voted, ['leo']);
     assert.equal(JSON.stringify(progress).includes('"yes"'), false);
-    nanu.send('tonight:vote', {voteId: voting.voteId, yes: [1, 2]});
+    nora.send('tonight:vote', {voteId: voting.voteId, yes: [1, 2]});
     const result = await untilVote(tv, 'result');
     assert.deepEqual(result.accepted, [1]);
     const chosen = (await tv.nextOf('tonight:picks')).payload;
@@ -175,6 +184,6 @@ describe('secret veto over the wire', () => {
     // New picks end the vote.
     tv.send('tonight:request', {mood: 'funny'});
     assert.equal((await untilVote(tv, 'idle')).voteId, null);
-    for (const c of [tv, rafi, nanu]) c.close();
+    for (const c of [tv, leo, nora]) c.close();
   });
 });

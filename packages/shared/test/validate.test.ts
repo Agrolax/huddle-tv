@@ -57,9 +57,9 @@ describe('validateHello', () => {
 
 describe('validateProfileSwitch', () => {
   it('dedupes ids', () => {
-    expect(validateProfileSwitch({profileIds: ['rafi', 'rafi', 'nanu']})).toEqual({ok: true, value: {profileIds: ['rafi', 'nanu']}});
+    expect(validateProfileSwitch({profileIds: ['leo', 'leo', 'nora']})).toEqual({ok: true, value: {profileIds: ['leo', 'nora']}});
   });
-  it.each([[undefined], [{}], [{profileIds: []}], [{profileIds: [1]}], [{profileIds: 'rafi'}]])('rejects %p', p => {
+  it.each([[undefined], [{}], [{profileIds: []}], [{profileIds: [1]}], [{profileIds: 'leo'}]])('rejects %p', p => {
     expect(validateProfileSwitch(p).ok).toBe(false);
   });
 });

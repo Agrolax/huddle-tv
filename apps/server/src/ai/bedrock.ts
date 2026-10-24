@@ -41,7 +41,7 @@ export class BedrockAI implements HouseholdAI {
         modelId: this.tonightModel,
         system: [{text: TONIGHT_SYSTEM}],
         messages: [{role: 'user', content: [{text: tonightPrompt(ctx)}]}],
-        inferenceConfig: {maxTokens: 700, temperature: 0.8},
+        inferenceConfig: {maxTokens: 900, temperature: 0.8},
       }),
       {abortSignal: signal},
     );
@@ -106,11 +106,12 @@ export class BedrockAI implements HouseholdAI {
 const TONIGHT_SYSTEM = [
   'You pick what a family watches tonight on Fire TV.',
   'Reply with JSON only, no prose and no code fence, in exactly this shape:',
-  '{"picks":[{"title":"...","year":2017,"minutes":104,"service":"Prime Video","why":"..."}]}',
+  '{"picks":[{"title":"...","year":2017,"minutes":104,"service":"Prime Video","why":"...","scene":"..."}]}',
   '"minutes" is the running time (one episode for a series).',
   'Give exactly 3 picks: real, well-known movies or series that suit everyone in the room.',
   '"why" is one short sentence (under 120 characters) that names the people it suits.',
   '"service" is where it usually streams in the US; prefer Prime Video when it fits.',
+  '"scene" is one wide landscape shot that captures the title\'s setting and mood for a backdrop (under 160 characters): places, objects, light, weather. No character names, no people, no text.',
 ].join('\n');
 
 const QUIZ_SYSTEM = [

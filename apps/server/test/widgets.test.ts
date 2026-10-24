@@ -26,10 +26,11 @@ async function tvAndPhone() {
 }
 
 describe('calendar', () => {
-  it('a new household has three demo events', async () => {
+  it('a new household has a week of demo events, soonest first', async () => {
     const {tv, phone, welcome} = await tvAndPhone();
     const events = welcome.payload.snapshot.events;
-    assert.deepEqual(events.map((e: any) => e.title), ['Pizza night', 'Dentist', 'Soccer practice']);
+    assert.deepEqual(events.slice(0, 3).map((e: any) => e.title), ['Pizza night', 'Dentist', 'Soccer practice']);
+    assert.equal(events.length, 7);
     tv.close();
     phone.close();
   });
@@ -45,13 +46,13 @@ describe('calendar', () => {
   it('a phone adds an event; the TV gets the sorted list', async () => {
     const {tv, phone} = await tvAndPhone();
     const start = new Date(server.clock.now + 30 * 60_000).toISOString();
-    const id = phone.send('calendar:add', {title: ' Movie ', start, profileIds: ['rafi']});
+    const id = phone.send('calendar:add', {title: ' Movie ', start, profileIds: ['leo']});
     const update = await tv.nextOf('calendar:updated');
     const added = update.payload.events.find((e: any) => e.id === id);
-    assert.deepEqual(added, {id, title: 'Movie', start, profileIds: ['rafi']});
+    assert.deepEqual(added, {id, title: 'Movie', start, profileIds: ['leo']});
     const starts = update.payload.events.map((e: any) => Date.parse(e.start));
     assert.deepEqual(starts, [...starts].sort((a: number, b: number) => a - b), 'soonest first');
-    assert.equal(server.hub.household(hh)!.events.length, 4);
+    assert.equal(server.hub.household(hh)!.events.length, 8);
     tv.close();
     phone.close();
   });

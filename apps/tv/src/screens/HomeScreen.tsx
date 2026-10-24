@@ -15,9 +15,12 @@ import {
   leaguePoints,
   standings,
   upcomingEvents,
+  weekDays,
   weatherSummary,
 } from '@huddle/shared';
 import {FocusGrid, FocusGridHandle, FocusGridItem} from '@huddle/tv-focus-kit';
+import {Backdrop} from '../components/Backdrop';
+import {CalendarOverlay} from '../components/CalendarOverlay';
 import {ConnectOverlay} from '../components/ConnectOverlay';
 import {GameNightOverlay} from '../components/GameNightOverlay';
 import {SmartHomeOverlay} from '../components/SmartHomeOverlay';
@@ -47,14 +50,16 @@ type Props = {
 export function HomeScreen({onSwitchProfiles, onOpenWidget, onFocusChange}: Props) {
   const now = useClock();
   const household = useHousehold();
-  const {activeProfileIds: profileIds, profiles, status, events, devices, weather, tonight, game, league} = household;
+  const {activeProfileIds: profileIds, profiles, status, events, devices, weather, tonight, game, league, serverUrl} = household;
   const names = namesFor(profileIds, profiles);
   const here = useMemo(() => profiles.filter(p => profileIds.includes(p.id)), [profiles, profileIds]);
-  const upcoming = useMemo(() => upcomingEvents(events, now, 3), [events, now]);
+  const upcoming = useMemo(() => upcomingEvents(events, now), [events, now]);
+  const week = useMemo(() => weekDays(upcoming, now), [upcoming, now]);
   const [connectOpen, setConnectOpen] = useState(false);
   const [smartHomeOpen, setSmartHomeOpen] = useState(false);
   const [tonightOpen, setTonightOpen] = useState(false);
   const [gameOpen, setGameOpen] = useState(false);
+  const [calendarOpen, setCalendarOpen] = useState(false);
   const tonightFresh = picksAreFor(tonight, profileIds);
   const connectRef = useRef<View>(null);
   const gridRef = useRef<FocusGridHandle>(null);
@@ -76,6 +81,11 @@ export function HomeScreen({onSwitchProfiles, onOpenWidget, onFocusChange}: Prop
     setTimeout(() => restoreFocus(gridRef.current?.getCell('tonight') ?? null), 0);
   }, []);
 
+  const closeCalendar = useCallback(() => {
+    setCalendarOpen(false);
+    setTimeout(() => restoreFocus(gridRef.current?.getCell('calendar') ?? null), 0);
+  }, []);
+
   const closeGame = useCallback(() => {
     setGameOpen(false);
     setTimeout(() => restoreFocus(gridRef.current?.getCell('game') ?? null), 0);
@@ -83,7 +93,7 @@ export function HomeScreen({onSwitchProfiles, onOpenWidget, onFocusChange}: Prop
 
   // A phone started a game: bring it up on the TV, or as soon as the sheet in the way closes.
   const live = gameIsLive(game);
-  const blocked = connectOpen || smartHomeOpen || tonightOpen;
+  const blocked = connectOpen || smartHomeOpen || tonightOpen || calendarOpen;
   useEffect(() => {
     if (live && !blocked) setGameOpen(true);
   }, [live, game.gameId, blocked]);
@@ -112,29 +122,40 @@ export function HomeScreen({onSwitchProfiles, onOpenWidget, onFocusChange}: Prop
         row: 0,
         col: 1,
         colSpan: 2,
-        accessibilityLabel: `Calendar. ${upcoming.length ? upcoming.map(e => `${e.title}, ${eventWhen(e.start, now)}`).join('. ') : 'No events'}`,
-        onPress: () => onOpenWidget?.('calendar'),
+        accessibilityLabel: `This week. ${upcoming.length ? upcoming.slice(0, 3).map(e => `${e.title}, ${eventWhen(e.start, now)}`).join('. ') : 'No events'}`,
+        onPress: () => {
+          setCalendarOpen(true);
+          onOpenWidget?.('calendar');
+        },
         render: () => (
-          <WidgetTile label="Calendar">
-            {upcoming.length ? (
-              upcoming.map(e => (
-                <View key={e.id} style={styles.eventRow} testID={`event-${e.id}`}>
-                  <Text style={styles.eventTime}>{eventWhen(e.start, now)}</Text>
-                  <Text style={[styles.body, styles.grow]} numberOfLines={1}>
-                    {e.title}
-                  </Text>
-                  <View style={styles.dots}>
-                    {profiles
-                      .filter(p => e.profileIds.includes(p.id))
-                      .map(p => (
-                        <View key={p.id} style={[styles.personDot, {backgroundColor: p.color}]} testID={`event-${e.id}-${p.id}`} />
-                      ))}
+          <WidgetTile label="This week">
+            <View style={styles.week}>
+              {week.map(d => (
+                <View key={d.start} style={styles.weekDay}>
+                  <Text style={[styles.weekName, d.today && styles.weekToday]}>{d.name}</Text>
+                  <View style={[styles.weekDate, d.today && styles.weekDateToday]}>
+                    <Text style={styles.weekDateText}>{d.date}</Text>
                   </View>
+                  {d.events.slice(0, 2).map(e => {
+                    const people = profiles.filter(p => e.profileIds.includes(p.id));
+                    return (
+                      <View key={e.id} style={[styles.chip, {backgroundColor: people[0]?.color ?? colors.mute}]} testID={`event-${e.id}`}>
+                        <Text style={styles.chipText} numberOfLines={1}>
+                          {e.title}
+                        </Text>
+                        {people.map(p => (
+                          <View key={p.id} testID={`event-${e.id}-${p.id}`} />
+                        ))}
+                      </View>
+                    );
+                  })}
+                  {d.events.length > 2 ? <Text style={styles.chipMore}>+{d.events.length - 2}</Text> : null}
                 </View>
-              ))
-            ) : (
-              <Text style={styles.mute}>{status === 'open' ? 'No events.' : 'Offline'}</Text>
-            )}
+              ))}
+            </View>
+            <Text style={styles.body} numberOfLines={1} testID="calendar-next-line">
+              {upcoming[0] ? `Next: ${upcoming[0].title} · ${eventWhen(upcoming[0].start, now)}` : status === 'open' ? 'Nothing planned.' : 'Offline'}
+            </Text>
           </WidgetTile>
         ),
       },
@@ -149,7 +170,7 @@ export function HomeScreen({onSwitchProfiles, onOpenWidget, onFocusChange}: Prop
             <View style={styles.avatars}>
               {here.map(p => (
                 <View key={p.id} style={styles.avatarGap}>
-                  <Avatar name={p.name} color={p.color} size={here.length > 3 ? 64 : 88} />
+                  <Avatar profile={p} size={here.length > 3 ? 64 : 88} />
                 </View>
               ))}
             </View>
@@ -177,14 +198,20 @@ export function HomeScreen({onSwitchProfiles, onOpenWidget, onFocusChange}: Prop
                       key={`${p.title}-${i}`}
                       style={[styles.poster, i > 0 && styles.posterGap, tonight.chosen === i && styles.posterChosen]}
                       testID={`tonight-tile-pick-${i}`}>
-                      <Text style={styles.posterTitle} numberOfLines={2}>
-                        {p.title}
-                      </Text>
+                      <Backdrop pick={p} serverUrl={serverUrl} />
+                      <View style={styles.posterLabel}>
+                        <Text style={styles.posterTitle} numberOfLines={2}>
+                          {p.title}
+                        </Text>
+                      </View>
                     </View>
                   ))
                 : TONIGHT_MOODS.map((m, i) => (
                     <View key={m.id} style={[styles.poster, i > 0 && styles.posterGap]}>
-                      <Text style={styles.posterTitle}>{m.label}</Text>
+                      <Backdrop pick={{title: m.label}} serverUrl={serverUrl} />
+                      <View style={styles.posterLabel}>
+                        <Text style={styles.posterTitle}>{m.label}</Text>
+                      </View>
                     </View>
                   ))}
             </View>
@@ -233,7 +260,7 @@ export function HomeScreen({onSwitchProfiles, onOpenWidget, onFocusChange}: Prop
         ),
       },
     ],
-    [now, names, here, upcoming, profiles, devices, weather, status, tonight, tonightFresh, gameLine, onOpenWidget, onSwitchProfiles],
+    [now, names, here, upcoming, week, profiles, devices, weather, status, tonight, tonightFresh, gameLine, onOpenWidget, onSwitchProfiles, serverUrl],
   );
 
   const online = status === 'open';
@@ -272,6 +299,7 @@ export function HomeScreen({onSwitchProfiles, onOpenWidget, onFocusChange}: Prop
       {connectOpen ? <ConnectOverlay onClose={closeConnect} /> : null}
       {smartHomeOpen ? <SmartHomeOverlay onClose={closeSmartHome} /> : null}
       {tonightOpen ? <TonightOverlay onClose={closeTonight} /> : null}
+      {calendarOpen ? <CalendarOverlay onClose={closeCalendar} /> : null}
       {gameOpen ? <GameNightOverlay onClose={closeGame} /> : null}
     </View>
   );
@@ -373,29 +401,6 @@ const styles = StyleSheet.create({
   muteText: {
     color: colors.mute,
   },
-  grow: {
-    flex: 1,
-  },
-  eventRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: space.sm,
-  },
-  eventTime: {
-    color: colors.mute,
-    fontSize: type.body,
-    width: 160,
-  },
-  dots: {
-    flexDirection: 'row',
-    marginLeft: space.sm,
-  },
-  personDot: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    marginLeft: space.xs,
-  },
   avatars: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -412,8 +417,13 @@ const styles = StyleSheet.create({
     flex: 1,
     borderRadius: radius.sm,
     backgroundColor: colors.surfaceRaised,
-    padding: space.sm,
     justifyContent: 'flex-end',
+    overflow: 'hidden',
+  },
+  posterLabel: {
+    backgroundColor: colors.bg,
+    paddingHorizontal: space.sm,
+    paddingVertical: space.xs,
   },
   posterChosen: {
     borderWidth: 4,
@@ -426,6 +436,58 @@ const styles = StyleSheet.create({
     color: colors.ink,
     fontSize: type.chip,
     fontWeight: '700',
+  },
+  week: {
+    flex: 1,
+    flexDirection: 'row',
+  },
+  weekDay: {
+    flex: 1,
+    alignItems: 'stretch',
+    marginRight: space.xs,
+  },
+  weekName: {
+    color: colors.mute,
+    fontSize: type.caption,
+    fontWeight: '700',
+    textAlign: 'center',
+  },
+  weekToday: {
+    color: colors.ink,
+  },
+  weekDate: {
+    alignSelf: 'center',
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginVertical: 4,
+  },
+  weekDateToday: {
+    backgroundColor: colors.accent,
+  },
+  weekDateText: {
+    color: colors.ink,
+    fontSize: type.chip,
+    fontWeight: '700',
+  },
+  chip: {
+    borderRadius: radius.sm,
+    paddingHorizontal: 6,
+    paddingVertical: 4,
+    marginTop: 4,
+  },
+  chipText: {
+    color: colors.bg,
+    fontSize: 18,
+    fontWeight: '700',
+  },
+  chipMore: {
+    color: colors.mute,
+    fontSize: 18,
+    textAlign: 'center',
+    marginTop: 2,
   },
   deviceRow: {
     flexDirection: 'row',

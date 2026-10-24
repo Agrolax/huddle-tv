@@ -8,8 +8,8 @@ import {joinNames, parsePicksJson, sanitizePicks} from '../src/ai/types.js';
 import {demoHousehold} from '../src/household.js';
 import {TestClient, TestServer, claimTv, pairPhone, startServer} from './helpers.js';
 
-const RAFI = {id: 'rafi', name: 'Rafi', kid: true};
-const NANU = {id: 'nanu', name: 'Nanu'};
+const RAFI = {id: 'leo', name: 'Leo', kid: true};
+const NANU = {id: 'nora', name: 'Nora'};
 
 /** An AI whose answers each test controls. */
 class ScriptedAI implements HouseholdAI {
@@ -52,7 +52,7 @@ describe('mock AI', () => {
     const titles = (picks: TonightPick[]) => picks.map(p => p.title);
     assert.deepEqual(titles(mockTonight([NANU, RAFI], 'cozy')), titles(a), 'order of people does not change the titles');
     for (const p of a) {
-      assert.match(p.why, /Rafi and Nanu/);
+      assert.match(p.why, /Leo and Nora/);
       assert.ok(p.year && p.service);
     }
     assert.equal(new Set(a.map(p => p.title)).size, 3);
@@ -77,7 +77,7 @@ describe('mock AI', () => {
     });
     assert.match(mockAnswer(ctx('Do I need a jacket?')), /6° and rain in Toronto.*Bring a jacket/);
     assert.match(mockAnswer(ctx("What's on the calendar?")), /Pizza night \(today at 7:00\), Dentist \(tomorrow\)/);
-    assert.match(mockAnswer(ctx('What should we watch?')), /For Rafi and Nanu, try/);
+    assert.match(mockAnswer(ctx('What should we watch?')), /For Leo and Nora, try/);
     assert.match(mockAnswer(ctx('Is the front door locked?')), /Front door: Locked/);
     assert.match(mockAnswer(ctx('why is the sky blue')), /demo mode/);
   });
@@ -114,15 +114,15 @@ describe('model output parsing', () => {
 
   it('joins names like a person would', () => {
     assert.equal(joinNames([]), 'everyone');
-    assert.equal(joinNames([RAFI]), 'Rafi');
-    assert.equal(joinNames([RAFI, NANU, {id: 'a', name: 'Ammu'}]), 'Rafi, Nanu and Ammu');
+    assert.equal(joinNames([RAFI]), 'Leo');
+    assert.equal(joinNames([RAFI, NANU, {id: 'a', name: 'Maya'}]), 'Leo, Nora and Maya');
   });
 });
 
 describe('Bedrock client', () => {
   it('asks Nova for JSON picks and keeps three', async () => {
     const sent: any[] = [];
-    const picks = Array.from({length: 4}, (_, i) => ({title: `T${i}`, year: 2000 + i, service: 'Prime Video', why: 'For Rafi.'}));
+    const picks = Array.from({length: 4}, (_, i) => ({title: `T${i}`, year: 2000 + i, service: 'Prime Video', why: 'For Leo.'}));
     const client = {
       send: async (cmd: any) => {
         sent.push(cmd);
@@ -135,7 +135,7 @@ describe('Bedrock client', () => {
     const first: any = sent[0];
     assert.ok(first instanceof ConverseCommand);
     assert.equal(sent[0].input.modelId, 'us.amazon.nova-lite-v1:0');
-    assert.match(sent[0].input.messages[0].content[0].text, /Rafi and Nanu[\s\S]*Mood: Funny/);
+    assert.match(sent[0].input.messages[0].content[0].text, /Leo and Nora[\s\S]*Mood: Funny/);
   });
 
   it('tells the model a child is here and how many minutes are left', async () => {
@@ -143,9 +143,9 @@ describe('Bedrock client', () => {
     const picks = Array.from({length: 3}, (_, i) => ({title: `T${i}`, minutes: 80, why: 'x'}));
     const client = {send: async (cmd: any) => (sent.push(cmd), {output: {message: {content: [{text: JSON.stringify({picks})}]}}})};
     const ai = new BedrockAI({region: 'us-east-1', client: client as any});
-    await ai.tonight({people: [RAFI, NANU], now: new Date(2026, 9, 15, 19), endsBy: {at: new Date(2026, 9, 15, 20, 30), reason: "Rafi's bedtime"}});
+    await ai.tonight({people: [RAFI, NANU], now: new Date(2026, 9, 15, 19), endsBy: {at: new Date(2026, 9, 15, 20, 30), reason: "Leo's bedtime"}});
     const prompt = sent[0].input.messages[0].content[0].text;
-    assert.match(prompt, /Rafi is a child: only picks rated G, PG/);
+    assert.match(prompt, /Leo is a child: only picks rated G, PG/);
     assert.match(prompt, /at most 90 minutes/);
   });
 
@@ -188,13 +188,13 @@ describe('Bedrock client', () => {
     const ai = new BedrockAI({region: 'us-east-1', client: client as any, chatModel: 'm'});
     const chunks: string[] = [];
     const hh = demoHousehold('x');
-    for await (const c of ai.chat({householdName: 'The Khans', people: [RAFI], events: hh.events, devices: hh.devices, weather: null, now: new Date(), turns: [{role: 'user', text: 'hi'}]})) {
+    for await (const c of ai.chat({householdName: 'The Parks', people: [RAFI], events: hh.events, devices: hh.devices, weather: null, now: new Date(), turns: [{role: 'user', text: 'hi'}]})) {
       chunks.push(c);
     }
     assert.deepEqual(chunks, ['Hello ', 'there.']);
     assert.ok((cmd as unknown) instanceof ConverseStreamCommand);
     assert.equal(cmd.input.modelId, 'm');
-    assert.match(cmd.input.system[0].text, /The Khans[\s\S]*In the room now: Rafi/);
+    assert.match(cmd.input.system[0].text, /The Parks[\s\S]*In the room now: Leo/);
   });
 
   it('sends alternating turns that start with the user', () => {
@@ -213,8 +213,8 @@ describe('Bedrock client', () => {
 
   it('prompts carry the mood and household context', () => {
     assert.match(tonightPrompt({people: [RAFI], now: new Date()}), /give a mix/);
-    const sys = chatSystem({householdName: 'The Khans', people: [RAFI], askedBy: NANU, events: [], devices: [], weather: null, now: new Date(), turns: []});
-    assert.match(sys, /Nanu is asking/);
+    const sys = chatSystem({householdName: 'The Parks', people: [RAFI], askedBy: NANU, events: [], devices: [], weather: null, now: new Date(), turns: []});
+    assert.match(sys, /Nora is asking/);
     assert.match(sys, /nothing coming up/);
   });
 });
@@ -245,7 +245,7 @@ describe('hub: Tonight', () => {
     assert.equal(onTv.payload.picks.length, 3);
     assert.equal(onTv.payload.mood, 'cozy');
     assert.equal(onTv.payload.source, 'bedrock');
-    assert.deepEqual(onTv.payload.forProfileIds, ['rafi', 'nanu']);
+    assert.deepEqual(onTv.payload.forProfileIds, ['leo', 'nora']);
     assert.deepEqual(ai.tonightCalls[0]!.people, [RAFI, NANU]);
 
     const {phone: late, welcome: lateWelcome} = await pairPhone(server.url, pair.code, {}, hh);
@@ -255,13 +255,13 @@ describe('hub: Tonight', () => {
 
   it('follows the people the TV says are here', async () => {
     const {tv} = await claimTv(server.url, hh);
-    tv.send('profile:switch', {profileIds: ['ammu']});
+    tv.send('profile:switch', {profileIds: ['maya']});
     await tv.nextOf('profile:changed');
     tv.send('tonight:request', {});
     const picks = await tv.nextOf('tonight:picks');
-    assert.deepEqual(picks.payload.forProfileIds, ['ammu']);
+    assert.deepEqual(picks.payload.forProfileIds, ['maya']);
     assert.equal(picks.payload.mood, undefined);
-    assert.match(picks.payload.picks[0].why, /Ammu/);
+    assert.match(picks.payload.picks[0].why, /Maya/);
     tv.close();
   });
 
@@ -325,7 +325,7 @@ describe('hub: chat', () => {
   }
 
   it('streams the answer to the asking phone only, then done', async () => {
-    const {tv, phone} = await tvAndPhone({client: {clientId: 'p1', role: 'phone', profileId: 'nanu'}});
+    const {tv, phone} = await tvAndPhone({client: {clientId: 'p1', role: 'phone', profileId: 'nora'}});
     phone.send('chat:ask', {text: ' What should we watch? ', conversationId: 'conv-1'});
     const {text, frames} = await collectReply(phone);
     assert.equal(text, 'You said: What should we watch?');

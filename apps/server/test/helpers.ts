@@ -2,6 +2,7 @@ import {createServer, Server} from 'node:http';
 import {AddressInfo} from 'node:net';
 import {WebSocket, WebSocketServer} from 'ws';
 import {PROTOCOL_VERSION} from '@huddle/shared';
+import type {Profile} from '@huddle/shared';
 import {Hub, HubOptions} from '../src/hub.js';
 
 export interface TestServer {
@@ -11,9 +12,18 @@ export interface TestServer {
   close: () => Promise<void>;
 }
 
+/** Four people and a guest, so games and votes have a crowd. The shipped demo has two. */
+export const TEST_PEOPLE: Profile[] = [
+  {id: 'leo', name: 'Leo', color: '#3D8BFF', avatar: 'drop', kid: true},
+  {id: 'nora', name: 'Nora', color: '#F5A524', avatar: 'bean'},
+  {id: 'maya', name: 'Maya', color: '#3DCF8E', avatar: 'squish'},
+  {id: 'sam', name: 'Sam', color: '#B57BFF', avatar: 'cloud'},
+  {id: 'guest', name: 'Guest', color: '#9AA3B2', avatar: 'cloud'},
+];
+
 export async function startServer(opts: Partial<HubOptions> = {}): Promise<TestServer> {
   const clock = {now: 1_000_000};
-  const hub = new Hub({companionUrl: 'http://10.0.0.5:5173/', now: () => clock.now, ...opts});
+  const hub = new Hub({companionUrl: 'http://10.0.0.5:5173/', now: () => clock.now, people: TEST_PEOPLE, ...opts});
   const http: Server = createServer();
   const wss = new WebSocketServer({server: http, path: '/ws'});
   wss.on('connection', socket => {

@@ -143,7 +143,7 @@ function SketchView() {
       <SketchBoard strokes={canvas.strokes} width={880} />
       <View style={styles.sketchSide}>
         <View style={styles.drawerRow}>
-          {drawer ? <Avatar name={drawer.name} color={drawer.color} size={56} /> : null}
+          {drawer ? <Avatar profile={drawer} size={56} /> : null}
           <Text style={styles.drawerText}>{reveal ? `${name(game.drawerId)} drew` : `${name(game.drawerId)} is drawing`}</Text>
         </View>
         {reveal ? (
@@ -160,7 +160,7 @@ function SketchView() {
             {players.length ? (
               players.map(p => (
                 <View key={p.id} style={styles.person}>
-                  <Avatar name={p.name} color={p.color} size={56} />
+                  <Avatar profile={p} size={56} />
                   <Text style={styles.points}>+{game.gained?.[p.id] ?? 0}</Text>
                 </View>
               ))
@@ -230,7 +230,7 @@ function QuestionView({game, profiles}: {game: GameState; profiles: Profile[]}) 
               const points = game.gained?.[p.id] ?? 0;
               return (
                 <View key={p.id} style={styles.person}>
-                  <Avatar name={p.name} color={p.color} size={56} dim={points === 0} />
+                  <Avatar profile={p} size={56} dim={points === 0} />
                   <Text style={[styles.points, points === 0 && styles.mute]}>{points ? `+${points}` : '0'}</Text>
                 </View>
               );
@@ -243,7 +243,7 @@ function QuestionView({game, profiles}: {game: GameState; profiles: Profile[]}) 
         <View style={styles.people} testID="game-answered">
           {answered.map(p => (
             <View key={p.id} style={styles.person}>
-              <Avatar name={p.name} color={p.color} size={56} />
+              <Avatar profile={p} size={56} />
             </View>
           ))}
           <Text style={styles.mute}>
@@ -281,7 +281,7 @@ function ScoreList({
         return (
           <View key={r.profileId} style={styles.scoreRow} testID={`${testID ?? 'league'}-${r.profileId}`}>
             <Text style={styles.place}>{r.place}</Text>
-            <Avatar name={p.name} color={p.color} size={48} />
+            <Avatar profile={p} size={48} />
             <Text style={styles.scoreName}>{p.name}</Text>
             {w ? <Text style={styles.mute}>{w === 1 ? '1 win' : `${w} wins`}</Text> : null}
             <Text style={styles.scorePoints}>{r.points}</Text>

@@ -1,10 +1,12 @@
-import React, {useEffect, useRef} from 'react';
+import React, {useEffect, useRef, useState} from 'react';
 import {StyleSheet, Text, View} from 'react-native';
 import {TONIGHT_MOODS, TonightPick, TonightPicks} from '@huddle/shared';
 import {namesFor} from '../data/profiles';
 import {useHousehold} from '../net/HouseholdContext';
 import {colors, radius, space, type} from '../theme';
-import {Avatar, Button, Sheet, useSecondsLeft} from './ui';
+import {FocusableCard} from '@huddle/tv-focus-kit';
+import {Avatar, Button, Sheet, focusLook, useSecondsLeft} from './ui';
+import {Backdrop} from './Backdrop';
 
 type Props = {onClose: () => void};
 
@@ -60,13 +62,21 @@ export function TonightOverlay({onClose}: Props) {
 }
 
 function PicksView({current, onClose, names}: {current: TonightPicks | null; onClose: () => void; names: string}) {
-  const {tonightLoading, requestTonight, status, startVote} = useHousehold();
+  const {tonightLoading, requestTonight, status, startVote, serverUrl} = useHousehold();
   const online = status === 'open';
   const selectedMood = current?.mood;
   const canVote = online && !tonightLoading && (current?.picks.length ?? 0) >= 2;
+  const [hero, setHero] = useState(current?.chosen ?? 0);
+  const shown = tonightLoading ? undefined : current?.picks[hero] ?? current?.picks[0];
 
   return (
-    <Sheet testID="tonight-overlay" title="Tonight" subtitle={tonightSubtitle(names, current)} onClose={onClose} width={1560}>
+    <Sheet
+      testID="tonight-overlay"
+      title="Tonight"
+      subtitle={tonightSubtitle(names, current)}
+      onClose={onClose}
+      width={1560}
+      backdrop={shown ? <Backdrop pick={shown} serverUrl={serverUrl} testID="tonight-backdrop" /> : undefined}>
       <View style={styles.moods}>
         {TONIGHT_MOODS.map((m, i) => (
           <Button
@@ -82,13 +92,35 @@ function PicksView({current, onClose, names}: {current: TonightPicks | null; onC
           />
         ))}
       </View>
+      {shown ? (
+        <View style={styles.hero} testID="tonight-hero">
+          <Text style={styles.heroTitle} numberOfLines={1}>
+            {shown.title}
+          </Text>
+          <Text style={styles.heroMeta}>{metaLine(shown)}</Text>
+          <Text style={styles.heroWhy} numberOfLines={2}>
+            {shown.why}
+          </Text>
+        </View>
+      ) : (
+        <View style={styles.hero} />
+      )}
       <View style={styles.picks} testID="tonight-picks">
         {tonightLoading ? (
           <Text style={styles.status} testID="tonight-loading">
             Getting picks…
           </Text>
         ) : current ? (
-          current.picks.map((p, i) => <PickCard key={`${p.title}-${i}`} pick={p} index={i} tag={current.chosen === i ? "Tonight's pick" : undefined} />)
+          current.picks.map((p, i) => (
+            <PickCard
+              key={`${p.title}-${i}`}
+              pick={p}
+              index={i}
+              tag={current.chosen === i ? "Tonight's pick" : undefined}
+              onFocus={() => setHero(i)}
+              focused={hero === i}
+            />
+          ))
         ) : (
           <Text style={styles.status}>{online ? 'Select a mood.' : 'The TV is offline.'}</Text>
         )}
@@ -108,10 +140,19 @@ function PicksView({current, onClose, names}: {current: TonightPicks | null; onC
           <Text style={styles.note} testID="tonight-demo-note">
             Demo picks
           </Text>
+        ) : current?.source === 'bedrock' && !tonightLoading ? (
+          <Text style={styles.note} testID="tonight-source">
+            Picked by Amazon Nova{current.picks.some(p => p.image) ? ' · art by Nova Canvas' : ''}
+          </Text>
         ) : null}
       </View>
     </Sheet>
   );
+}
+
+/** "2017 · Prime Video · 1 h 44 min". */
+function metaLine(pick: TonightPick): string {
+  return [pick.year, pick.service, pick.minutes ? runtime(pick.minutes) : undefined].filter(Boolean).join(' · ');
 }
 
 /** Voting progress (who has voted, never how), then the overlap or the sudden-death winner. */
@@ -168,7 +209,7 @@ function VoteView({tonight}: {tonight: TonightPicks}) {
       <View style={styles.people} testID="vote-voted">
         {voters.map(p => (
           <View key={p.id} style={styles.person}>
-            <Avatar name={p.name} color={p.color} size={56} dim={!vote.voted.includes(p.id)} />
+            <Avatar profile={p} size={56} dim={!vote.voted.includes(p.id)} />
             <Text style={styles.personText}>{vote.voted.includes(p.id) ? 'Voted' : 'Waiting'}</Text>
           </View>
         ))}
@@ -185,35 +226,116 @@ function VoteView({tonight}: {tonight: TonightPicks}) {
   );
 }
 
-function PickCard({pick, index, tag, dim}: {pick: TonightPick; index: number; tag?: string; dim?: boolean}) {
-  const meta = [pick.year, pick.service, pick.minutes ? runtime(pick.minutes) : undefined].filter(Boolean).join(' · ');
+/**
+ * A pick as a poster: its art on top, title and details below. In the picks row
+ * it takes focus and puts its art behind the sheet; in the vote it is just a card.
+ */
+function PickCard({
+  pick,
+  index,
+  tag,
+  dim,
+  onFocus,
+  focused,
+}: {
+  pick: TonightPick;
+  index: number;
+  tag?: string;
+  dim?: boolean;
+  onFocus?: () => void;
+  focused?: boolean;
+}) {
+  const {serverUrl} = useHousehold();
+  const meta = metaLine(pick);
+  const body = (
+    <>
+      <View style={styles.thumb}>
+        <Backdrop pick={pick} serverUrl={serverUrl} />
+      </View>
+      <View style={styles.pickText}>
+        {tag ? <Text style={styles.tag}>{tag}</Text> : null}
+        <Text style={styles.pickTitle} numberOfLines={1}>
+          {pick.title}
+        </Text>
+        {meta ? <Text style={styles.pickMeta}>{meta}</Text> : null}
+        {onFocus ? null : (
+          <Text style={styles.pickWhy} numberOfLines={2}>
+            {pick.why}
+          </Text>
+        )}
+      </View>
+    </>
+  );
+  const look = [styles.pick, tag !== undefined && styles.pickTagged, dim && styles.dim, focused && styles.pickFocused];
+  if (!onFocus) {
+    return (
+      <View style={[look, index > 0 && styles.pickGap]} testID={`tonight-pick-${index}`}>
+        {body}
+      </View>
+    );
+  }
   return (
-    <View style={[styles.pick, index > 0 && styles.pickGap, tag !== undefined && styles.pickTagged, dim && styles.dim]} testID={`tonight-pick-${index}`}>
-      {tag ? <Text style={styles.tag}>{tag}</Text> : null}
-      <Text style={styles.pickTitle} numberOfLines={2}>
-        {pick.title}
-      </Text>
-      {meta ? <Text style={styles.pickMeta}>{meta}</Text> : null}
-      <Text style={styles.pickWhy} numberOfLines={3}>
-        {pick.why}
-      </Text>
-    </View>
+    <FocusableCard
+      testID={`tonight-pick-${index}`}
+      onFocus={onFocus}
+      onPress={onFocus}
+      accessibilityLabel={`${pick.title}. ${meta}. ${pick.why}`}
+      {...focusLook}
+      radius={radius.md}
+      focusScale={1.03}
+      containerStyle={[styles.pickSlot, index > 0 && styles.pickGap]}
+      style={look}>
+      {body}
+    </FocusableCard>
   );
 }
 
 const styles = StyleSheet.create({
   moods: {
     flexDirection: 'row',
-    marginTop: space.lg,
-    marginBottom: space.lg,
+    marginTop: space.md,
   },
   moodGap: {
     marginRight: space.sm,
   },
   picks: {
     flexDirection: 'row',
-    minHeight: 300,
+    minHeight: 280,
     alignItems: 'stretch',
+  },
+  hero: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    paddingBottom: space.lg,
+    maxWidth: 1300,
+  },
+  heroTitle: {
+    color: colors.ink,
+    fontSize: 72,
+    fontWeight: '800',
+  },
+  heroMeta: {
+    color: colors.ink,
+    fontSize: type.body,
+    marginTop: space.xs,
+  },
+  heroWhy: {
+    color: colors.ink,
+    fontSize: type.title,
+    marginTop: space.sm,
+  },
+  thumb: {
+    height: 150,
+    overflow: 'hidden',
+  },
+  pickText: {
+    padding: space.md,
+  },
+  pickSlot: {
+    flex: 1,
+  },
+  pickFocused: {
+    backgroundColor: colors.surfaceRaised,
   },
   status: {
     color: colors.mute,
@@ -223,8 +345,8 @@ const styles = StyleSheet.create({
   pick: {
     flex: 1,
     borderRadius: radius.md,
-    backgroundColor: colors.surfaceRaised,
-    padding: space.lg,
+    backgroundColor: colors.surface,
+    overflow: 'hidden',
   },
   pickGap: {
     marginLeft: space.md,

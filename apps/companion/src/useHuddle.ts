@@ -6,6 +6,7 @@ import {
   GameState,
   HouseholdSnapshot,
   IDLE_GAME,
+  Profile,
   IDLE_VOTE,
   League,
   QuizSource,
@@ -89,6 +90,9 @@ export function useHuddle() {
     othersGot: [],
   });
   const socketRef = useRef<HuddleSocket | null>(null);
+  /** The next saved profile is this phone's person (someone added themselves). */
+  const claimRef = useRef(false);
+  const setMeRef = useRef<(id: string) => void>(() => {});
   const sessionRef = useRef(session);
   sessionRef.current = session;
 
@@ -158,6 +162,15 @@ export function useHuddle() {
           case 'profile:changed':
             setState(s => ({...s, activeProfileIds: (msg.payload as {profileIds: string[]}).profileIds}));
             break;
+          case 'profiles:updated': {
+            const {profiles, savedId} = msg.payload as {profiles: Profile[]; savedId: string};
+            setState(s => (s.snapshot ? {...s, snapshot: {...s.snapshot, profiles}} : s));
+            if (claimRef.current) {
+              claimRef.current = false;
+              setMeRef.current(savedId);
+            }
+            break;
+          }
           case 'message:new': {
             const m = msg.payload as FamilyMessage;
             if (m.fromClient === 'phone') setState(s => ({...s, lastSent: m}));
@@ -339,6 +352,19 @@ export function useHuddle() {
     },
     [update],
   );
+  setMeRef.current = setMe;
+
+  /** Add a person (no `profileId`) or edit one. `claim`: the new person is whoever holds this phone. */
+  const saveProfile = useCallback(
+    (profile: {profileId?: string; name: string; color: string; avatar: string; kid?: boolean}, claim = false) => {
+      const name = profile.name.trim();
+      if (!name) return false;
+      const sent = socketRef.current?.send('profile:save', {...profile, name}) ?? false;
+      if (sent && claim && !profile.profileId) claimRef.current = true;
+      return sent;
+    },
+    [],
+  );
 
   return {
     ...state,
@@ -349,6 +375,7 @@ export function useHuddle() {
     setDevice,
     ringDoor,
     setMe,
+    saveProfile,
     requestTonight,
     ask,
     resetChat,

@@ -2,11 +2,11 @@ import type {SocketLike} from '@huddle/shared';
 import {EMPTY_CANVAS, IDLE_GAME, IDLE_VOTE, PROTOCOL_VERSION} from '@huddle/shared';
 import type {GameState, League} from '@huddle/shared';
 
-const PROFILES = [
-  {id: 'rafi', name: 'Rafi', color: '#3D8BFF'},
-  {id: 'nanu', name: 'Nanu', color: '#F5A524'},
-  {id: 'ammu', name: 'Ammu', color: '#3DCF8E'},
-  {id: 'abbu', name: 'Abbu', color: '#B57BFF'},
+export const PROFILES = [
+  {id: 'leo', name: 'Leo', color: '#3D8BFF'},
+  {id: 'nora', name: 'Nora', color: '#F5A524'},
+  {id: 'maya', name: 'Maya', color: '#3DCF8E'},
+  {id: 'sam', name: 'Sam', color: '#B57BFF'},
   {id: 'guest', name: 'Guest', color: '#9AA3B2'},
 ];
 
@@ -30,13 +30,13 @@ export class FakeServer {
   tonight: any = null;
   /** When false, `tonight:request` is recorded but not answered, so tests can see the loading state. */
   answerTonight = true;
-  activeProfileIds = ['rafi', 'nanu'];
+  activeProfileIds = ['maya', 'leo'];
   game: GameState = IDLE_GAME;
   league: League = {};
   /** Phones in the room, by profile. */
   phones = [
-    {clientId: 'phone-rafi', role: 'phone', profileId: 'rafi'},
-    {clientId: 'phone-nanu', role: 'phone', profileId: 'nanu'},
+    {clientId: 'phone-leo', role: 'phone', profileId: 'leo'},
+    {clientId: 'phone-nora', role: 'phone', profileId: 'nora'},
   ];
 
   createSocket = (url: string): SocketLike => {
@@ -73,12 +73,12 @@ export class FakeServer {
       socket.deliver('welcome', {
         snapshot: {
           householdId: 'home',
-          name: 'The Khans',
+          name: 'The Parks',
           profiles: PROFILES,
           activeProfileIds: this.activeProfileIds,
           events: [
             {id: 'e-movie', title: 'Movie night', start: hoursFromNow(0.5), profileIds: []},
-            {id: 'e-dentist', title: 'Dentist', start: hoursFromNow(30), profileIds: ['ammu']},
+            {id: 'e-dentist', title: 'Dentist', start: hoursFromNow(30), profileIds: ['maya']},
             {id: 'e-past', title: 'Breakfast', start: hoursFromNow(-5), profileIds: []},
           ],
           messages: [],
@@ -114,7 +114,7 @@ export class FakeServer {
 
 export function fakePicks(mood?: string) {
   const tag = mood ?? 'mix';
-  return [0, 1, 2].map(i => ({title: `${tag} pick ${i + 1}`, year: 2020 + i, service: 'Prime Video', why: `Good for Rafi & Nanu (${tag}).`}));
+  return [0, 1, 2].map(i => ({title: `${tag} pick ${i + 1}`, year: 2020 + i, service: 'Prime Video', why: `Good for Leo & Nora (${tag}).`}));
 }
 
 export class FakeSocket implements SocketLike {

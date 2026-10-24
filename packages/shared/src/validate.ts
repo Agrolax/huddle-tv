@@ -5,6 +5,7 @@
  */
 import {ALL_TOPICS, ClientCapabilities, ClientMessage, ClientRole, Point, QUIZ_CHOICES, QUIZ_SOURCES, QuizSource, TONIGHT_MOODS, TonightMood, Topic} from './protocol';
 import {isPairCode, normalizePairCode} from './pairing';
+import {BLOB_KINDS, isBlobKind} from './avatars';
 
 export const MESSAGE_MAX_LENGTH = 280;
 const ROLES: readonly ClientRole[] = ['tv', 'phone', 'display', 'voice'];
@@ -80,6 +81,29 @@ export function validateProfileSwitch(payload: unknown): Validation<PayloadOf<'p
   if (ids.length === 0) return fail('profile:switch needs at least one profile');
   if (ids.length > 20 || !ids.every(isId)) return fail('profile:switch.profileIds must be valid ids');
   return {ok: true, value: {profileIds: [...new Set(ids as string[])]}};
+}
+
+export const PROFILE_NAME_MAX_LENGTH = 16;
+
+export function validateProfileSave(payload: unknown): Validation<PayloadOf<'profile:save'>> {
+  if (!isRecord(payload) || typeof payload.name !== 'string') return fail('profile:save needs name: string');
+  const name = payload.name.trim().replace(/\s+/g, ' ');
+  if (!name) return fail('profile:save.name is empty');
+  if ([...name].length > PROFILE_NAME_MAX_LENGTH) return fail(`profile:save.name is longer than ${PROFILE_NAME_MAX_LENGTH} characters`);
+  if (payload.profileId !== undefined && !isId(payload.profileId)) return fail('profile:save.profileId is not a valid id');
+  if (typeof payload.color !== 'string' || !/^#[0-9A-Fa-f]{6}$/.test(payload.color)) return fail('profile:save.color must be #RRGGBB');
+  if (!isBlobKind(payload.avatar)) return fail(`profile:save.avatar must be one of ${BLOB_KINDS.join(', ')}`);
+  if (payload.kid !== undefined && typeof payload.kid !== 'boolean') return fail('profile:save.kid must be a boolean');
+  return {
+    ok: true,
+    value: {
+      name,
+      color: payload.color.toUpperCase(),
+      avatar: payload.avatar,
+      ...(payload.profileId !== undefined ? {profileId: payload.profileId as string} : {}),
+      ...(payload.kid !== undefined ? {kid: payload.kid} : {}),
+    },
+  };
 }
 
 export function validateMessageSend(payload: unknown): Validation<PayloadOf<'message:send'>> {

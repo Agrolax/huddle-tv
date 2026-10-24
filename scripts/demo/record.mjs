@@ -132,12 +132,11 @@ async function main() {
   const winId = await windowId();
   if (!winId) throw new Error('Vega Virtual Device window not found. Start it: vega virtual-device start');
 
-  // The four phones in the story. Ammu is not on the couch; she joins from the kitchen.
+  // The phones in the story. Maya and Leo are already in the household; Nora adds herself.
   let phones = {};
   const joinAll = async code => {
-    phones.ammu = await Phone.join(wsUrl, code, 'ammu', "Ammu's phone");
-    phones.nanu = await Phone.join(wsUrl, code, 'nanu', "Nanu's phone");
-    phones.rafi = await Phone.join(wsUrl, code, 'rafi', "Rafi's phone");
+    phones.maya = await Phone.join(wsUrl, code, 'maya', "Maya's phone");
+    phones.leo = await Phone.join(wsUrl, code, 'leo', "Leo's phone");
   };
 
   // recording
@@ -150,62 +149,80 @@ async function main() {
   }
   t0 = Date.now() - (DRY ? 0 : 400); // screencapture's first frame lands a moment after the process starts
 
-  // 1. Who's here
+  // 1. Who's here, and a new person from a phone
   await shot('whos-here');
-  await beat("Who's on the couch? Rafi and Nanu pick themselves with the remote.", 6, async () => {
+  await beat("Who's on the couch? Everyone has a blob. Maya and Leo are here.", 5, async () => {
     await sleep(1500);
     await press('KEY_RIGHT', 'KEY_LEFT');
   });
+  await press('KEY_RIGHT', 'KEY_RIGHT', 'KEY_RIGHT', 'KEY_ENTER');
+  await sleep(2200);
+  await shot('add-someone');
+  let code = null;
+  await beat('Nora is new. She scans the code and adds herself on her phone. No typing on the TV.', 8, async () => {
+    code = await readPairCode();
+    await joinAll(code);
+    const newcomer = await Phone.join(wsUrl, code, undefined, 'New phone');
+    await sleep(1800);
+    const saved = newcomer.waitFor(f => f.type === 'profiles:updated');
+    newcomer.send('profile:save', {name: 'Nora', color: '#FF6B8B', avatar: 'squish'});
+    await saved;
+    newcomer.close();
+    phones.nora = await Phone.join(wsUrl, code, 'nora', "Nora's phone");
+    await sleep(1500);
+  });
+  await shot('nora-added');
   await press('KEY_DOWN', 'KEY_ENTER');
   await sleep(1200);
 
-  // 2. Home, live
+  // 2. Home and the week
   await shot('home');
-  await beat('Live weather, family calendar and home devices. Every tile takes the D-pad.', 9, async () => {
-    await press('KEY_RIGHT', 'KEY_RIGHT');
-    await press('KEY_DOWN', 'KEY_LEFT');
-    await press('KEY_LEFT');
+  await beat('Weather, the week, who is here, tonight and the house. Every tile takes the D-pad.', 6, async () => {
+    await press('KEY_RIGHT');
   });
-
-  // 3. Phone joins by QR
-  await shot('tonight-tile');
-  await press('KEY_UP', 'KEY_UP', 'KEY_ENTER');
-  await sleep(2200);
-  await shot('connect');
-  let code = null;
-  await beat('Any phone joins with a QR code. No app to install.', 6, async () => {
-    code = await readPairCode();
-    await joinAll(code);
+  await press('KEY_ENTER');
+  await beat("The week on one screen: what's next, what's on tonight, and who has what.", 7, async () => {
+    await sleep(1200);
   });
-  await shot('connected');
+  await shot('week');
   await press('KEY_BACK');
-  await beat("Ammu, in the kitchen, sends a message. The TV shows it.", 6, async () => {
-    phones.ammu.send('message:send', {text: 'Pizza night at 7!', fromProfileId: 'ammu'});
+  await sleep(600);
+
+  // 3. Phones change the TV
+  await beat("Maya, in the kitchen, sends a message. The TV shows it.", 6, async () => {
+    phones.maya.send('message:send', {text: 'Pizza night at 7!', fromProfileId: 'maya'});
   });
   await shot('toast');
-  await beat('She adds swim class to the family calendar...', 5, async () => {
-    phones.ammu.send('calendar:add', {title: 'Swim class', start: tomorrowAt(12), profileIds: ['rafi']});
-    await press('KEY_DOWN', 'KEY_RIGHT');
+  await beat('She adds a pancake breakfast to the week...', 5, async () => {
+    phones.maya.send('calendar:add', {title: 'Pancakes', start: tomorrowAt(10), profileIds: []});
   });
   await shot('calendar-added');
   await beat('...and turns the lamp off. The TV updates live.', 5, async () => {
-    phones.ammu.send('smart-home:set', {deviceId: 'living-lamp', on: false});
+    phones.maya.send('smart-home:set', {deviceId: 'living-lamp', on: false});
     await press('KEY_RIGHT', 'KEY_DOWN');
   });
   await shot('lamp-off');
 
   // 4. Tonight and the secret vote
   await press('KEY_LEFT', 'KEY_LEFT', 'KEY_ENTER');
-  await beat(AI === 'bedrock' ? "Amazon Bedrock picks for who's here. It's Rafi's bedtime: nothing runs long." : "Picks for who's here. It's Rafi's bedtime, so nothing runs long.", 7, async () => {
-    await sleep(2000);
+  await beat(AI === 'bedrock' ? "Amazon Nova picks for who's here and Nova Canvas paints each one. It's Leo's bedtime: nothing runs long." : "Picks for who's here. It's Leo's bedtime, so nothing runs long.", 7, async () => {
+    await sleep(AI === 'bedrock' ? 6000 : 2000);
   });
   await shot('tonight-sheet');
-  await press('KEY_DOWN', 'KEY_ENTER');
+  await beat('Move along the picks and the art changes behind them.', 5, async () => {
+    await press('KEY_DOWN');
+    await sleep(900);
+    await press('KEY_RIGHT');
+    await sleep(1200);
+    await press('KEY_RIGHT');
+  });
+  await shot('tonight-browse');
+  await press('KEY_LEFT', 'KEY_LEFT', 'KEY_DOWN', 'KEY_ENTER');
   await sleep(1200);
   await shot('vote-open');
   await beat('Everyone votes in secret on their phone. The TV shows who voted, never how.', 7, async () => {
-    const v = await phones.ammu.untilVote(x => x.phase === 'voting');
-    const ballots = {ammu: [0, 1], nanu: [0, 2], rafi: [0, 1]};
+    const v = await phones.maya.untilVote(x => x.phase === 'voting');
+    const ballots = {maya: [0, 1], nora: [0, 2], leo: [0, 1]};
     await sleep(1400);
     for (const [who, yes] of Object.entries(ballots)) {
       phones[who].send('tonight:vote', {voteId: v.voteId, yes});
@@ -214,8 +231,8 @@ async function main() {
   });
   await shot('vote-progress');
   await beat('Only the pick everyone accepted comes up.', 5, async () => {
-    const v = phones.ammu.vote;
-    if (v?.phase === 'voting') phones.ammu.send('tonight:vote-next', {voteId: v.voteId});
+    const v = phones.maya.vote;
+    if (v?.phase === 'voting') phones.maya.send('tonight:vote-next', {voteId: v.voteId});
     await sleep(800);
   });
   await shot('vote-result');
@@ -228,10 +245,10 @@ async function main() {
   await shot('game-menu');
   await press('KEY_ENTER');
   await beat('Game night is about your family. The quiz asks about your own week.', 8, async () => {
-    await phones.ammu.untilGame(g => g.phase === 'question');
+    await phones.maya.untilGame(g => g.phase === 'question');
     await sleep(1800);
-    const g = phones.ammu.game;
-    const picks = {ammu: 1, nanu: 0, rafi: 2};
+    const g = phones.maya.game;
+    const picks = {maya: 1, nora: 0, leo: 2};
     for (const [who, choice] of Object.entries(picks)) {
       phones[who].send('game:answer', {gameId: g.gameId, round: g.round, choice});
       await sleep(900);
@@ -239,25 +256,25 @@ async function main() {
   });
   await shot('quiz-question');
   await beat('Phones tap A to D. Points go up with speed.', 5, async () => {
-    phones.ammu.send('game:next', {gameId: phones.ammu.game.gameId});
+    phones.maya.send('game:next', {gameId: phones.maya.game.gameId});
   });
   await shot('quiz-reveal');
   // fast-forward the other rounds, answering quickly
   await beat('Five questions, all from your own calendar, messages and home.', 8, async () => {
-    for (let r = 2; r <= phones.ammu.game.rounds; r++) {
-      phones.ammu.send('game:next', {gameId: phones.ammu.game.gameId});
-      await phones.ammu.untilGame(g => g.phase === 'question' && g.round === r);
-      const g = phones.ammu.game;
-      phones.rafi.send('game:answer', {gameId: g.gameId, round: r, choice: r % 4});
-      phones.nanu.send('game:answer', {gameId: g.gameId, round: r, choice: (r + 1) % 4});
-      phones.ammu.send('game:answer', {gameId: g.gameId, round: r, choice: (r + 2) % 4});
+    for (let r = 2; r <= phones.maya.game.rounds; r++) {
+      phones.maya.send('game:next', {gameId: phones.maya.game.gameId});
+      await phones.maya.untilGame(g => g.phase === 'question' && g.round === r);
+      const g = phones.maya.game;
+      phones.leo.send('game:answer', {gameId: g.gameId, round: r, choice: r % 4});
+      phones.nora.send('game:answer', {gameId: g.gameId, round: r, choice: (r + 1) % 4});
+      phones.maya.send('game:answer', {gameId: g.gameId, round: r, choice: (r + 2) % 4});
       await sleep(500);
-      phones.ammu.send('game:next', {gameId: g.gameId});
+      phones.maya.send('game:next', {gameId: g.gameId});
       await sleep(600);
     }
   });
-  await beat('A family league carries across nights.', 4, async () => {
-    phones.ammu.send('game:next', {gameId: phones.ammu.game.gameId});
+  await beat('A family league keeps score across the night.', 4, async () => {
+    phones.maya.send('game:next', {gameId: phones.maya.game.gameId});
     await sleep(800);
   });
   await shot('quiz-final');
@@ -272,7 +289,7 @@ async function main() {
   await shot('game-menu-sketch-focus');
   await press('KEY_ENTER');
   await beat('Or draw the movie. One phone is the pen, the others guess.', 12, async () => {
-    const g = await phones.ammu.untilGame(x => x.kind === 'sketch' && x.phase === 'question');
+    const g = await phones.maya.untilGame(x => x.kind === 'sketch' && x.phase === 'question');
     const drawer = Object.values(phones).find(p => p.profileId === g.drawerId);
     const guessers = Object.values(phones).filter(p => p !== drawer);
     await sleep(800);
@@ -288,8 +305,8 @@ async function main() {
   });
   await shot('sketch');
   await beat('The game ends on the decision: the last movie drawn is tonight\'s pick.', 6, async () => {
-    const g = phones.ammu.game;
-    phones.ammu.send('game:end', {gameId: g.gameId});
+    const g = phones.maya.game;
+    phones.maya.send('game:end', {gameId: g.gameId});
     await sleep(600);
     await press('KEY_BACK');
   });

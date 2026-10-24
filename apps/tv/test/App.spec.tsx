@@ -2,7 +2,7 @@ import React from 'react';
 import {act, fireEvent, render, waitFor} from '@testing-library/react-native';
 import {BackHandler} from 'react-native';
 import {App} from '../src/App';
-import {FakeServer, fakePicks} from './fakeServer';
+import {FakeServer, PROFILES, fakePicks} from './fakeServer';
 
 // Vega's jest setup mocks addEventListener without returning a subscription.
 // Handlers run newest-first, like React Native's BackHandler.
@@ -63,7 +63,20 @@ describe('screens', () => {
   it('toggles a profile with Select', async () => {
     const {getByTestId, getByText} = await renderApp();
     expect(getByText('Continue with 2')).toBeTruthy();
-    fireEvent.press(getByTestId('profile-ammu'));
+    fireEvent.press(getByTestId('profile-sam'));
+    expect(getByText('Continue with 3')).toBeTruthy();
+  });
+
+  it('Add someone shows the QR; the person a phone adds arrives selected', async () => {
+    const {getByTestId, getByText, queryByTestId, server} = await renderApp();
+    await waitFor(() => expect(server.tv.readyState).toBe(1));
+    expect(getByTestId('avatar-maya')).toBeTruthy();
+    fireEvent.press(getByTestId('profile-add'));
+    expect(textOf(getByTestId('connect-overlay'))).toMatch(/^Add someoneScan with a phone and add yourself/);
+    const jo = {id: 'jo', name: 'Jo', color: '#FF6B8B', avatar: 'squish'};
+    act(() => server.push('profiles:updated', {profiles: [...PROFILES, jo], savedId: 'jo'}));
+    expect(queryByTestId('connect-overlay')).toBeNull();
+    expect(getByTestId('here-jo')).toBeTruthy();
     expect(getByText('Continue with 3')).toBeTruthy();
   });
 
@@ -108,15 +121,15 @@ describe('household connection', () => {
   it('Continue on Who\'s here tells the server', async () => {
     const {getByTestId, server} = await renderApp();
     await waitFor(() => expect(server.tv.readyState).toBe(1));
-    fireEvent.press(getByTestId('profile-ammu'));
+    fireEvent.press(getByTestId('profile-sam'));
     fireEvent.press(getByTestId('continue'));
-    expect(server.received.filter(m => m.type === 'profile:switch').pop()?.payload).toEqual({profileIds: ['rafi', 'nanu', 'ammu']});
+    expect(server.received.filter(m => m.type === 'profile:switch').pop()?.payload).toEqual({profileIds: ['maya', 'leo', 'sam']});
   });
 
   it('a profile switch from a phone updates the profiles tile', async () => {
     const {getByTestId, server} = await goHome();
-    act(() => server.push('profile:changed', {profileIds: ['ammu', 'abbu']}));
-    expect(getByTestId('grid-cell-profiles').props.accessibilityLabel).toBe("Who's here: Ammu & Abbu. Select to change");
+    act(() => server.push('profile:changed', {profileIds: ['maya', 'sam']}));
+    expect(getByTestId('grid-cell-profiles').props.accessibilityLabel).toBe("Who's here: Maya & Sam. Select to change");
   });
 
   it("a profile switch from a phone updates Who's here", async () => {
@@ -129,10 +142,10 @@ describe('household connection', () => {
     const {getByTestId, queryByTestId, server} = await goHome();
     jest.useFakeTimers({doNotFake: ['setImmediate', 'nextTick', 'queueMicrotask']});
     act(() =>
-      server.push('message:new', {id: 'm1', text: 'Pizza night 🍕', fromProfileId: 'ammu', fromClient: 'phone', at: new Date().toISOString()}),
+      server.push('message:new', {id: 'm1', text: 'Pizza night 🍕', fromProfileId: 'maya', fromClient: 'phone', at: new Date().toISOString()}),
     );
-    expect(getByTestId('message-toast').props.accessibilityLabel).toBe('Message from Ammu: Pizza night 🍕');
-    expect(textOf(getByTestId('message-toast'))).toMatch(/AmmuPizza night 🍕/);
+    expect(getByTestId('message-toast').props.accessibilityLabel).toBe('Message from Maya: Pizza night 🍕');
+    expect(textOf(getByTestId('message-toast'))).toMatch(/MayaPizza night 🍕/);
     act(() => {
       jest.advanceTimersByTime(9000);
     });
@@ -213,16 +226,29 @@ describe('live widgets', () => {
     const {getByTestId, queryByTestId} = await goHome();
     expect(textOf(getByTestId('event-e-movie'))).toMatch(/Movie night/);
     expect(textOf(getByTestId('event-e-dentist'))).toMatch(/Dentist/);
-    expect(getByTestId('event-e-dentist-ammu')).toBeTruthy();
+    expect(getByTestId('event-e-dentist-maya')).toBeTruthy();
     expect(queryByTestId('event-e-past')).toBeNull();
+  });
+
+  it('the week opens from the tile: next up, tonight, a column per day; Back closes it', async () => {
+    const {getByTestId, queryByTestId} = await goHome();
+    expect(textOf(getByTestId('calendar-next-line'))).toMatch(/^Next: Movie night · /);
+    fireEvent.press(getByTestId('grid-cell-calendar'));
+    expect(textOf(getByTestId('calendar-next'))).toMatch(/^Next upMovie night.* · Everyone$/);
+    expect(getByTestId('calendar-day-6')).toBeTruthy();
+    expect(textOf(getByTestId('calendar-day-0'))).toMatch(/^Today/);
+    expect(getByTestId('calendar-event-e-dentist')).toBeTruthy();
+    expect(queryByTestId('calendar-event-e-past')).toBeNull();
+    expect(pressBack()).toBe(true);
+    expect(queryByTestId('calendar-overlay')).toBeNull();
   });
 
   it('adds an event a phone created', async () => {
     const {getByTestId, server} = await goHome();
     const start = new Date(Date.now() + 3_600_000).toISOString();
-    act(() => server.push('calendar:updated', {events: [{id: 'e-new', title: 'Soccer', start, profileIds: ['rafi']}]}));
+    act(() => server.push('calendar:updated', {events: [{id: 'e-new', title: 'Soccer', start, profileIds: ['leo']}]}));
     expect(textOf(getByTestId('event-e-new'))).toMatch(/Soccer/);
-    expect(getByTestId('event-e-new-rafi')).toBeTruthy();
+    expect(getByTestId('event-e-new-leo')).toBeTruthy();
   });
 
   it('shows device state and follows a phone flipping the lamp', async () => {
@@ -287,10 +313,12 @@ describe('Tonight', () => {
   it('Select on the tile opens the sheet and asks for picks for who is here', async () => {
     const {getByTestId, server} = await openTonight();
     expect(requests(server)).toEqual([{type: 'tonight:request', payload: {}}]);
-    expect(textOf(getByTestId('tonight-overlay'))).toMatch(/For Rafi & Nanu/);
-    expect(textOf(getByTestId('tonight-pick-0'))).toBe('mix pick 12020 · Prime VideoGood for Rafi & Nanu (mix).');
+    expect(textOf(getByTestId('tonight-overlay'))).toMatch(/For Leo & Maya/);
+    expect(textOf(getByTestId('tonight-pick-0'))).toBe('mix pick 12020 · Prime Video');
+    expect(textOf(getByTestId('tonight-hero'))).toBe('mix pick 12020 · Prime VideoGood for Leo & Nora (mix).');
     expect(getByTestId('tonight-pick-2')).toBeTruthy();
     expect(getByTestId('tonight-demo-note')).toBeTruthy();
+    expect(getByTestId('tonight-backdrop').props.accessibilityLabel).toBe('Drawn backdrop');
   });
 
   it('shows a loading line until the picks arrive', async () => {
@@ -303,6 +331,17 @@ describe('Tonight', () => {
     expect(getByTestId('tonight-pick-0')).toBeTruthy();
   });
 
+  it('focusing a pick puts it in the hero, and painted art replaces the drawn scene', async () => {
+    const {getByTestId, server} = await openTonight();
+    fireEvent(getByTestId('tonight-pick-2'), 'focus');
+    expect(textOf(getByTestId('tonight-hero'))).toMatch(/^mix pick 3/);
+    const picks = server.tonight.picks.map((p: object, i: number) => ({...p, image: `/art/${'ab'.repeat(8)}.png`, n: i}));
+    act(() => server.push('tonight:picks', {...server.tonight, picks, source: 'bedrock'}));
+    expect(getByTestId('tonight-backdrop').props.accessibilityLabel).toBe('Painted backdrop');
+    expect(getByTestId('tonight-backdrop-image').props.source.uri).toMatch(/^http:\/\/[^/]+:8787\/art\/(ab){8}\.png$/);
+    expect(textOf(getByTestId('tonight-source'))).toBe('Picked by Amazon Nova · art by Nova Canvas');
+  });
+
   it('a mood button asks again with that mood', async () => {
     const {getByTestId, server} = await openTonight();
     fireEvent.press(getByTestId('tonight-mood-edge-of-seat'));
@@ -313,7 +352,7 @@ describe('Tonight', () => {
 
   it('reuses picks that already fit the room, and asks again when the room changes', async () => {
     const server = new FakeServer();
-    server.tonight = {picks: fakePicks('cozy'), mood: 'cozy', forProfileIds: ['nanu', 'rafi'], at: new Date().toISOString(), source: 'bedrock'};
+    server.tonight = {picks: fakePicks('cozy'), mood: 'cozy', forProfileIds: ['maya', 'leo'], at: new Date().toISOString(), source: 'bedrock'};
     const utils = await goHome(server);
     expect(textOf(utils.getByTestId('tonight-tile-pick-0'))).toBe('cozy pick 1');
     await waitFor(() => expect(server.tv.readyState).toBe(1));
@@ -322,7 +361,7 @@ describe('Tonight', () => {
     expect(utils.queryByTestId('tonight-demo-note')).toBeNull();
     pressBack();
 
-    act(() => server.push('profile:changed', {profileIds: ['ammu']}));
+    act(() => server.push('profile:changed', {profileIds: ['nora']}));
     fireEvent.press(utils.getByTestId('grid-cell-tonight'));
     expect(requests(server)).toHaveLength(1);
   });
@@ -358,10 +397,10 @@ describe('Game night', () => {
     title: 'Our Week',
     round: 2,
     rounds: 5,
-    question: {id: 'g1-2', text: 'Who has Dentist tomorrow?', choices: ['Rafi', 'Ammu', 'Nanu', 'Abbu']},
+    question: {id: 'g1-2', text: 'Who has Dentist tomorrow?', choices: ['Leo', 'Maya', 'Nora', 'Sam']},
     endsAt: new Date(Date.now() + 20_000).toISOString(),
-    answered: ['rafi'],
-    scores: {rafi: 0},
+    answered: ['leo'],
+    scores: {leo: 0},
   };
 
   async function openGame(server = new FakeServer()) {
@@ -377,13 +416,13 @@ describe('Game night', () => {
     const server = new FakeServer();
     const {getByTestId} = await goHome(server);
     expect(textOf(getByTestId('game-tile-line'))).toBe('Play a quiz on your phones.');
-    act(() => server.push('league:updated', {nanu: {points: 2400, wins: 2, games: 2}, rafi: {points: 900, wins: 0, games: 2}}));
-    expect(textOf(getByTestId('game-tile-line'))).toBe('Nanu leads the league.');
+    act(() => server.push('league:updated', {nora: {points: 2400, wins: 2, games: 2}, leo: {points: 900, wins: 0, games: 2}}));
+    expect(textOf(getByTestId('game-tile-line'))).toBe('Nora leads the league.');
   });
 
   it('Select opens the menu; Our Week and Watched It start a quiz', async () => {
     const server = new FakeServer();
-    server.tonight = {picks: fakePicks('cozy'), mood: 'cozy', forProfileIds: ['rafi', 'nanu'], at: new Date().toISOString(), source: 'mock'};
+    server.tonight = {picks: fakePicks('cozy'), mood: 'cozy', forProfileIds: ['leo', 'maya'], at: new Date().toISOString(), source: 'mock'};
     const {getByTestId} = await openGame(server);
     expect(textOf(getByTestId('game-league'))).toMatch(/Play a quiz to start the league\./);
     fireEvent.press(getByTestId('game-start-our-week'));
@@ -398,8 +437,8 @@ describe('Game night', () => {
     const {getByTestId} = await goHome(server);
     act(() => server.push('game:state', question));
     expect(textOf(getByTestId('game-overlay'))).toMatch(/Our WeekQuestion 2 of 5Who has Dentist tomorrow\?/);
-    expect(getByTestId('game-choice-1').props.accessibilityLabel).toBe('B: Ammu');
-    expect(textOf(getByTestId('game-answered'))).toMatch(/R1 answered · \d+ s/);
+    expect(getByTestId('game-choice-1').props.accessibilityLabel).toBe('B: Maya');
+    expect(textOf(getByTestId('game-answered'))).toMatch(/1 answered · \d+ s/);
     fireEvent.press(getByTestId('game-next'));
     expect(sent(server, 'game:next').pop()?.payload).toEqual({gameId: 'g1'});
   });
@@ -408,11 +447,11 @@ describe('Game night', () => {
     const server = new FakeServer();
     const {getByTestId} = await goHome(server);
     act(() =>
-      server.push('game:state', {...question, phase: 'reveal', correct: 1, choices: {rafi: 1, nanu: 0}, gained: {rafi: 850, nanu: 0}, scores: {rafi: 850, nanu: 0}}),
+      server.push('game:state', {...question, phase: 'reveal', correct: 1, choices: {leo: 1, nora: 0}, gained: {leo: 850, nora: 0}, scores: {leo: 850, nora: 0}}),
     );
-    expect(getByTestId('game-choice-1').props.accessibilityLabel).toBe('B: Ammu, right answer');
+    expect(getByTestId('game-choice-1').props.accessibilityLabel).toBe('B: Maya, right answer');
     expect(textOf(getByTestId('game-choice-1'))).toMatch(/Right answer/);
-    expect(textOf(getByTestId('game-gained'))).toBe('R+850N0');
+    expect(textOf(getByTestId('game-gained'))).toBe('+8500');
     expect(textOf(getByTestId('game-next'))).toBe('Next question');
   });
 
@@ -420,11 +459,11 @@ describe('Game night', () => {
     const server = new FakeServer();
     const {getByTestId, queryByTestId} = await goHome(server);
     act(() => server.push('game:state', question));
-    act(() => server.push('game:state', {...question, phase: 'final', round: 5, answered: [], scores: {rafi: 850, nanu: 1700}}));
-    act(() => server.push('league:updated', {rafi: {points: 850, wins: 0, games: 1}, nanu: {points: 1700, wins: 1, games: 1}}));
-    expect(textOf(getByTestId('game-final'))).toBe('1NNanu17002RRafi850');
-    expect(textOf(getByTestId('game-league'))).toMatch(/Family league1NNanu1 win17002RRafi850/);
-    expect(textOf(getByTestId('game-tile-line'))).toBe('Nanu won the quiz.');
+    act(() => server.push('game:state', {...question, phase: 'final', round: 5, answered: [], scores: {leo: 850, nora: 1700}}));
+    act(() => server.push('league:updated', {leo: {points: 850, wins: 0, games: 1}, nora: {points: 1700, wins: 1, games: 1}}));
+    expect(textOf(getByTestId('game-final'))).toBe('1Nora17002Leo850');
+    expect(textOf(getByTestId('game-league'))).toMatch(/Family league1Nora1 win17002Leo850/);
+    expect(textOf(getByTestId('game-tile-line'))).toBe('Nora won the quiz.');
     expect(pressBack()).toBe(true);
     expect(queryByTestId('game-overlay')).toBeNull();
 
@@ -435,7 +474,7 @@ describe('Game night', () => {
 });
 
 describe('Secret veto', () => {
-  const picks = () => ({...{picks: fakePicks('cozy')}, mood: 'cozy', forProfileIds: ['rafi', 'nanu'], at: new Date().toISOString(), source: 'mock'});
+  const picks = () => ({...{picks: fakePicks('cozy')}, mood: 'cozy', forProfileIds: ['leo', 'maya'], at: new Date().toISOString(), source: 'mock'});
 
   async function openTonight(server = new FakeServer()) {
     server.tonight = picks();
@@ -450,13 +489,13 @@ describe('Secret veto', () => {
     server.tonight = {
       ...picks(),
       picks: fakePicks('cozy').map((p, i) => ({...p, minutes: [104, 86, 50][i]})),
-      endsBy: {at: new Date().toISOString(), label: '8:30', reason: "Rafi's bedtime"},
+      endsBy: {at: new Date().toISOString(), label: '8:30', reason: "Leo's bedtime"},
     };
     const {getByTestId} = await goHome(server);
     await waitFor(() => expect(server.tv.readyState).toBe(1));
     expect(textOf(getByTestId('grid-cell-tonight'))).toMatch(/Tonight · ends by 8:30/);
     fireEvent.press(getByTestId('grid-cell-tonight'));
-    expect(textOf(getByTestId('tonight-overlay'))).toMatch(/For Rafi & Nanu · Ends by 8:30 \(Rafi's bedtime\)/);
+    expect(textOf(getByTestId('tonight-overlay'))).toMatch(/For Leo & Maya · Ends by 8:30 \(Leo's bedtime\)/);
     expect(textOf(getByTestId('tonight-pick-0'))).toMatch(/2020 · Prime Video · 1 h 44 min/);
     expect(textOf(getByTestId('tonight-pick-2'))).toMatch(/50 min/);
   });
@@ -466,11 +505,11 @@ describe('Secret veto', () => {
     fireEvent.press(getByTestId('tonight-vote'));
     expect(server.received.some(m => m.type === 'tonight:vote-start')).toBe(true);
     act(() =>
-      server.push('tonight:vote-state', {voteId: 'v1', phase: 'voting', options: [0, 1, 2], voted: ['nanu'], endsAt: new Date(Date.now() + 60_000).toISOString()}),
+      server.push('tonight:vote-state', {voteId: 'v1', phase: 'voting', options: [0, 1, 2], voted: ['nora'], endsAt: new Date(Date.now() + 60_000).toISOString()}),
     );
     const progress = textOf(getByTestId('vote-progress'));
     expect(progress).toMatch(/Vote on your phones\. Nobody sees your vote\./);
-    expect(textOf(getByTestId('vote-voted'))).toMatch(/RWaitingNVoted1 of 2 voted · \d+ s/);
+    expect(textOf(getByTestId('vote-voted'))).toMatch(/WaitingVoted1 of 2 voted · \d+ s/);
     fireEvent.press(getByTestId('vote-next'));
     expect(server.received.filter(m => m.type === 'tonight:vote-next').pop()?.payload).toEqual({voteId: 'v1'});
   });
@@ -480,7 +519,7 @@ describe('Secret veto', () => {
     act(() => server.push('tonight:vote-state', {voteId: 'v1', phase: 'sudden-death', options: [0, 2], voted: []}));
     expect(textOf(getByTestId('vote-progress'))).toMatch(/Sudden death/);
     expect(() => getByTestId('tonight-pick-1')).toThrow();
-    act(() => server.push('tonight:vote-state', {voteId: 'v1', phase: 'result', options: [0, 2], voted: ['rafi', 'nanu'], accepted: [], winner: 2, decidedBy: 'sudden-death'}));
+    act(() => server.push('tonight:vote-state', {voteId: 'v1', phase: 'result', options: [0, 2], voted: ['leo', 'nora'], accepted: [], winner: 2, decidedBy: 'sudden-death'}));
     act(() => server.push('tonight:picks', {...picks(), chosen: 2}));
     expect(textOf(getByTestId('vote-result'))).toMatch(/Sudden death: cozy pick 3 wins\./);
     expect(textOf(getByTestId('tonight-pick-2'))).toMatch(/^Tonight's pick/);
@@ -502,8 +541,8 @@ describe('Sketch the pick', () => {
     rounds: 3,
     endsAt: new Date(Date.now() + 60_000).toISOString(),
     answered: [],
-    scores: {rafi: 0, nanu: 0},
-    drawerId: 'rafi',
+    scores: {leo: 0, nora: 0},
+    drawerId: 'leo',
     hint: '__________ 2',
   };
 
@@ -531,23 +570,23 @@ describe('Sketch the pick', () => {
     const server = new FakeServer();
     const {getByTestId, getAllByTestId, queryAllByTestId} = await goHome(server);
     act(() => server.push('game:state', round));
-    expect(textOf(getByTestId('game-sketch'))).toMatch(/Rafi is drawing/);
+    expect(textOf(getByTestId('game-sketch'))).toMatch(/Leo is drawing/);
     expect(textOf(getByTestId('game-sketch-hint'))).toBe('_ _ _ _ _ _ _ _ _ _    2');
     const stroke = {id: 'a', color: '#3D8BFF', width: 0.01, points: [{x: 0.1, y: 0.1}, {x: 0.5, y: 0.5}]};
     act(() => server.push('sketch:stroke', {gameId: 's1', round: 1, stroke}));
     act(() => server.push('sketch:stroke', {gameId: 's1', round: 1, stroke: {...stroke, points: [{x: 1, y: 0.75}]}}));
     // One path per pen color; the blue one holds the stroke.
     expect(getAllByTestId('svg-path').map(p => p.props.accessibilityLabel)).toContain('M88.0 66.0 L440.0 330.0 880.0 495.0');
-    act(() => server.push('sketch:guess', {gameId: 's1', round: 1, profileId: 'nanu', text: 'cars', correct: false}));
-    act(() => server.push('sketch:guess', {gameId: 's1', round: 1, profileId: 'nanu', correct: true}));
-    expect(textOf(getByTestId('game-guesses'))).toMatch(/Nanu: carsNanu got it/);
-    act(() => server.push('game:state', {...round, phase: 'reveal', answered: ['nanu'], answer: 'Paddington 2', gained: {nanu: 900, rafi: 250}}));
+    act(() => server.push('sketch:guess', {gameId: 's1', round: 1, profileId: 'nora', text: 'cars', correct: false}));
+    act(() => server.push('sketch:guess', {gameId: 's1', round: 1, profileId: 'nora', correct: true}));
+    expect(textOf(getByTestId('game-guesses'))).toMatch(/Nora: carsNora got it/);
+    act(() => server.push('game:state', {...round, phase: 'reveal', answered: ['nora'], answer: 'Paddington 2', gained: {nora: 900, leo: 250}}));
     expect(textOf(getByTestId('game-sketch-answer'))).toBe('Paddington 2');
-    expect(textOf(getByTestId('game-gained'))).toBe("R+250N+900");
+    expect(textOf(getByTestId('game-gained'))).toBe("+250+900");
     // The next round starts blank.
-    act(() => server.push('game:state', {...round, round: 2, drawerId: 'nanu'}));
+    act(() => server.push('game:state', {...round, round: 2, drawerId: 'nora'}));
     expect(queryAllByTestId('svg-path').every(p => p.props.accessibilityLabel === 'M0 0')).toBe(true);
-    expect(textOf(getByTestId('game-sketch'))).toMatch(/Nanu is drawing/);
+    expect(textOf(getByTestId('game-sketch'))).toMatch(/Nora is drawing/);
   });
 });
 

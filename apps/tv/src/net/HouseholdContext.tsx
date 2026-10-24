@@ -182,6 +182,9 @@ export function HouseholdProvider({children, initialProfileIds, createSocket, se
         setState(s => ({...s, activeProfileIds: profileIds}));
         break;
       }
+      case 'profiles:updated':
+        setState(s => ({...s, profiles: (msg.payload as {profiles: Profile[]}).profiles}));
+        break;
       case 'calendar:updated':
         setState(s => ({...s, events: (msg.payload as {events: CalendarEvent[]}).events}));
         break;

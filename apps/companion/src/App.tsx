@@ -5,6 +5,7 @@ import {ChatCard, TonightCard} from './AI';
 import {CalendarCard, SmartHomeCard} from './Widgets';
 import {GameCard} from './Game';
 import {VoteCard} from './Vote';
+import {Avatar, WhoAmI} from './Profiles';
 
 export function App() {
   const huddle = useHuddle();
@@ -77,7 +78,7 @@ export function App() {
           <span className="dot" /> {status === 'open' ? 'Connected to the TV' : 'Reconnecting…'}
         </p>
       </header>
-      <WhoAmI profiles={snapshot.profiles} meId={huddle.meId} onPick={huddle.setMe} />
+      <WhoAmI profiles={snapshot.profiles} meId={huddle.meId} onPick={huddle.setMe} onSave={huddle.saveProfile} disabled={status !== 'open'} />
       {voting ? (
         <VoteCard
           vote={huddle.vote}
@@ -128,52 +129,6 @@ function Empty({title, body}: {title: string; body: string}) {
       <p className="eyebrow">Huddle</p>
       <h1>{title}</h1>
       {body ? <p className="muted">{body}</p> : null}
-    </section>
-  );
-}
-
-function Avatar({profile, size = 56}: {profile: Profile; size?: number}) {
-  return (
-    <span className="avatar" style={{background: profile.color, width: size, height: size, fontSize: size * 0.42}} aria-hidden>
-      {profile.name[0]}
-    </span>
-  );
-}
-
-function WhoAmI({profiles, meId, onPick}: {profiles: Profile[]; meId?: string; onPick: (id: string) => void}) {
-  const [editing, setEditing] = useState(!meId);
-  const me = profiles.find(p => p.id === meId);
-  if (me && !editing) {
-    return (
-      <section className="card row">
-        <Avatar profile={me} size={40} />
-        <p className="grow">
-          You're <strong>{me.name}</strong>
-        </p>
-        <button className="link" onClick={() => setEditing(true)}>
-          Change
-        </button>
-      </section>
-    );
-  }
-  return (
-    <section className="card">
-      <h2>Who are you?</h2>
-      <div className="chips">
-        {profiles.map(p => (
-          <button
-            key={p.id}
-            className={`chip ${p.id === meId ? 'on' : ''}`}
-            aria-pressed={p.id === meId}
-            onClick={() => {
-              onPick(p.id);
-              setEditing(false);
-            }}>
-            <Avatar profile={p} size={40} />
-            {p.name}
-          </button>
-        ))}
-      </div>
     </section>
   );
 }

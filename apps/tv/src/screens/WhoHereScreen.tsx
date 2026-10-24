@@ -1,20 +1,41 @@
-import React, {useState} from 'react';
+import React, {useEffect, useRef, useState} from 'react';
 import {StyleSheet, Text, View} from 'react-native';
 import {TVFocusGuideView} from '@amazon-devices/react-native-kepler';
 import {FocusableCard} from '@huddle/tv-focus-kit';
 import {useHousehold} from '../net/HouseholdContext';
-import {Avatar, Button, focusLook} from '../components/ui';
-import {colors, space, type} from '../theme';
+import {ConnectOverlay} from '../components/ConnectOverlay';
+import {Avatar, Button, focusLook, restoreFocus} from '../components/ui';
+import {colors, radius, space, type} from '../theme';
 
 type Props = {
   initialSelected: string[];
   onContinue: (profileIds: string[]) => void;
 };
 
-/** "Who's here?": multi-select people, like Vega's profile picker. Select toggles, Continue goes home. */
+/**
+ * "Who's here?": square person tiles, multi-select, like Vega's profile picker.
+ * Select toggles, Continue goes home. "Add someone" shows the QR; the new person
+ * is typed in on a phone and arrives here already selected.
+ */
 export function WhoHereScreen({initialSelected, onContinue}: Props) {
   const {profiles} = useHousehold();
   const [selected, setSelected] = useState<string[]>(initialSelected);
+  const [adding, setAdding] = useState(false);
+  const known = useRef(new Set(profiles.map(p => p.id)));
+  const addRef = useRef<View>(null);
+  const closeAdd = () => {
+    setAdding(false);
+    // Focus goes back to the tile that opened the sheet.
+    setTimeout(() => restoreFocus(addRef.current), 0);
+  };
+
+  useEffect(() => {
+    const fresh = profiles.filter(p => !known.current.has(p.id)).map(p => p.id);
+    known.current = new Set(profiles.map(p => p.id));
+    if (!fresh.length || !adding) return;
+    setSelected(prev => [...prev, ...fresh.filter(id => !prev.includes(id))]);
+    closeAdd();
+  }, [profiles, adding]);
 
   const toggle = (id: string) => {
     setSelected(prev => (prev.includes(id) ? prev.filter(p => p !== id) : [...prev, id]));
@@ -35,18 +56,32 @@ export function WhoHereScreen({initialSelected, onContinue}: Props) {
                 onPress={() => toggle(p.id)}
                 accessibilityLabel={`${p.name}, ${isOn ? 'here' : 'not here'}`}
                 {...focusLook}
-                radius={AVATAR / 2}
-                focusScale={1.08}
-                style={styles.avatarButton}>
-                <Avatar name={p.name} color={p.color} size={AVATAR} dim={!isOn} />
+                radius={radius.lg}
+                focusScale={1.06}
+                style={[styles.tile, isOn && styles.tileOn]}>
+                <Avatar profile={p} size={BLOB} dim={!isOn} />
+                <View style={[styles.check, isOn && styles.checkOn]} testID={isOn ? `here-${p.id}` : undefined}>
+                  <Text style={styles.checkMark}>{isOn ? '✓' : ''}</Text>
+                </View>
               </FocusableCard>
               <Text style={[styles.name, !isOn && styles.nameOff]}>{p.name}</Text>
-              <View style={[styles.check, isOn && styles.checkOn]} testID={isOn ? `here-${p.id}` : undefined}>
-                <Text style={styles.checkMark}>{isOn ? '✓' : ''}</Text>
-              </View>
             </View>
           );
         })}
+        <View style={styles.person}>
+          <FocusableCard
+            ref={addRef}
+            testID="profile-add"
+            onPress={() => setAdding(true)}
+            accessibilityLabel="Add someone. Finish on your phone"
+            {...focusLook}
+            radius={radius.lg}
+            focusScale={1.06}
+            style={[styles.tile, styles.addTile]}>
+            <Text style={styles.plus}>+</Text>
+          </FocusableCard>
+          <Text style={[styles.name, styles.nameOff]}>Add someone</Text>
+        </View>
       </TVFocusGuideView>
 
       <Button
@@ -56,11 +91,13 @@ export function WhoHereScreen({initialSelected, onContinue}: Props) {
         accessibilityLabel="Continue to home"
         onPress={() => onContinue(selected.length ? selected : ['guest'])}
       />
+      {adding ? <ConnectOverlay purpose="add" onClose={closeAdd} /> : null}
     </View>
   );
 }
 
-const AVATAR = 160;
+const TILE = 220;
+const BLOB = 150;
 
 const styles = StyleSheet.create({
   root: {
@@ -84,25 +121,44 @@ const styles = StyleSheet.create({
   },
   person: {
     alignItems: 'center',
-    marginHorizontal: space.md,
+    marginHorizontal: space.sm,
   },
-  avatarButton: {
-    width: AVATAR,
-    height: AVATAR,
+  tile: {
+    width: TILE,
+    height: TILE,
+    borderRadius: radius.lg,
+    backgroundColor: colors.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  tileOn: {
+    backgroundColor: colors.surfaceRaised,
+  },
+  addTile: {
+    borderWidth: 3,
+    borderColor: colors.surfaceRaised,
+    backgroundColor: colors.bg,
+  },
+  plus: {
+    color: colors.mute,
+    fontSize: 96,
+    fontWeight: '300',
   },
   name: {
     color: colors.ink,
     fontSize: type.body,
-    marginTop: space.md,
+    marginTop: space.sm,
   },
   nameOff: {
     color: colors.mute,
   },
   check: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    marginTop: space.xs,
+    position: 'absolute',
+    top: space.sm,
+    right: space.sm,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
   },

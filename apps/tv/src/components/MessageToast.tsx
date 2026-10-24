@@ -3,8 +3,10 @@ import {Animated, StyleSheet, Text, View} from 'react-native';
 import type {FamilyMessage} from '@huddle/shared';
 import {useHousehold} from '../net/HouseholdContext';
 import {colors, radius, space, type} from '../theme';
+import {Avatar} from './ui';
 
 export const TOAST_MS = 8000;
+const AVATAR = 80;
 
 /** 10-foot toast for messages from phones: who sent it + the text. Not focusable; never steals focus. */
 export function MessageToast() {
@@ -25,7 +27,7 @@ export function MessageToast() {
 
   if (!shown) return null;
   const sender = senderName(shown);
-  const color = profiles.find(p => p.id === shown.fromProfileId)?.color ?? colors.mute;
+  const from = profiles.find(p => p.id === shown.fromProfileId) ?? {id: 'phone', name: sender, color: colors.mute, avatar: 'cloud'};
 
   return (
     <Animated.View
@@ -34,8 +36,8 @@ export function MessageToast() {
       testID="message-toast"
       accessibilityLiveRegion="polite"
       accessibilityLabel={`Message from ${sender}: ${shown.text}`}>
-      <View style={[styles.avatar, {backgroundColor: color}]}>
-        <Text style={styles.avatarLetter}>{sender[0]}</Text>
+      <View style={styles.avatar}>
+        <Avatar profile={from} size={AVATAR} />
       </View>
       <View style={styles.body}>
         <Text style={styles.from}>{sender}</Text>
@@ -62,17 +64,7 @@ const styles = StyleSheet.create({
     borderColor: colors.focusRing,
   },
   avatar: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
     marginRight: space.md,
-  },
-  avatarLetter: {
-    color: colors.bg,
-    fontSize: type.title,
-    fontWeight: '700',
   },
   body: {
     flex: 1,

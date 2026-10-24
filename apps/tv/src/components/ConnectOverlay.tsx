@@ -10,13 +10,17 @@ import {Button, Sheet} from './ui';
 /** Ask for a new code this long before the current one expires. */
 const REFRESH_BEFORE_MS = 30_000;
 
-type Props = {onClose: () => void};
+type Props = {
+  onClose: () => void;
+  /** `add`: the same QR, worded for adding a person. Names are typed on the phone, never on the TV. */
+  purpose?: 'connect' | 'add';
+};
 
 /**
  * "Connect your phone" sheet: big QR, the code in text, and the URL.
  * Focus is trapped here while open and Back closes it (see Sheet).
  */
-export function ConnectOverlay({onClose}: Props) {
+export function ConnectOverlay({onClose, purpose = 'connect'}: Props) {
   const {
     status,
     statusDetail,
@@ -45,7 +49,12 @@ export function ConnectOverlay({onClose}: Props) {
   const phones = companions.filter(c => c.role === 'phone');
 
   return (
-    <Sheet testID="connect-overlay" title="Connect your phone" onClose={onClose} width={1560}>
+    <Sheet
+      testID="connect-overlay"
+      title={purpose === 'add' ? 'Add someone' : 'Connect your phone'}
+      subtitle={purpose === 'add' ? "Scan with a phone and add yourself. You'll show up here." : undefined}
+      onClose={onClose}
+      width={1560}>
       <View style={styles.body}>
         <View style={styles.qrTile} testID="connect-qr">
           {online && pairCode ? (

@@ -76,7 +76,7 @@ describe('phone pairing', () => {
     const {phone, welcome} = await pairPhone(server.url, pair.code.toLowerCase(), {}, hh);
     assert.equal(welcome.type, 'welcome');
     assert.equal(welcome.payload.you.role, 'phone');
-    assert.equal(welcome.payload.snapshot.name, 'The Khans');
+    assert.equal(welcome.payload.snapshot.name, 'The Parks');
     const joined = await tv.nextOf('client:joined');
     assert.equal(joined.payload.role, 'phone');
     tv.close();
@@ -205,11 +205,11 @@ describe('profile:switch and message:send', () => {
     const {tv, pair} = await claimTv(server.url, hh);
     const {phone} = await pairPhone(server.url, pair.code, {}, hh);
     const {phone: phone2} = await pairPhone(server.url, pair.code, {}, hh);
-    phone.send('profile:switch', {profileIds: ['ammu', 'abbu', 'ammu']});
-    assert.deepEqual((await tv.nextOf('profile:changed')).payload, {profileIds: ['ammu', 'abbu']});
-    assert.deepEqual((await phone2.nextOf('profile:changed')).payload, {profileIds: ['ammu', 'abbu']});
-    assert.deepEqual((await phone.nextOf('profile:changed')).payload, {profileIds: ['ammu', 'abbu']});
-    assert.deepEqual(server.hub.household(hh)!.activeProfileIds, ['ammu', 'abbu']);
+    phone.send('profile:switch', {profileIds: ['maya', 'sam', 'maya']});
+    assert.deepEqual((await tv.nextOf('profile:changed')).payload, {profileIds: ['maya', 'sam']});
+    assert.deepEqual((await phone2.nextOf('profile:changed')).payload, {profileIds: ['maya', 'sam']});
+    assert.deepEqual((await phone.nextOf('profile:changed')).payload, {profileIds: ['maya', 'sam']});
+    assert.deepEqual(server.hub.household(hh)!.activeProfileIds, ['maya', 'sam']);
     tv.close();
     phone.close();
     phone2.close();
@@ -227,13 +227,50 @@ describe('profile:switch and message:send', () => {
     phone.close();
   });
 
+  it('a phone adds a person before Guest, then edits them; the TV gets every change', async () => {
+    const {tv, pair} = await claimTv(server.url, hh);
+    const {phone} = await pairPhone(server.url, pair.code, {}, hh);
+    phone.send('profile:save', {name: '  Grandma   Jo ', color: '#ff6b8b', avatar: 'squish'});
+    const added = (await tv.nextOf('profiles:updated')).payload;
+    assert.equal(added.savedId, 'grandma-jo');
+    assert.deepEqual(added.profiles.at(-2), {id: 'grandma-jo', name: 'Grandma Jo', color: '#FF6B8B', avatar: 'squish'});
+    assert.equal(added.profiles.at(-1).id, 'guest');
+
+    phone.send('profile:save', {name: 'Grandma Jo', color: '#3D8BFF', avatar: 'bean'});
+    assert.equal((await tv.nextOf('profiles:updated')).payload.savedId, 'grandma-jo-2');
+
+    phone.send('profile:save', {profileId: 'maya', name: 'Mai', color: '#22C3D6', avatar: 'drop', kid: false});
+    const edited = (await tv.nextOf('profiles:updated')).payload;
+    assert.deepEqual(edited.profiles.find((p: {id: string}) => p.id === 'maya'), {id: 'maya', name: 'Mai', color: '#22C3D6', avatar: 'drop', kid: false});
+    tv.close();
+    phone.close();
+  });
+
+  it('rejects bad profiles, unknown ids, and the TV saving one', async () => {
+    const {tv, pair} = await claimTv(server.url, hh);
+    const {phone} = await pairPhone(server.url, pair.code, {}, hh);
+    phone.send('profile:save', {name: '', color: '#3D8BFF', avatar: 'bean'});
+    assert.match((await phone.nextOf('error')).payload.message, /name is empty/);
+    phone.send('profile:save', {name: 'Jo', color: 'red', avatar: 'bean'});
+    assert.match((await phone.nextOf('error')).payload.message, /color/);
+    phone.send('profile:save', {name: 'Jo', color: '#3D8BFF', avatar: 'robot'});
+    assert.match((await phone.nextOf('error')).payload.message, /avatar/);
+    phone.send('profile:save', {profileId: 'mallory', name: 'Jo', color: '#3D8BFF', avatar: 'bean'});
+    assert.match((await phone.nextOf('error')).payload.message, /unknown profile/);
+    tv.send('profile:save', {name: 'Jo', color: '#3D8BFF', avatar: 'bean'});
+    assert.equal((await tv.nextOf('error')).payload.code, 'forbidden');
+    assert.equal(await tv.noneOf('profiles:updated'), true);
+    tv.close();
+    phone.close();
+  });
+
   it('broadcasts a message with its sender', async () => {
     const {tv, pair} = await claimTv(server.url, hh);
     const {phone} = await pairPhone(server.url, pair.code, {}, hh);
-    phone.send('message:send', {text: '  Pizza night 🍕  ', fromProfileId: 'ammu'});
+    phone.send('message:send', {text: '  Pizza night 🍕  ', fromProfileId: 'maya'});
     const msg = await tv.nextOf('message:new');
     assert.equal(msg.payload.text, 'Pizza night 🍕');
-    assert.equal(msg.payload.fromProfileId, 'ammu');
+    assert.equal(msg.payload.fromProfileId, 'maya');
     assert.equal(msg.payload.fromClient, 'phone');
     assert.equal(server.hub.household(hh)!.messages[0]!.text, 'Pizza night 🍕');
     tv.close();
@@ -253,8 +290,8 @@ describe('profile:switch and message:send', () => {
   it('a phone can drop topics it does not want', async () => {
     const {tv, pair} = await claimTv(server.url, hh);
     const {phone} = await pairPhone(server.url, pair.code, {topics: ['household']}, hh);
-    tv.send('profile:switch', {profileIds: ['rafi']});
-    assert.equal((await phone.nextOf('profile:changed')).payload.profileIds[0], 'rafi');
+    tv.send('profile:switch', {profileIds: ['leo']});
+    assert.equal((await phone.nextOf('profile:changed')).payload.profileIds[0], 'leo');
     const {phone: other} = await pairPhone(server.url, pair.code, {}, hh);
     other.send('message:send', {text: 'hello'});
     assert.equal((await tv.nextOf('message:new')).payload.text, 'hello');

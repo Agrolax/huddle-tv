@@ -6,3 +6,4 @@ export * from './validate';
 export * from './socket';
 export * from './widgets';
 export * from './game';
+export * from './avatars';

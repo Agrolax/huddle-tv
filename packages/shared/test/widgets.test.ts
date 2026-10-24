@@ -1,4 +1,4 @@
-import {applyDeviceSet, deviceStateLabel, eventWhen, pruneEvents, upcomingEvents, weatherSummary} from '../src/widgets';
+import {applyDeviceSet, deviceStateLabel, eventWhen, pruneEvents, tonightEvents, upcomingEvents, weatherSummary, weekDays} from '../src/widgets';
 import {validateCalendarAdd, validateCalendarRemove, validateSmartHomeSet} from '../src/validate';
 import type {CalendarEvent, SmartDevice} from '../src/protocol';
 
@@ -75,8 +75,8 @@ describe('smart home', () => {
 
 describe('widget validators', () => {
   it('calendar:add trims, normalises dates and dedupes people', () => {
-    const r = validateCalendarAdd({title: '  Dentist ', start: '2026-10-16T16:00:00-04:00', profileIds: ['ammu', 'ammu']});
-    expect(r).toEqual({ok: true, value: {title: 'Dentist', start: '2026-10-16T20:00:00.000Z', profileIds: ['ammu']}});
+    const r = validateCalendarAdd({title: '  Dentist ', start: '2026-10-16T16:00:00-04:00', profileIds: ['maya', 'maya']});
+    expect(r).toEqual({ok: true, value: {title: 'Dentist', start: '2026-10-16T20:00:00.000Z', profileIds: ['maya']}});
   });
 
   it('calendar:add defaults profileIds to everyone', () => {
@@ -102,5 +102,29 @@ describe('widget validators', () => {
     expect(validateSmartHomeSet({deviceId: 'lamp'}).ok).toBe(false);
     expect(validateSmartHomeSet({deviceId: 'lamp', on: 'yes'}).ok).toBe(false);
     expect(validateSmartHomeSet({deviceId: 'lamp', level: Infinity}).ok).toBe(false);
+  });
+});
+
+describe('week view', () => {
+  const now = at(2026, 10, 22, 18, 0); // Thursday evening
+  const events = [
+    ev('later-today', at(2026, 10, 22, 19)),
+    ev('morning', at(2026, 10, 22, 8)),
+    ev('sat', at(2026, 10, 24, 10)),
+    ev('next-week', at(2026, 10, 29, 10)),
+  ];
+
+  it('lays out today and six more days, each with its own events in order', () => {
+    const days = weekDays(events, now);
+    expect(days.map(d => `${d.name} ${d.date}`)).toEqual(['Thu 22', 'Fri 23', 'Sat 24', 'Sun 25', 'Mon 26', 'Tue 27', 'Wed 28']);
+    expect(days[0]!.today).toBe(true);
+    expect(days[0]!.events.map(e => e.id)).toEqual(['morning', 'later-today']);
+    expect(days[2]!.events.map(e => e.id)).toEqual(['sat']);
+    expect(days.flatMap(d => d.events).some(e => e.id === 'next-week')).toBe(false);
+  });
+
+  it('tonight is what is still on this evening', () => {
+    expect(tonightEvents(events, now).map(e => e.id)).toEqual(['later-today']);
+    expect(tonightEvents(events, at(2026, 10, 22, 7)).map(e => e.id)).toEqual(['later-today']);
   });
 });
