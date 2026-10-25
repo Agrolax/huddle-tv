@@ -5,11 +5,7 @@
 | | |
 |---|---|
 | **Hackathon** | Build, Ship, Shape: Amazon Developer Hackathon |
-| **Deadline** | Oct 23, 2026 · 3:00pm EDT (aim: submit Oct 22) |
-| **Primary track** | Fire TV |
-| **Mini challenges** | AWS Builder (Amazon Bedrock only. DynamoDB, S3, Lightsail, Polly and Transcribe are not used) · Open Source (`tv-focus-kit`, not published) |
-| **Bonus** | Friction log (up to +10%) |
-| **Related docs** | [Roadmap](roadmap.md) · [Architecture](../architecture/architecture.md) · [Design guide](../design/design-guide.md) · [Wireframes](../design/wireframes.html) · [Ideas backlog](ideas-backlog.md) |
+| **Related docs** | [Architecture](../architecture/architecture.md) · [Design guide](../design/design-guide.md) · [Wireframes](../design/wireframes.html) · [Ideas backlog](ideas-backlog.md) |
 
 ---
 

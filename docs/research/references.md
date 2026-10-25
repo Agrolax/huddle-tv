@@ -4,13 +4,6 @@ Sample apps are cloned locally into `reference/` by `scripts/fetch-references.sh
 
 Add links here as you find them. Keep one line of "why it's useful" per link.
 
-## Hackathon
-- [Hackathon home](https://amazonappdev2026.devpost.com/): tracks, prizes, judging criteria
-- [Official rules](https://amazonappdev2026.devpost.com/rules): submission requirements, "obvious vs creative" examples per track
-- [Resources](https://amazonappdev2026.devpost.com/resources): official SDK/sample list (summarized below)
-- [AWS credit request form](https://forms.gle/GaHFxSbBQNG9Kti6A): $150, due Oct 21 12pm PT, first-come first-served, ~5 business days. Must name your track in the description. (The rules page links `forms.gle/5hyhr1u6x3fuV2aW7`; it's the same form.)
-- Live office hours: schedule + join link posted on the hackathon landing page. Our notes: [office-hours.md](office-hours.md)
-
 ## Competition snapshot (Amazon slide, public repos as of Oct 1, directional only)
 44K+ registered. Share of public hackathon repos by track: **Alexa+ 70% · Fire TV 16% · Ring 11% · Bee 3%**.
 - Fire TV has the same cash as Alexa+ ($44K across 3 places) with roughly 1/4 of the competition, which confirms our track choice.
@@ -75,7 +68,7 @@ SDK first: [Install the Vega Developer Tools](https://developer.amazon.com/docs/
 - [AmazonAppDev YouTube](https://www.youtube.com/channel/UCT9ApARFgQJOeqD-ygmxnJQ)
 - [AmazonAppDev on dev.to](https://dev.to/amazonappdev)
 
-## AWS (AWS Builder mini challenge)
+## AWS
 - [AWS Builder Center](https://builder.aws.com/)
 - [Learn on Builder Center](https://builder.aws.com/learn): Bedrock, AgentCore, Kiro tutorials
 

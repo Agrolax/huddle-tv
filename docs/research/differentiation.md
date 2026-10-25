@@ -1,6 +1,6 @@
 # What Amazon already does, and where Huddle can be different (Oct 16)
 
-Follow-up to [community-research.md §7a](community-research.md#7a-biggest-finding-fire-tvs-2026-update-already-covers-part-of-huddle). Prompted by the Alexa+ Echo lineup video (Echo Show 8/11 home screen: greeting, smart-home widget, photos, calendar).
+Follow-up to the community research (§7a). Prompted by the Alexa+ Echo lineup video (Echo Show 8/11 home screen: greeting, smart-home widget, photos, calendar).
 
 ## Already covered by Amazon (don't compete head-on)
 

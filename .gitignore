@@ -16,3 +16,4 @@ coverage/
 *.tsbuildinfo
 .claude/worktrees/
 .art-cache/
+local/

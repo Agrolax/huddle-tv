@@ -3,17 +3,12 @@
 | I want to… | Open |
 |---|---|
 | Understand what we're building and why | [product/PRD.md](product/PRD.md) |
-| See / update the plan and dates | [product/roadmap.md](product/roadmap.md) |
-| Resume work: decisions, schedule, what to do next | [product/next-steps.md](product/next-steps.md) |
 | Check what is unique vs already out there | [research/uniqueness.md](research/uniqueness.md) · [product/family-league.md](product/family-league.md) |
 | Park an idea for later | [product/ideas-backlog.md](product/ideas-backlog.md) |
 | See how it works technically | [architecture/architecture.md](architecture/architecture.md) |
-| Design screens | [design/design-guide.md](design/design-guide.md) · [design/wireframes.html](design/wireframes.html) · [design/screen-inventory.md](design/screen-inventory.md) (redesign checklist) |
+| Design screens | [design/design-guide.md](design/design-guide.md) · [design/wireframes.html](design/wireframes.html) · [design/screen-inventory.md](design/screen-inventory.md) |
 | Find docs, samples, links | [research/references.md](research/references.md) · [research/echo-show.md](research/echo-show.md) (Echo Show as a second screen) |
 | See the app as it runs | [screenshots/](screenshots/) (one folder per step, from the Vega Virtual Device) |
-| Prepare the submission | [submission/hackathon.md](submission/hackathon.md) (archived; not submitted) · [checklist.md](submission/checklist.md) · [demo-script.md](submission/demo-script.md) |
-| Log tool pain (+10% bonus) | [submission/friction-log.md](submission/friction-log.md) |
-| Write required tool feedback | [submission/product-feedback.md](submission/product-feedback.md) |
 
 **How to iterate:** edit any file directly, or ask Claude ("move ambient mode to MVP", "add a chores widget to the PRD"). Everything is in git, so you can see what changed and undo it.
 
@@ -27,7 +22,6 @@
 **Planning (~30m)**
 - [x] Re-read the [PRD](product/PRD.md). Cut or add, and lock the MVP list (Oct 14)
 - [ ] Answer the open questions in [design-guide](design/design-guide.md#open-design-questions)
-- [ ] Adjust dates in the [roadmap](product/roadmap.md)
 
 **Design (rest of the day)**
 - [ ] Figma file in the `Saf` or `Laurier` team, 1920×1080 frames with a 5% safe-area guide

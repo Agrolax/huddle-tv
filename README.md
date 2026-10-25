@@ -16,23 +16,21 @@
 
 Huddle Home is a family home screen for Fire TV on Vega OS. The TV shows the household that is actually on the couch: the clock and the weather, today's calendar, who is here, and what to watch tonight. Phones join with a QR code and become the keyboard, the private ballot, and the pens. Tonight's picks come from Amazon Bedrock (Nova), finish in time for bedtime, and the family settles them with a secret vote. Game night is a quiz about your own week, plus Sketch the pick.
 
-Built for the Amazon Developer Hackathon (Oct 2026). The project was not submitted. Rules, prizes, judging and the submit checklist are in [docs/submission/hackathon.md](docs/submission/hackathon.md).
-
 > Status: **done.**
 
 ## Screens
 
-![Home: clock, calendar, who's here, Tonight, game night and the home tile](docs/submission/gallery/01-home.png)
+![Home: clock, calendar, who's here, Tonight, game night and the home tile](docs/gallery/01-home.png)
 
-![Tonight picks that end by bedtime](docs/submission/gallery/02-tonight-ends-by.png)
+![Tonight picks with TMDB posters; the art behind follows the focused pick](docs/gallery/02-tonight-posters.png)
 
-![Secret vote result on the TV](docs/submission/gallery/03-secret-vote-result.png)
+![Secret vote result on the TV](docs/gallery/03-secret-vote-result.png)
 
-![Household quiz](docs/submission/gallery/04-household-quiz.png)
+![Household quiz](docs/gallery/04-household-quiz.png)
 
-![Sketch the pick](docs/submission/gallery/05-sketch-the-pick.png)
+![Sketch the pick](docs/gallery/05-sketch-the-pick.png)
 
-![Phones join by QR](docs/submission/gallery/06-phones-join-by-qr.png)
+![Phones join by QR](docs/gallery/06-phones-join-by-qr.png)
 
 Stills from the Vega Virtual Device are also in [`docs/screenshots/`](docs/screenshots/).
 
@@ -120,11 +118,61 @@ npm run dev:server     # ws://<LAN IP>:8787/ws; prints the URLs it detected
 npm run dev:companion  # http://<LAN IP>:5173, the page the QR code opens
 ```
 
-`HUDDLE_AI=mock` (the default) needs no AWS account. `HUDDLE_AI=bedrock` calls Amazon Nova with the default AWS credential chain. See [apps/server/.env.example](apps/server/.env.example).
+### Keys and settings
 
-**Movie posters (optional).** Set `TMDB_API_KEY` to a [TMDB v3 API key](https://www.themoviedb.org/settings/api), or `TMDB_READ_TOKEN` to a v4 read access token, in `apps/server/.env`. The server calls `/search/movie` for each Tonight title, takes `poster_path`, and sends `https://image.tmdb.org/t/p/w342/…` as `posterUrl`. Results are cached in memory. Mock mode and Bedrock mode both get posters when a key is present. Series often have no movie match. Leave the variables unset and the TV keeps the title cards.
+Only one thing needs a key, and it is optional. Everything else works out of the box. Server settings go in `apps/server/.env` (copy it from [`.env.example`](apps/server/.env.example)). That file is git-ignored, so keys never get committed.
+
+| What | Key? | How to turn it on |
+|---|---|---|
+| **Weather** | No key | [Open-Meteo](https://open-meteo.com/) is free and keyless. Refreshed every 15 minutes. |
+| **Tonight picks, chat, quiz (AI)** | No key; AWS credentials | Mock by default. For Amazon Nova, set `HUDDLE_AI=bedrock` and sign in to AWS. |
+| **Tonight backdrops** | Same AWS credentials | Painted by Nova Canvas when Bedrock is on. Otherwise the TV draws them. |
+| **Movie posters** | TMDB key (free) | Set `TMDB_API_KEY` or `TMDB_READ_TOKEN`. |
+
+**Weather.** There's nothing to sign up for. It shows Toronto unless you set a place:
+
+| Variable | Default | What it does |
+|---|---|---|
+| `HUDDLE_PLACE` | `Toronto` | Name shown on the clock tile |
+| `HUDDLE_LAT`, `HUDDLE_LON` | `43.65`, `-79.38` | Where to fetch the forecast for |
+| `HUDDLE_WEATHER` | on | `off` stops fetching (offline demos) |
+
+**Amazon Bedrock (AI).** Bedrock has no API key. The server uses your normal AWS credentials (`aws login`, an `AWS_PROFILE`, or `~/.aws`). In the AWS console, open Bedrock → Model access in your region and enable Nova Lite, Micro and Pro, plus Nova Canvas for backdrops. A new AWS account can start with Bedrock quotas at zero; request an increase if calls fail.
+
+| Variable | Default | What it does |
+|---|---|---|
+| `HUDDLE_AI` | `mock` | `bedrock` calls Amazon Nova; `mock` needs no AWS account |
+| `AWS_REGION` | `us-east-1` | Bedrock region |
+| `AWS_PROFILE` | default chain | Which AWS profile to use |
+| `HUDDLE_TONIGHT_MODEL` | `us.amazon.nova-lite-v1:0` | Tonight picks |
+| `HUDDLE_CHAT_MODEL` | `us.amazon.nova-micro-v1:0` | Phone chat |
+| `HUDDLE_QUIZ_MODEL` | `us.amazon.nova-pro-v1:0` | "Watched It" quiz questions |
+| `HUDDLE_ART` | on with Bedrock | `off` skips Nova Canvas; the TV draws backdrops |
+| `HUDDLE_ART_MODEL` | `amazon.nova-canvas-v1:0` | Backdrop image model |
+| `HUDDLE_ART_DIR` | `apps/server/.art-cache` | Where painted backdrops are kept |
+
+If Bedrock fails or times out, the server quietly falls back to the mock, so the TV never shows an error.
+
+**TMDB (movie posters).** Create a free account at [themoviedb.org](https://www.themoviedb.org/signup), then go to [Settings → API](https://www.themoviedb.org/settings/api) and request a key. It asks for a short form (choose personal or educational use and describe the app in a line), and approval is usually instant. The page then shows two values. Use either one:
+
+| Variable | Which value from the TMDB page |
+|---|---|
+| `TMDB_API_KEY` | **API Key**: the short one, 32 characters |
+| `TMDB_READ_TOKEN` | **API Read Access Token**: the long one, starts with `eyJ` |
+
+For each Tonight title the server calls `/search/movie`, takes `poster_path`, and sends `https://image.tmdb.org/t/p/w342/…` as `posterUrl`. Results are cached in memory. Mock and Bedrock modes both get posters. Series often have no movie match. With no key, or when a poster fails to load, the TV shows the backdrop instead.
 
 This product uses the TMDB API but is not endorsed or certified by TMDB.
+
+**Network and build settings** (no keys; the defaults detect your LAN IP):
+
+| Variable | Where | What it does |
+|---|---|---|
+| `PORT`, `HOST` | server `.env` | Where the server listens (`8787`, `0.0.0.0`) |
+| `HUDDLE_LAN_IP` | server `.env` | Override the detected LAN IP |
+| `COMPANION_URL` | server `.env` | The page the QR code opens (default `http://<LAN IP>:5173/`) |
+| `HUDDLE_SERVER_URL`, `HUDDLE_PORT`, `HUDDLE_HOUSEHOLD` | TV build, e.g. `HUDDLE_SERVER_URL=ws://… npm run build:tv` | Server address and household baked into the TV app |
+| `VITE_HUDDLE_SERVER_URL` | `apps/companion/.env` | Server address for the phone page (default: the host it was opened from) |
 
 **Pair a phone:** start the server and the phone app, then build and launch the TV app. On the TV press Up to reach **Connect phone**, then Select. Scan the QR with a phone on the same Wi-Fi. From the phone you can switch who's watching and send a message to the TV.
 
@@ -152,10 +200,10 @@ Everything talks to the Mac on its **LAN IP**, never `localhost`:
 | `apps/server` | API + realtime (Node + TS, WebSocket, Amazon Bedrock). Household and league state are in memory |
 | `packages/shared` | Shared types + theme tokens |
 | `packages/tv-focus-kit` | D-pad focus primitives (MIT) |
-| `docs/` | PRD, roadmap, architecture, design, references, submission archive |
+| `docs/` | PRD, architecture, design, research, screenshots |
 | `reference/` | Amazon sample apps (gitignored): `./scripts/fetch-references.sh` |
 
-Plan: [roadmap](docs/product/roadmap.md). Docs index: [`docs/README.md`](docs/README.md).
+Docs index: [`docs/README.md`](docs/README.md).
 
 ### Dev tooling
 - **Amazon Devices Builder Tools** (MCP + Agent Skills) is configured for Claude Code. Context: `.claude/amazon-devices/CLAUDE.md`; platform: `.adbt-config.json`. Check with:

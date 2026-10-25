@@ -217,7 +217,8 @@ async function main() {
     await press('KEY_RIGHT');
   });
   await shot('tonight-browse');
-  await press('KEY_LEFT', 'KEY_LEFT', 'KEY_DOWN', 'KEY_ENTER');
+  // Down from the picks can land on Done; Left from there (or from Vote) ends on Vote on phones.
+  await press('KEY_LEFT', 'KEY_LEFT', 'KEY_DOWN', 'KEY_LEFT', 'KEY_ENTER');
   await sleep(1200);
   await shot('vote-open');
   await beat('Everyone votes in secret on their phone. The TV shows who voted, never how.', 7, async () => {
