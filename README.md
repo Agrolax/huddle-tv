@@ -16,7 +16,7 @@
 
 Huddle Home is a family home screen for Fire TV on Vega OS. The TV shows the household that is actually on the couch: the clock and the weather, today's calendar, who is here, and what to watch tonight. Phones join with a QR code and become the keyboard, the private ballot, and the pens. Tonight's picks come from Amazon Bedrock (Nova), finish in time for bedtime, and the family settles them with a secret vote. Game night is a quiz about your own week, plus Sketch the pick.
 
-> Status: **done.**
+> Status: **work in progress.** This is the first MVP: every feature below runs end to end on the Vega Virtual Device, and the design and features are still changing.
 
 ## Screens
 
