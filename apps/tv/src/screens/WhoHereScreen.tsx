@@ -1,7 +1,7 @@
 import React, {useEffect, useRef, useState} from 'react';
 import {StyleSheet, Text, View} from 'react-native';
 import {TVFocusGuideView} from '@amazon-devices/react-native-kepler';
-import {FocusableCard} from '@huddle/tv-focus-kit';
+import {FocusableCard} from 'react-native-tv-focus-kit';
 import {useHousehold} from '../net/HouseholdContext';
 import {ConnectOverlay} from '../components/ConnectOverlay';
 import {Avatar, Button, focusLook, restoreFocus} from '../components/ui';

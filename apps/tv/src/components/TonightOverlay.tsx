@@ -4,7 +4,7 @@ import {TMDB_ATTRIBUTION, TONIGHT_MOODS, TonightPick, TonightPicks} from '@huddl
 import {namesFor} from '../data/profiles';
 import {useHousehold} from '../net/HouseholdContext';
 import {colors, radius, space, type} from '../theme';
-import {FocusableCard} from '@huddle/tv-focus-kit';
+import {FocusableCard} from 'react-native-tv-focus-kit';
 import {Avatar, Button, Sheet, focusLook, useSecondsLeft} from './ui';
 import {Backdrop} from './Backdrop';
 

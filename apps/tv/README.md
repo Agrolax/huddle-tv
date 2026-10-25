@@ -6,7 +6,7 @@ React Native for Vega, SDK 0.24, RN 0.72 (`@amazon-devices/react-native-kepler` 
 Full state list: [docs/design/screen-inventory.md](../../docs/design/screen-inventory.md).
 
 1. **Who's here?** Multi-select profiles. Select toggles; Continue goes Home.
-2. **Home.** Greeting, "Connect phone", and a 4×2 widget grid built with `@huddle/tv-focus-kit`'s `FocusGrid`:
+2. **Home.** Greeting, "Connect phone", and a 4×2 widget grid built with `react-native-tv-focus-kit`'s `FocusGrid`:
 
    ```
    clock & weather | family calendar (2 wide) | who's here

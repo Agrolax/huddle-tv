@@ -62,7 +62,7 @@ npm workspaces. `npm run check` typechecks every workspace and runs all unit tes
 
 - **Base:** the Vega app in `react-native-multi-tv-app-sample`. Its web target is handy for fast design iteration in a browser. Stay on that sample's React Native version (0.72 until its 0.83 migration lands). SDK 0.24 can scaffold a new app on React Native 0.83, and several Expo libraries are not stabilized there yet.
 - **Navigation:** Amazon's react-navigation packages (skill: `amazon-devices-vega-navigation`)
-- **Focus:** `@huddle/tv-focus-kit`. `FocusGrid` computes each neighbour in plain TS (`grid.ts`, unit tested) and sets `nextFocus*` on Vega's `Pressable`. Edges fall back to native Cartesian focus. Grids sit inside `TVFocusGuideView autoFocus` so focus coming back from outside lands on the last cell. Verified on the VVD in step 1.
+- **Focus:** `react-native-tv-focus-kit`. `FocusGrid` computes each neighbour in plain TS (`grid.ts`, unit tested) and sets `nextFocus*` on Vega's `Pressable`. Edges fall back to native Cartesian focus. Grids sit inside `TVFocusGuideView autoFocus` so focus coming back from outside lands on the last cell. Verified on the VVD in step 1.
 - **Widgets:** there is no shared `Widget` type. Home is a `FocusGrid` of six tiles (`clock`, `calendar`, `profiles`, `tonight`, `game`, `smart-home`), each a `FocusGridItem` plus `WidgetTile`. Select opens a sheet for Tonight, Game night and Home. Clock and calendar are focusable and do not open a sheet. States: [screen-inventory.md](../design/screen-inventory.md).
 
 ## 4. App launching

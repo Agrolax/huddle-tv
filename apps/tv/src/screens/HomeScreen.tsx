@@ -18,7 +18,7 @@ import {
   weekDays,
   weatherSummary,
 } from '@huddle/shared';
-import {FocusGrid, FocusGridHandle, FocusGridItem} from '@huddle/tv-focus-kit';
+import {FocusGrid, FocusGridHandle, FocusGridItem} from 'react-native-tv-focus-kit';
 import {Backdrop} from '../components/Backdrop';
 import {CalendarOverlay} from '../components/CalendarOverlay';
 import {ConnectOverlay} from '../components/ConnectOverlay';

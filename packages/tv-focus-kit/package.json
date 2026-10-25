@@ -1,12 +1,44 @@
 {
-  "name": "@huddle/tv-focus-kit",
+  "name": "react-native-tv-focus-kit",
   "version": "0.1.0",
   "description": "D-pad focus primitives for React Native TV apps (Vega OS, Android TV, tvOS): FocusableCard, FocusGrid with deterministic row/column navigation, and a focus ring",
   "license": "MIT",
-  "main": "src/index.ts",
-  "types": "src/index.ts",
-  "keywords": ["react-native", "tv", "fire-tv", "vega", "focus", "d-pad", "10-foot-ui"],
+  "author": "Safdar Shukur (https://github.com/Agrolax)",
+  "homepage": "https://github.com/Agrolax/huddle-tv/tree/main/packages/tv-focus-kit#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Agrolax/huddle-tv.git",
+    "directory": "packages/tv-focus-kit"
+  },
+  "bugs": {
+    "url": "https://github.com/Agrolax/huddle-tv/issues"
+  },
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "react-native": "src/index.ts",
+  "files": [
+    "dist",
+    "src",
+    "README.md",
+    "LICENSE"
+  ],
+  "sideEffects": false,
+  "keywords": [
+    "react-native",
+    "tv",
+    "fire-tv",
+    "vega",
+    "focus",
+    "d-pad",
+    "10-foot-ui",
+    "android-tv",
+    "tvos",
+    "spatial-navigation",
+    "react-native-tvos"
+  ],
   "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "prepack": "npm run build",
     "typecheck": "tsc --noEmit -p .",
     "test": "jest"
   },

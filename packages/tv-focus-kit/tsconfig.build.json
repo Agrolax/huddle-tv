@@ -1,0 +1,19 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": false,
+    "declaration": true,
+    "outDir": "dist",
+    "rootDir": "src",
+    "module": "CommonJS",
+    "jsx": "react",
+    "lib": [
+      "ES2020"
+    ],
+    "types": [],
+    "isolatedModules": false
+  },
+  "include": [
+    "src"
+  ]
+}

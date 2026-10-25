@@ -3,7 +3,9 @@
   "compilerOptions": {
     /* Override "jest", "react-native" from @tsconfig/react-native */
     "types": ["jest", "@amazon-devices/react-native-kepler"],
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    // The focus kit is published with built types; in this repo, check against its source.
+    "paths": {"react-native-tv-focus-kit": ["../../packages/tv-focus-kit/src"]}
   },
   "include": ["src", "test", "index.js"]
 }

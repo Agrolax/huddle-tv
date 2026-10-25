@@ -9,7 +9,7 @@ import {FocusManager, TVFocusGuideView} from '@amazon-devices/react-native-keple
 import Svg, {Circle, Path} from '@amazon-devices/react-native-svg';
 import {BLOB_EYE_RADIUS, BLOB_INK, BLOB_PUPIL_RADIUS, blobFor} from '@huddle/shared';
 import type {Profile} from '@huddle/shared';
-import {FocusableCard} from '@huddle/tv-focus-kit';
+import {FocusableCard} from 'react-native-tv-focus-kit';
 import {colors, focus, radius, space, type} from '../theme';
 
 /** Focus props for every focusable on the TV. */

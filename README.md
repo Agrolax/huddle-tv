@@ -42,7 +42,7 @@ Stills from the Vega Virtual Device are also in [`docs/screenshots/`](docs/scree
 - **Secret vote.** Each phone says yes or no in private. The TV shows who has voted, then only the picks everyone accepted.
 - **Game night.** Our Week is a quiz built from the household, with no model. Watched It is written by Nova Pro and falls back to a mock bank. Sketch the pick: one phone draws, the others guess. Scores sit in a family league that lives in memory and resets when the server restarts.
 - **Phone.** Join from the QR code, pick who you are, change who's watching, message the TV, chat (Nova Micro, or the mock), vote, answer and draw.
-- **Focus kit.** [`packages/tv-focus-kit`](packages/tv-focus-kit/README.md) is a small set of D-pad focus primitives for React Native TV (MIT).
+- **Focus kit.** [`react-native-tv-focus-kit`](packages/tv-focus-kit/README.md) is a small set of D-pad focus primitives for React Native TV, published on npm on its own (MIT).
 
 Polly, Transcribe, DynamoDB, S3 and Lightsail are not used. What is real and what is simulated: [docs/product/customizing.md](docs/product/customizing.md).
 
@@ -199,7 +199,7 @@ Everything talks to the Mac on its **LAN IP**, never `localhost`:
 | `apps/companion` | Phone companion (React + Vite web app, opened via QR) |
 | `apps/server` | API + realtime (Node + TS, WebSocket, Amazon Bedrock). Household and league state are in memory |
 | `packages/shared` | Shared types + theme tokens |
-| `packages/tv-focus-kit` | D-pad focus primitives (MIT) |
+| `packages/tv-focus-kit` | D-pad focus primitives, published on npm as [`react-native-tv-focus-kit`](packages/tv-focus-kit/README.md) (MIT) |
 | `docs/` | PRD, architecture, design, research, screenshots |
 | `reference/` | Amazon sample apps (gitignored): `./scripts/fetch-references.sh` |
 
@@ -210,3 +210,11 @@ Docs index: [`docs/README.md`](docs/README.md).
   `npx -y @amazon-devices/amazon-devices-buildertools-mcp@latest check-status --agent claude-code-cli`
 - Update it with:
   `npx -y @amazon-devices/amazon-devices-buildertools-mcp@latest init-context --agent claude-code-cli -p .claude/amazon-devices -m --force`
+
+## Contributing
+
+Issues and pull requests are welcome. Start with [CONTRIBUTING.md](CONTRIBUTING.md).
+
+## License
+
+[MIT](LICENSE)

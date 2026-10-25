@@ -15,7 +15,8 @@ module.exports = {
     // On device, `react-native` resolves to Vega's fork. Upstream RN 0.72's Pressable drops onFocus/onBlur.
     '^react-native$': kepler,
     '^react-native/(.*)$': `${kepler}/$1`,
-    '^@huddle/(shared|tv-focus-kit)$': path.resolve(__dirname, '../../packages/$1/src'),
+    '^@huddle/shared$': path.resolve(__dirname, '../../packages/shared/src'),
+    '^react-native-tv-focus-kit$': path.resolve(__dirname, '../../packages/tv-focus-kit/src'),
     '^@amazon-devices/react-native-qrcode-svg$': '<rootDir>/test/mocks/QRCode.tsx',
     '^@amazon-devices/react-native-svg$': '<rootDir>/test/mocks/svg.tsx',
     '^@amazon-devices/react-native-async-storage__async-storage$': '<rootDir>/test/mocks/asyncStorage.ts',
