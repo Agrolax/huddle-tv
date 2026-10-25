@@ -1,26 +1,18 @@
-<p align="center">
-  <img src="cover.png" alt="Huddle Home" width="100%">
-</p>
+![Huddle Home](cover.png)
 
-<h1 align="center">Huddle Home</h1>
+# Huddle Home
 
-<p align="center">
-  A family home screen for Fire TV, with phones as the remote, the ballot and the pens.
-</p>
-
-<p align="center">
-  <img alt="Fire TV · Vega OS" src="https://img.shields.io/badge/Fire%20TV-Vega%20OS-FF9900?style=flat-square">
-  <img alt="React Native 0.72" src="https://img.shields.io/badge/React%20Native-0.72-61DAFB?style=flat-square&logo=react&logoColor=black">
-  <img alt="React 18" src="https://img.shields.io/badge/React-18-61DAFB?style=flat-square&logo=react&logoColor=black">
-  <img alt="Vite 5" src="https://img.shields.io/badge/Vite-5-646CFF?style=flat-square&logo=vite&logoColor=white">
-  <img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-3178C6?style=flat-square&logo=typescript&logoColor=white">
-  <img alt="Node.js 20+" src="https://img.shields.io/badge/Node.js-20%2B-5FA04E?style=flat-square&logo=nodedotjs&logoColor=white">
-  <img alt="WebSocket" src="https://img.shields.io/badge/WebSocket-realtime-010101?style=flat-square">
-  <img alt="Amazon Bedrock · Nova" src="https://img.shields.io/badge/Amazon%20Bedrock-Nova-232F3E?style=flat-square">
-  <img alt="TMDB" src="https://img.shields.io/badge/TMDB-posters-01B4E4?style=flat-square&logo=themoviedatabase&logoColor=white">
-  <img alt="Jest" src="https://img.shields.io/badge/Jest-tests-C21325?style=flat-square&logo=jest&logoColor=white">
-  <img alt="MIT License" src="https://img.shields.io/badge/license-MIT-lightgrey?style=flat-square">
-</p>
+![Fire TV · Vega OS](https://img.shields.io/badge/Fire%20TV-Vega%20OS-FF9900?style=flat-square)
+![React Native 0.72](https://img.shields.io/badge/React%20Native-0.72-61DAFB?style=flat-square&logo=react&logoColor=black)
+![React 18](https://img.shields.io/badge/React-18-61DAFB?style=flat-square&logo=react&logoColor=black)
+![Vite 5](https://img.shields.io/badge/Vite-5-646CFF?style=flat-square&logo=vite&logoColor=white)
+![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=flat-square&logo=typescript&logoColor=white)
+![Node.js 20+](https://img.shields.io/badge/Node.js-20%2B-5FA04E?style=flat-square&logo=nodedotjs&logoColor=white)
+![WebSocket](https://img.shields.io/badge/WebSocket-realtime-010101?style=flat-square)
+![Amazon Bedrock · Nova](https://img.shields.io/badge/Amazon%20Bedrock-Nova-232F3E?style=flat-square)
+![TMDB](https://img.shields.io/badge/TMDB-posters-01B4E4?style=flat-square&logo=themoviedatabase&logoColor=white)
+![Jest](https://img.shields.io/badge/Jest-tests-C21325?style=flat-square&logo=jest&logoColor=white)
+![MIT License](https://img.shields.io/badge/license-MIT-lightgrey?style=flat-square)
 
 Huddle Home is a family home screen for Fire TV on Vega OS. The TV shows the household that is actually on the couch: the clock and the weather, today's calendar, who is here, and what to watch tonight. Phones join with a QR code and become the keyboard, the private ballot, and the pens. Tonight's picks come from Amazon Bedrock (Nova), finish in time for bedtime, and the family settles them with a secret vote. Game night is a quiz about your own week, plus Sketch the pick.
 
